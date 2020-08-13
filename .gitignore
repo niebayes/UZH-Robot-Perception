@@ -1,0 +1,45 @@
+# Third party libraries
+
+# Directories containing compiled files
+bin
+build
+
+# Temporary files 
+eigen_notes.md
+
+# Visual Studio Code settings
+.vscode
+
+# macOS-specific files
+.DS_Store
+
+# ethz exercises
+exercises
+
+# Prerequisites
+*.d
+
+# Compiled Object files
+*.slo
+*.lo
+*.o
+*.obj
+
+# Precompiled Headers
+*.gch
+*.pch
+
+# Compiled Dynamic libraries
+*.so
+*.dylib
+*.dll
+
+# Fortran module files
+*.mod
+*.smod
+
+# Compiled Static libraries
+*.lai
+*.la
+*.a
+*.lib
