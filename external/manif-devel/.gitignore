@@ -1,0 +1,8 @@
+*.user
+.cproject
+.project
+.settings
+.tags
+build
+doc
+doxygen_warnings.txt

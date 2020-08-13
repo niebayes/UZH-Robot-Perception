@@ -41,6 +41,14 @@ else()
     message("Not Found Eigen3")
 endif()
 
+# manif
+find_package(manif REQUIRED)
+if (manif_FOUND)
+    message("Found manif" " Path ${Eigen3_INCLUDE_DIRS}")
+else()
+    message("Not Found Eigen3")
+endif()
+
 # ceres
 find_package(Ceres REQUIRED)
 if (CERES_FOUND)
@@ -74,6 +82,7 @@ include_directories(BEFORE
     ${CERES_INCLUDE_DIRS}
     "/usr/include"
     ${EIGEN3_INCLUDE_DIRS}
+    ${manif_INCLUDE_DIRS}
     # ${Sophus_INCLUDE_DIRS}
     # "/Users/bayes/slam_lib/Sophus"
     # ${Pangolin_INCLUDE_DIRS}
