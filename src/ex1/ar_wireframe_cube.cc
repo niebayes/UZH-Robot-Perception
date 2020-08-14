@@ -207,7 +207,7 @@ enum ProjectModes : int { PROJECT_WITH_DISTORTION, PROJECT_WITHOUT_DISTORTION };
 // user provided distortion coefficients D
 //! The std::optional is a feature of C++17. Alternatively you can avoid this by
 //! overloading ProjectPoints function.
-//? This paradigm is nor working.
+//? This paradigm is not working.
 // template <typename Derived>
 // const Eigen::Ref<const Eigen::MatrixBase<Derived>>& object_points
 static void ProjectPoints(
@@ -338,6 +338,7 @@ int main(int /*argc*/, char** argv) {
                kScaling = 2 * kCellSize;
   p_W_cube.noalias() = (kScaling * p_W_cube).colwise() +
                        Eigen::Vector3d{kOffsetX, kOffsetY, 0.0};
+
   const Eigen::Matrix3Xd p_C_cube = T_C_W * p_W_cube.colwise().homogeneous();
   Eigen::Matrix2Xd cube_image_points;
   ProjectPoints(p_C_cube, &cube_image_points, K, PROJECT_WITHOUT_DISTORTION);
@@ -358,7 +359,7 @@ int main(int /*argc*/, char** argv) {
                    cube_image_points.rightCols(kNumVerticesPerDepth).data()),
                cube_top);
 
-  // ! The conversion below is necessary due to assertions in cv::polylines.
+  //! The conversion below is necessary due to assertions in cv::polylines.
   cube_base.reshape(1).convertTo(cube_base, CV_32S);
   cube_top.reshape(1).convertTo(cube_top, CV_32S);
   cv::polylines(image, cube_base.t(), true, {0, 0, 255}, 3);
@@ -369,6 +370,14 @@ int main(int /*argc*/, char** argv) {
   }
   cv::imshow("", image);
   cv::waitKey(0);
+
+  // Part II
+  // Interpolation:
+  //@ref https://en.wikipedia.org/wiki/Interpolation
+  // Nearest-neighbor interpolation
+  //@ref https://en.wikipedia.org/wiki/Nearest-neighbor_interpolation
+  // Bilinear interpolation
+  //@ref https://en.wikipedia.org/wiki/Bilinear_interpolation
 
   return EXIT_SUCCESS;
 }
