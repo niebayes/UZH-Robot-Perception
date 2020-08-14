@@ -82,6 +82,7 @@ include_directories(BEFORE
     ${CERES_INCLUDE_DIRS}
     "/usr/include"
     ${EIGEN3_INCLUDE_DIRS}
+    "/usr/include/eigen3/unsupported"
     ${manif_INCLUDE_DIRS}
     # ${Sophus_INCLUDE_DIRS}
     # "/Users/bayes/slam_lib/Sophus"

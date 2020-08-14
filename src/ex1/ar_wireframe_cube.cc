@@ -7,11 +7,11 @@
 #include <vector>
 
 #include "Eigen/Dense"
-#include "ceres/ceres.h"
-#include "ceres/rotation.h"
 #include "google_suite.h"
 #include "manif/manif.h"
+#include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
+#include "unsupported/Eigen/CXX11/Tensor"
 
 using RigidTransformation = Eigen::Matrix<double, 3, 4>;
 
@@ -84,6 +84,8 @@ static std::vector<double> LoadD(const std::string& file_name) {
 }
 
 //@brief Imitate matlab's meshgrid.
+// TODO Generalize this function to arbitrarily accomodating [low, hight] range
+// values. E.g. use OpenCV's cv::Range
 template <typename Derived>
 static void Meshgrid(const int width, const int height,
                      Eigen::MatrixBase<Derived>* X,
@@ -92,6 +94,43 @@ static void Meshgrid(const int width, const int height,
                         y = Eigen::VectorXi::LinSpaced(height, 0, height - 1);
   *X = x.transpose().replicate(height, 1);
   *Y = y.replicate(1, width);
+}
+
+//@brief Imitate matlab's meshgrid operating on 3D grid though.
+// You could also use eigen's Tensor module which is not supported yet though.
+//@ref
+// http://eigen.tuxfamily.org/dox-devel/unsupported/group__CXX11__Tensor__Module.html
+//@warning If using fixed-size eigen objects, care has to be taken on the
+// alignment issues.
+//@ref https://eigen.tuxfamily.org/dox/group__TopicStlContainers.html
+//? Why "template argument deduction failed"?
+// template <typename Derived>
+static void Meshgrid3D(const cv::Range& x_range, const cv::Range& y_range,
+                       const cv::Range& z_range,
+                       std::vector<Eigen::MatrixXi>* X,
+                       std::vector<Eigen::MatrixXi>* Y,
+                       std::vector<Eigen::MatrixXi>* Z) {
+  //  std::vector<typename Eigen::MatrixBase<Derived>>* X,
+  //  std::vector<typename Eigen::MatrixBase<Derived>>* Y,
+  //  std::vector<typename Eigen::MatrixBase<Derived>>* Z) {
+  const int width = x_range.size() + 1, height = y_range.size() + 1,
+            depth = z_range.size() + 1;
+  const Eigen::VectorXi x = Eigen::VectorXi::LinSpaced(width, x_range.start,
+                                                       x_range.end),
+                        y = Eigen::VectorXi::LinSpaced(height, y_range.start,
+                                                       y_range.end),
+                        z = Eigen::VectorXi::LinSpaced(depth, z_range.start,
+                                                       z_range.end);
+  // const Eigen::MatrixBase<Derived>
+  const Eigen::MatrixXi X_any_depth = x.transpose().replicate(height, 1),
+                        Y_any_depth = y.replicate(1, width);
+  for (int d = 0; d < depth; ++d) {
+    X->push_back(X_any_depth);
+    Y->push_back(Y_any_depth);
+    Eigen::MatrixXi Z_d_depth(height, width);
+    Z_d_depth.fill(z(d));
+    Z->push_back(Z_d_depth);
+  }
 }
 
 //@brief Toy function for Rodrigues formula transforming rotation vector to
@@ -176,7 +215,7 @@ static void ProjectPoints(
     Eigen::Matrix2Xd* image_points, const Eigen::Ref<const Eigen::Matrix3d>& K,
     int project_mode, std::optional<Eigen::Vector2d> D_opt = std::nullopt) {
   Eigen::Vector2d D = Eigen::Vector2d::Zero();
-  if (D_opt) {
+  if (project_mode == PROJECT_WITH_DISTORTION && D_opt) {
     D = D_opt.value();
   }
   const Eigen::Matrix2Xd normalized_image_points =
@@ -262,16 +301,72 @@ int main(int /*argc*/, char** argv) {
   const Eigen::Vector2d D(D_tmp.data());
 
   Eigen::Matrix2Xd image_points;
-  ProjectPoints(p_C_corners, &image_points, K, PROJECT_WITH_DISTORTION, D);
+  ProjectPoints(p_C_corners, &image_points, K, PROJECT_WITHOUT_DISTORTION);
 
   // Superimpose points on the image
   const int kImageIndex = 1;
-  const std::string kImageName{
-      cv::format((kFilePath + "images/img_%04d.jpg").c_str(), kImageIndex)};
+  const std::string kImageName{cv::format(
+      (kFilePath + "images_undistorted/img_%04d.jpg").c_str(), kImageIndex)};
   cv::Mat image = cv::imread(kImageName, cv::IMREAD_COLOR);
   const Eigen::VectorXi& x = image_points.row(0).cast<int>();
   const Eigen::VectorXi& y = image_points.row(1).cast<int>();
   Scatter(image, x, y, 3, {0, 0, 255}, cv::FILLED);
+  cv::imshow("", image);
+  // cv::waitKey(0);
+
+  // Draw a customized cube on the undistorted image
+  // TODO Modularize the codes below.
+  const Eigen::Vector3i cube{2, 2, 2};
+  std::vector<Eigen::MatrixXi> cube_X, cube_Y, cube_Z;
+  Meshgrid3D(cv::Range(0, cube.x() - 1), cv::Range(0, cube.y() - 1),
+             cv::Range(-cube.z() + 1, 0), &cube_X, &cube_Y, &cube_Z);
+  const int kNumVerticesPerDepth = cube.x() * cube.y();
+  const int depth = cube.z();
+  Eigen::Matrix3Xd p_W_cube(3, kNumVerticesPerDepth * depth);
+  for (int d = 0; d < depth; ++d) {
+    cube_X[d].resize(1, kNumVerticesPerDepth);
+    cube_Y[d].resize(1, kNumVerticesPerDepth);
+    cube_Z[d].resize(1, kNumVerticesPerDepth);
+    p_W_cube.row(0).segment(d * kNumVerticesPerDepth, kNumVerticesPerDepth) =
+        cube_X[d].cast<double>();
+    p_W_cube.row(1).segment(d * kNumVerticesPerDepth, kNumVerticesPerDepth) =
+        cube_Y[d].cast<double>();
+    p_W_cube.row(2).segment(d * kNumVerticesPerDepth, kNumVerticesPerDepth) =
+        cube_Z[d].cast<double>();
+  }
+  const double kOffsetX = 3 * kCellSize, kOffsetY = 1 * kCellSize,
+               kScaling = 2 * kCellSize;
+  p_W_cube.noalias() = (kScaling * p_W_cube).colwise() +
+                       Eigen::Vector3d{kOffsetX, kOffsetY, 0.0};
+  const Eigen::Matrix3Xd p_C_cube = T_C_W * p_W_cube.colwise().homogeneous();
+  Eigen::Matrix2Xd cube_image_points;
+  ProjectPoints(p_C_cube, &cube_image_points, K, PROJECT_WITHOUT_DISTORTION);
+  //! The Meshgrid3D returns points with column-major order, not a cyclic order.
+  //! Hence, you need to swap the corresponding columns to get a cyclic order in
+  //! order to bootstrap the cube drawing.
+  cube_image_points.leftCols(4).col(2).swap(
+      cube_image_points.leftCols(4).col(3));
+  cube_image_points.rightCols(4).col(2).swap(
+      cube_image_points.rightCols(4).col(3));
+
+  //! Transfer from eigen to OpenCV to utilize OpenCV's drawing functions.
+  cv::Mat cube_base, cube_top;
+  cv::eigen2cv(Eigen::Matrix<double, 2, 4>(
+                   cube_image_points.leftCols(kNumVerticesPerDepth).data()),
+               cube_base);
+  cv::eigen2cv(Eigen::Matrix<double, 2, 4>(
+                   cube_image_points.rightCols(kNumVerticesPerDepth).data()),
+               cube_top);
+
+  // ! The conversion below is necessary due to assertions in cv::polylines.
+  cube_base.reshape(1).convertTo(cube_base, CV_32S);
+  cube_top.reshape(1).convertTo(cube_top, CV_32S);
+  cv::polylines(image, cube_base.t(), true, {0, 0, 255}, 3);
+  cv::polylines(image, cube_top.t(), true, {0, 0, 255}, 3);
+
+  for (int i = 0; i < kNumVerticesPerDepth; ++i) {
+    cv::line(image, {cube_base.col(i)}, {cube_top.col(i)}, {0, 0, 255}, 3);
+  }
   cv::imshow("", image);
   cv::waitKey(0);
 
