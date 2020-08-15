@@ -130,4 +130,5 @@ include_directories(BEFORE
 
 ##################################################################
 # Add subdirectory in which put the source files
-add_subdirectory(src/ex1)
+# add_subdirectory(src/ex1)
+add_subdirectory(src/ex2)
