@@ -311,7 +311,7 @@ int main(int /*argc*/, char** argv) {
   const Eigen::VectorXi& x = image_points.row(0).cast<int>();
   const Eigen::VectorXi& y = image_points.row(1).cast<int>();
   Scatter(image, x, y, 3, {0, 0, 255}, cv::FILLED);
-  cv::imshow("", image);
+  // cv::imshow("", image);
   // cv::waitKey(0);
 
   // Draw a customized cube on the undistorted image
@@ -339,37 +339,64 @@ int main(int /*argc*/, char** argv) {
   p_W_cube.noalias() = (kScaling * p_W_cube).colwise() +
                        Eigen::Vector3d{kOffsetX, kOffsetY, 0.0};
 
-  const Eigen::Matrix3Xd p_C_cube = T_C_W * p_W_cube.colwise().homogeneous();
-  Eigen::Matrix2Xd cube_image_points;
-  ProjectPoints(p_C_cube, &cube_image_points, K, PROJECT_WITHOUT_DISTORTION);
-  //! The Meshgrid3D returns points with column-major order, not a cyclic order.
-  //! Hence, you need to swap the corresponding columns to get a cyclic order in
-  //! order to bootstrap the cube drawing.
-  cube_image_points.leftCols(4).col(2).swap(
-      cube_image_points.leftCols(4).col(3));
-  cube_image_points.rightCols(4).col(2).swap(
-      cube_image_points.rightCols(4).col(3));
+  // Draw the cube frame by frame to create a video
+  cv::Mat sample_image =
+      cv::imread(kFilePath + "images/img_0001.jpg", cv::IMREAD_COLOR);
+  const cv::Size frame_size = sample_image.size();
+  cv::VideoWriter video(kFilePath + "cube_video.avi",
+                        cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 30.0,
+                        frame_size, true);
+  if (video.isOpened()) {
+    for (int pose_index = 0;; ++pose_index) {
+      cv::Mat frame =
+          cv::imread(cv::format((kFilePath + "images/img_%04d.jpg").c_str(),
+                                pose_index + 1),
+                     cv::IMREAD_COLOR);
+      if (frame.empty()) {
+        LOG(INFO) << "Wrote " << pose_index << " images to the video";
+        break;
+      }
+      const std::vector<double>& camera_pose = poses[pose_index];
+      RigidTransformation T_C_W_cube;
+      PoseVectorToTransformationMatrix(camera_pose, &T_C_W_cube);
+      const Eigen::Matrix3Xd p_C_cube =
+          T_C_W_cube * p_W_cube.colwise().homogeneous();
+      Eigen::Matrix2Xd cube_image_points;
+      ProjectPoints(p_C_cube, &cube_image_points, K, PROJECT_WITH_DISTORTION,
+                    D);
+      //! The Meshgrid3D returns points with column-major order, not a cyclic
+      //! order. Hence, you need to swap the corresponding columns to get a
+      //! cyclic order in order to bootstrap the cube drawing.
+      cube_image_points.leftCols(4).col(2).swap(
+          cube_image_points.leftCols(4).col(3));
+      cube_image_points.rightCols(4).col(2).swap(
+          cube_image_points.rightCols(4).col(3));
 
-  //! Transfer from eigen to OpenCV to utilize OpenCV's drawing functions.
-  cv::Mat cube_base, cube_top;
-  cv::eigen2cv(Eigen::Matrix<double, 2, 4>(
-                   cube_image_points.leftCols(kNumVerticesPerDepth).data()),
-               cube_base);
-  cv::eigen2cv(Eigen::Matrix<double, 2, 4>(
-                   cube_image_points.rightCols(kNumVerticesPerDepth).data()),
-               cube_top);
+      //! Transfer from eigen to OpenCV to utilize OpenCV's drawing functions.
+      cv::Mat cube_base, cube_top;
+      cv::eigen2cv(Eigen::Matrix<double, 2, 4>(
+                       cube_image_points.leftCols(kNumVerticesPerDepth).data()),
+                   cube_base);
+      cv::eigen2cv(
+          Eigen::Matrix<double, 2, 4>(
+              cube_image_points.rightCols(kNumVerticesPerDepth).data()),
+          cube_top);
 
-  //! The conversion below is necessary due to assertions in cv::polylines.
-  cube_base.reshape(1).convertTo(cube_base, CV_32S);
-  cube_top.reshape(1).convertTo(cube_top, CV_32S);
-  cv::polylines(image, cube_base.t(), true, {0, 0, 255}, 3);
-  cv::polylines(image, cube_top.t(), true, {0, 0, 255}, 3);
-
-  for (int i = 0; i < kNumVerticesPerDepth; ++i) {
-    cv::line(image, {cube_base.col(i)}, {cube_top.col(i)}, {0, 0, 255}, 3);
+      //! The conversion below is necessary due to assertions in cv::polylines.
+      cube_base.reshape(1).convertTo(cube_base, CV_32S);
+      cube_top.reshape(1).convertTo(cube_top, CV_32S);
+      cv::polylines(frame, cube_base.t(), true, {0, 0, 255}, 3);
+      cv::polylines(frame, cube_top.t(), true, {0, 0, 255}, 3);
+      for (int i = 0; i < kNumVerticesPerDepth; ++i) {
+        cv::line(frame, {cube_base.col(i)}, {cube_top.col(i)}, {0, 0, 255}, 3);
+      }
+      video << frame;
+    }
+    video.release();
+    LOG(INFO) << "Successfully wrote a video file: cube_video.avi";
+  } else {
+    LOG(ERROR) << "Failed writing the video file: cube_video.avi";
   }
-  cv::imshow("", image);
-  cv::waitKey(0);
 
   // Part II
   // Interpolation:
