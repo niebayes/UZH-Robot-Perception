@@ -8,10 +8,9 @@
 
 #include "Eigen/Dense"
 #include "google_suite.h"
-#include "manif/manif.h"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
-#include "unsupported/Eigen/CXX11/Tensor"
+// #include "unsupported/Eigen/CXX11/Tensor"
 
 using RigidTransformation = Eigen::Matrix<double, 3, 4>;
 
@@ -271,6 +270,9 @@ static cv::Mat UndistortImage(const cv::Mat& distorted_image,
   cv::cv2eigen(distorted_image, distorted_image_eigen);
 
   // Use backward warping
+  // TODO Optimize the interpolation processing; use vectorized techniques. For
+  // bilinear interpolation, consider using "shift" to wrap single interpolating
+  // process into a matrix-like one.
   for (int u = 0; u < image_size.width; ++u) {
     for (int v = 0; v < image_size.height; ++v) {
       // x = (u, v) is the pixel in undistorted image
