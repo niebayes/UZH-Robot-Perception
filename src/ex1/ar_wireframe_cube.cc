@@ -179,9 +179,13 @@ enum DistorionCoefficientIndices : int { INDEX_RADIAL_K1, INDEX_RADIAL_K2 };
 //@brief Distort normalized image points to get the image points expressed in
 // pixel coords.
 // Distortion model: x_d = x_u * (1 + k1 * r2 + k2 * r2 * r2)
+// TODO Change normalized_image_points from Matrix2Xd to Matrix3Xd to accomodate
+// the convection that normalized image points are expressed at Z = 1 where the
+// coordinates are 3D vectors.
+template <typename Derived>
 static void DistortPoints(
-    const Eigen::Ref<const Eigen::Matrix2Xd>& normalized_image_points,
-    Eigen::Matrix2Xd* distorted_image_points,
+    const Eigen::MatrixBase<Derived>& normalized_image_points,
+    Eigen::MatrixBase<Derived>* distorted_image_points,
     const Eigen::Ref<const Eigen::Vector2d>& D) {
   // Unpack D to get the distortion coefficients
   const double k1 = D(INDEX_RADIAL_K1);
@@ -246,12 +250,111 @@ static void Scatter(cv::InputOutputArray image,
             << " points rendered";
 }
 
+//@brief Interpolation methods used in UndistortImage.
+namespace {
+enum InterpolationMethods : int { NEAREST_NEIGHBOR, BILINEAR };
+}
+
+//@brief Undistort image according to distortion function \Tau specified with
+// distortion coefficients D
+static cv::Mat UndistortImage(const cv::Mat& distorted_image,
+                              const Eigen::Ref<const Eigen::Matrix3d>& K,
+                              const Eigen::Ref<const Eigen::Vector2d>& D,
+                              int interpolation_method) {
+  if (distorted_image.channels() > 1) {
+    LOG(ERROR) << "Only support grayscale image at this moment";
+  }
+
+  const cv::Size& image_size = distorted_image.size();
+  cv::Mat undistorted_image = cv::Mat::zeros(image_size, CV_8UC1);
+  Eigen::MatrixXd distorted_image_eigen(image_size.height, image_size.width);
+  cv::cv2eigen(distorted_image, distorted_image_eigen);
+
+  // Use backward warping
+  for (int u = 0; u < image_size.width; ++u) {
+    for (int v = 0; v < image_size.height; ++v) {
+      // x = (u, v) is the pixel in undistorted image
+
+      // Find the corresponding distorted image if applied the disortion
+      // coefficients K
+      // First, find the normalized image coordinates
+      Eigen::Vector2d normalized_image_point =
+          (K.inverse() * Eigen::Vector2d{u, v}.homogeneous()).hnormalized();
+
+      // Apply the distortion
+      Eigen::Vector2d distorted_image_point;
+      DistortPoints(normalized_image_point, &distorted_image_point, D);
+
+      // Convert back to pixel coordinates
+      distorted_image_point.noalias() =
+          (K * distorted_image_point.homogeneous()).hnormalized();
+
+      // Apply interpolation
+      // up: distorted x coordinate; vp: distorted y coordinate.
+      const double up = distorted_image_point.x(),
+                   vp = distorted_image_point.y();
+      // up_0: squeeze up to the closest pixel nearest to up along the upper
+      // left direction; vp_0, in the same principle.
+      const double up_0 = std::floor(up), vp_0 = std::floor(vp);
+      uchar intensity = 0;
+      switch (interpolation_method) {
+        case NEAREST_NEIGHBOR:
+          // Nearest-neighbor interpolation
+          //@ref https://en.wikipedia.org/wiki/Nearest-neighbor_interpolation
+          //! The correct way do this may be using std::round. However, we use
+          //! std::floor here for the sake of simplicity and consistency.
+          if (up_0 >= 0 && up_0 < image_size.width && vp_0 >= 0 &&
+              vp_0 < image_size.height) {
+            // TODO Elegantly resolve narrowing issue here.
+            intensity = distorted_image.at<uchar>({up_0, vp_0});
+          }
+          break;
+
+        case BILINEAR:
+          // Bilinear interpolation
+          // Use bilinear interpolation to counter against edge artifacts.
+          //! We apply the unit square paradigm considering the simplicity.
+          //@ref
+          // https://en.wikipedia.org/wiki/Bilinear_interpolation#Unit_square
+          if (up_0 + 1 >= 0 && up_0 + 1 < image_size.width && vp_0 + 1 >= 0 &&
+              vp_0 + 1 < image_size.height) {
+            const double x = up - up_0, y = vp - vp_0;
+            // TODO Elegantly resolve narrowing issue here.
+            const Eigen::Matrix2d four_corners =
+                (Eigen::Matrix<uchar, 2, 2>()
+                     << distorted_image.at<uchar>({up_0, vp_0}),
+                 distorted_image.at<uchar>({up_0, vp_0 + 1}),
+                 distorted_image.at<uchar>({up_0 + 1, vp_0}),
+                 distorted_image.at<uchar>({up_0 + 1, vp_0 + 1}))
+                    .finished()
+                    .cast<double>();
+            intensity = cv::saturate_cast<uchar>(
+                Eigen::Vector2d{1 - x, x}.transpose() * four_corners *
+                Eigen::Vector2d{1 - y, y});
+          }
+          break;
+
+        default:
+          LOG(ERROR) << "Invalid interpolation method";
+          break;
+      }
+      undistorted_image.at<uchar>({u, v}) = intensity;
+    }
+  }
+  const std::string log_info{std::string{"Undistorted an image with "}.append(
+      interpolation_method ? "bilinear interpolation"
+                           : "nearest-neighbor interpolation")};
+  LOG(INFO) << log_info;
+  return undistorted_image;
+}
+
 int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
   const std::string kFilePath{"data/ex1/"};
 
+  // Part I:
   // Construct a 2D mesh grid where each vertix corrsponds to a inner corner.
   // Given settings, cf. data/ex1/images/img_0001.jpg
   const cv::Size checkerboard(9, 6);
@@ -311,7 +414,7 @@ int main(int /*argc*/, char** argv) {
   const Eigen::VectorXi& x = image_points.row(0).cast<int>();
   const Eigen::VectorXi& y = image_points.row(1).cast<int>();
   Scatter(image, x, y, 3, {0, 0, 255}, cv::FILLED);
-  // cv::imshow("", image);
+  cv::imshow("Scatter plot with corners reprojected", image);
   // cv::waitKey(0);
 
   // Draw a customized cube on the undistorted image
@@ -382,7 +485,8 @@ int main(int /*argc*/, char** argv) {
               cube_image_points.rightCols(kNumVerticesPerDepth).data()),
           cube_top);
 
-      //! The conversion below is necessary due to assertions in cv::polylines.
+      //! The conversion below is necessary due to the assertions in
+      //! cv::polylines.
       cube_base.reshape(1).convertTo(cube_base, CV_32S);
       cube_top.reshape(1).convertTo(cube_top, CV_32S);
       cv::polylines(frame, cube_base.t(), true, {0, 0, 255}, 3);
@@ -398,13 +502,22 @@ int main(int /*argc*/, char** argv) {
     LOG(ERROR) << "Failed writing the video file: cube_video.avi";
   }
 
-  // Part II
-  // Interpolation:
-  //@ref https://en.wikipedia.org/wiki/Interpolation
-  // Nearest-neighbor interpolation
-  //@ref https://en.wikipedia.org/wiki/Nearest-neighbor_interpolation
-  // Bilinear interpolation
-  //@ref https://en.wikipedia.org/wiki/Bilinear_interpolation
+  // Part II: undistort an image
+  cv::Mat distorted_image =
+      cv::imread(kFilePath + "images/img_0001.jpg", cv::IMREAD_GRAYSCALE);
+  cv::Mat undistorted_image_nearest_neighbor =
+      UndistortImage(distorted_image, K, D, NEAREST_NEIGHBOR);
+  cv::Mat undistorted_image_bilinear =
+      UndistortImage(distorted_image, K, D, BILINEAR);
+  cv::Mat comparison(distorted_image.rows, 2 * distorted_image.cols, CV_8UC1);
+  cv::hconcat(undistorted_image_nearest_neighbor, undistorted_image_bilinear,
+              comparison);
+  cv::imshow(
+      "Comparison between nearest-neighbor interpolation and bilinear "
+      "interpolation in undistortion",
+      comparison);
+  cv::waitKey(0);
+  cv::destroyAllWindows();
 
   return EXIT_SUCCESS;
 }
