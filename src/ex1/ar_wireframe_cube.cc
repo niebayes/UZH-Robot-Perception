@@ -216,7 +216,8 @@ enum ProjectModes : int { PROJECT_WITH_DISTORTION, PROJECT_WITHOUT_DISTORTION };
 static void ProjectPoints(
     const Eigen::Ref<const Eigen::Matrix3Xd>& object_points,
     Eigen::Matrix2Xd* image_points, const Eigen::Ref<const Eigen::Matrix3d>& K,
-    int project_mode, std::optional<Eigen::Vector2d> D_opt = std::nullopt) {
+    const int project_mode,
+    const std::optional<Eigen::Vector2d>& D_opt = std::nullopt) {
   Eigen::Vector2d D = Eigen::Vector2d::Zero();
   if (project_mode == PROJECT_WITH_DISTORTION && D_opt) {
     D = D_opt.value();
@@ -230,8 +231,9 @@ static void ProjectPoints(
 //@brief Imitate matlab's scatter.
 static void Scatter(cv::InputOutputArray image,
                     const Eigen::Ref<const Eigen::VectorXi>& x,
-                    const Eigen::Ref<const Eigen::VectorXi>& y, int radius,
-                    const cv::Scalar& color, int thickness = 1) {
+                    const Eigen::Ref<const Eigen::VectorXi>& y,
+                    const int radius, const cv::Scalar& color,
+                    const int thickness = 1) {
   if (x.size() <= 0 || y.size() <= 0) {
     LOG(ERROR) << "Invalid input vectors";
     return;
@@ -259,7 +261,7 @@ enum InterpolationMethods : int { NEAREST_NEIGHBOR, BILINEAR };
 static cv::Mat UndistortImage(const cv::Mat& distorted_image,
                               const Eigen::Ref<const Eigen::Matrix3d>& K,
                               const Eigen::Ref<const Eigen::Vector2d>& D,
-                              int interpolation_method) {
+                              const int interpolation_method) {
   if (distorted_image.channels() > 1) {
     LOG(ERROR) << "Only support grayscale image at this moment";
   }
