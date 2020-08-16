@@ -73,6 +73,16 @@ else()
     message("Not Found gflags")
 endif()
 
+# pcl
+find_package(PCL 1.2 REQUIRED)
+if (PCL_FOUND)
+    message("Found PCL")
+else() 
+    message("Not Found PCL")
+endif()
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
+
 # Add additional include path for header files
 include_directories(BEFORE
     ${PROJECT_SOURCE_DIR}/include
@@ -84,12 +94,13 @@ include_directories(BEFORE
     ${EIGEN3_INCLUDE_DIRS}
     "/usr/include/eigen3/unsupported"
     ${manif_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
     # ${Sophus_INCLUDE_DIRS}
     # "/Users/bayes/slam_lib/Sophus"
     # ${Pangolin_INCLUDE_DIRS}
     # ${G2O_INCLUDE_DIRS}
-    # ${PCL_INCLUDE_DIRS}
 ) # path relative to this CMakeLists.txt
+
 
 # Prepare googletest for use 
 #@ref build instruction: https://github.com/google/googletest/blob/master/googletest/README.md
@@ -130,5 +141,5 @@ include_directories(BEFORE
 
 ##################################################################
 # Add subdirectory in which put the source files
-add_subdirectory(src/ex1)
-# add_subdirectory(src/ex2)
+# add_subdirectory(src/ex1)
+add_subdirectory(src/ex2)
