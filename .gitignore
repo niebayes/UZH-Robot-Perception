@@ -19,6 +19,9 @@ data
 # ethz exercises
 exercises
 
+# googletest source files 
+googletest-master
+
 # Prerequisites
 *.d
 

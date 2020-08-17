@@ -1,5 +1,7 @@
 #include <cmath>
 #include <fstream>
+#include <iostream>
+#include <limits>
 #include <optional>
 #include <sstream>
 #include <string>
@@ -11,12 +13,13 @@
 #include "unsupported/Eigen/KroneckerProduct"
 
 void EstimateCameraPoseWithDLT() {
-  // matlab's kron
+  //@note You can also use Kronecker Product to obtain the Q matrix.
+  // More about usages of Kronecker product,
+  //@ref
+  // https://blogs.sas.com/content/iml/2020/07/27/8-ways-kronecker-product.html
 
   // matlab's svd
 }
-
-// is_valid_rotation_mat
 
 int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);

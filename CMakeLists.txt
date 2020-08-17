@@ -86,6 +86,7 @@ add_definitions(${PCL_DEFINITIONS})
 # Add additional include path for header files
 include_directories(BEFORE
     ${PROJECT_SOURCE_DIR}/include
+    ${PROJECT_SOURCE_DIR}/include/common
     ${PROJECT_SOURCE_DIR}/utils
     ${PROJECT_SOURCE_DIR}/src
     ${OpenCV_INCLUDE_DIRS}
