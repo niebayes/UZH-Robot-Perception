@@ -1,3 +1,6 @@
+//! Const version of std::begin and std::end used for C++11.
+//! These were already introduced to the C++ standard sin C++14.
+
 #ifndef CONST_ITER_UTILS_H_
 #define CONST_ITER_UTILS_H_
 

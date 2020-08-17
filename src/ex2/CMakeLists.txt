@@ -1,5 +1,5 @@
 project(ex2)
-add_executable(pnp_dlt pnp_dlt.cc)
+add_executable(pnp_dlt ./external/pcl_plotter_example.cc)
 target_link_libraries(pnp_dlt
   ${OpenCV_LIBRARIES}
   ${CERES_LIBRARIES}

@@ -74,7 +74,7 @@ else()
 endif()
 
 # pcl
-find_package(PCL 1.2 REQUIRED)
+find_package(PCL REQUIRED)
 if (PCL_FOUND)
     message("Found PCL")
 else() 
