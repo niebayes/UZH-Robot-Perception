@@ -57,4 +57,11 @@ static bool IsValidRotationMatrix(const Eigen::MatrixBase<Derived>& R,
          precision;
 }
 
+//@brief Get Eigen::Matrix from std::vector
+//TODO Implement a more generic version of EigenMatrixFromCVMat
+template <typename T, typename Derived>
+static void EigenMatrixFromCVMat(const std::vector<T>& vec,
+                                 Eigen::MatrixBase<Derived>* eigen_matrix,
+                                 const int rows, const int cols) {}
+
 #endif  // UZH_COMMON_TRANSFORM_H_

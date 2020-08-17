@@ -2,12 +2,13 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(SFM)
 
 # Configure compile mode: Debug, Release, etc.
-if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
-endif()
+set(CMAKE_BUILD_TYPE Release)
+# if (NOT CMAKE_BUILD_TYPE)
+#     set(CMAKE_BUILD_TYPE Release)
+# endif()
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
-# Enable C++11 standard
+# Enable C++17 standard
 # Check if the compiler supports C++11
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
@@ -17,6 +18,14 @@ if(COMPILER_SUPPORTS_CXX17)
 else()
    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. Please use a different C++ compiler.")
 endif()
+
+# Enable optimization 
+# Check if the compiler supports this intruction 
+# Pass flags using modern CMake, cf. https://stackoverflow.com/a/23995391/11240780
+# CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
+# if(COMPILER_SUPPORTS_MARCH_NATIVE) 
+#     set(CMAKE_CXX_FLAGS_RELEASE "{CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
+# endif()
 
 # Configure compile output directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin)

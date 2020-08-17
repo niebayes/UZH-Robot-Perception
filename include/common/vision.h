@@ -114,7 +114,7 @@ cv::Mat UndistortImage(const cv::Mat& distorted_image,
           if (up_0 >= 0 && up_0 < image_size.width && vp_0 >= 0 &&
               vp_0 < image_size.height) {
             // TODO Elegantly resolve narrowing issue here.
-            intensity = distorted_image.at<uchar>({up_0, vp_0});
+            intensity = distorted_image.at<uchar>({(uchar)up_0, (uchar)vp_0});
           }
           break;
 
@@ -130,10 +130,11 @@ cv::Mat UndistortImage(const cv::Mat& distorted_image,
             // TODO Elegantly resolve narrowing issue here.
             const Eigen::Matrix2d four_corners =
                 (Eigen::Matrix<uchar, 2, 2>()
-                     << distorted_image.at<uchar>({up_0, vp_0}),
-                 distorted_image.at<uchar>({up_0, vp_0 + 1}),
-                 distorted_image.at<uchar>({up_0 + 1, vp_0}),
-                 distorted_image.at<uchar>({up_0 + 1, vp_0 + 1}))
+                     << distorted_image.at<uchar>({(uchar)up_0, (uchar)vp_0}),
+                 distorted_image.at<uchar>({(uchar)up_0, (uchar)(vp_0 + 1)}),
+                 distorted_image.at<uchar>({(uchar)(up_0 + 1), (uchar)vp_0}),
+                 distorted_image.at<uchar>(
+                     {(uchar)(up_0 + 1), (uchar)(vp_0 + 1)}))
                     .finished()
                     .cast<double>();
             intensity = cv::saturate_cast<uchar>(
@@ -304,16 +305,20 @@ struct ResultDLT {
 //@brief Wrap the principal procedures of DLT algorithms.
 //
 // TODO Don't pass matrices by copying
-ResultDLT EstimateCameraPoseDLT(Eigen::Matrix2Xd image_points,
-                                Eigen::Matrix3Xd object_points) {
-  Eigen::Affine2d T;
-  Eigen::Affine3d U;
-  Normalize(&image_points, &object_points, &T, &U);
-
+ResultDLT EstimateCameraPoseDLT(Eigen::Matrix2Xd& image_points,
+                                Eigen::Matrix3Xd& object_points,
+                                const bool do_normalization = true) {
   Eigen::Matrix<double, 3, 4> camera_matrix;
-  DLT(image_points, object_points, &camera_matrix);
 
-  Denormalize(&camera_matrix, T, U);
+  if (do_normalization) {
+    Eigen::Affine2d T;
+    Eigen::Affine3d U;
+    Normalize(&image_points, &object_points, &T, &U);
+    DLT(image_points, object_points, &camera_matrix);
+    Denormalize(&camera_matrix, T, U);
+  } else {
+    DLT(image_points, object_points, &camera_matrix);
+  }
 
   Eigen::Matrix3d calibration_matrix, rotation;
   Eigen::Vector3d translation;
@@ -324,6 +329,7 @@ ResultDLT EstimateCameraPoseDLT(Eigen::Matrix2Xd image_points,
 
   // Store the estimation result
   ResultDLT res;
+  res.camera_matrix = camera_matrix;
   res.calibration_matrix = calibration_matrix;
   res.rotation = rotation;
   res.translation = translation;
