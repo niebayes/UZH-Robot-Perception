@@ -13,61 +13,104 @@
 #include "opencv2/core/eigen.hpp"
 
 template <typename T>
-struct Data {
+class Data {
+ public:
+  Data() = default;
+
+  // TODO Overload or modify this function to directly return a dynamic
+  // Eigen::Matrix object whose Scalar, rows, and cols are all dynamic.
+  cv::Mat_<T> matrix() const {
+    cv::Mat_<T> cv_mat(data);
+    cv_mat = cv_mat.reshape(1, rows);
+    return cv_mat;
+  }
+
+ public:
   int rows;
   int cols;
+  int num_entries;
   std::vector<T> data;
 };
 
-//@brief Load everything into a std::vector object.
-template <typename T>
-static Data<T> Load(const std::string& file_name,
-                    const std::optional<const char>& delimiter = std::nullopt) {
-  std::vector<T> data;
-  int rows = 0, cols = 0;
+// TODO Add file extensions provided by the armadillo library.
+//@ref https://stackoverflow.com/a/39146048/14007680
+//@ref http://arma.sourceforge.net/
+
+//@brief Generic load function.
+//@template param M, complete type of the returned matrix, e.g. Eigen::MatrixXd
+template <typename M>
+static M Load(const std::string& file_name,
+              const std::optional<const char>& entry_delimiter = std::nullopt) {
+  std::vector<typename M::Scalar> data;
+  int rows = 0;
+
+  char delimiter = entry_delimiter ? entry_delimiter.value() : ' ';
 
   std::ifstream fin(file_name, std::ios::in);
   if (fin.is_open()) {
     std::string line;
     while (std::getline(fin, line)) {
-      std::istringstream iss_outer(line);
-      if (iss_outer.good()) {
-        T x;
-        std::string entry;
-        if (delimiter) {
-          while (std::getline(iss_outer, entry, delimiter.value())) {
-            std::istringstream iss_inner(entry);
-            if (iss_inner.good() && iss_inner >> x) {
-              data.push_back(x);
-              cols++;
-            }
-          }
-        } else {
-          while (std::getline(iss_outer, entry, ' ')) {
-            std::istringstream iss_inner(entry);
-            if (iss_inner.good() && iss_inner >> x) {
-              data.push_back(x);
-              cols++;
-            }
-          }
-        }
-        rows++;
-      } else {
-        LOG(ERROR) << "Error loading file " << file_name;
+      std::istringstream line_stream(line);
+      std::string entry;
+      while (std::getline(line_stream, entry, delimiter)) {
+        data.push_back(static_cast<typename M::Scalar>(std::stod(entry)));
       }
+      ++rows;
     }
     fin.close();
-  } else {
-    LOG(ERROR) << "Error opening file " << file_name;
   }
-  LOG(INFO) << cv::format("Loaded (rows %d x cols %d) data from file %s", rows,
-                          cols, file_name);
-  Data<T> d;
-  d.rows = rows;
-  d.cols = cols;
-  d.data = data;
-  return d;
+  return Eigen::Map<Eigen::Matrix<typename M::Scalar, M::RowsAtCompileTime,
+                                  M::ColsAtCompileTime, Eigen::RowMajor>>(
+      data.data(), rows, data.size() / rows);
 }
+
+//@brief Load everything into a std::vector object.
+// template <typename T>
+// static Data<T> Load(
+//     const std::string& file_name,
+//     const std::optional<const char>& entry_delimiter = std::nullopt) {
+//   // Returned Data
+//   int rows = 0, cols = 0;
+//   int num_entries = 0;
+//   std::vector<T> data;
+
+//   // Entry delimiter inside each line of the text file
+//   char delimiter = entry_delimiter ? entry_delimiter.value() : ' ';
+
+//   std::ifstream fin(file_name, std::ios::in);
+//   if (fin.is_open()) {
+//     std::string line;
+//     while (std::getline(fin, line)) {
+//       std::istringstream iss_outer(line);
+//       if (iss_outer.good()) {
+//         T x;
+//         std::string entry;
+//         while (!iss_outer.eof()) {
+//           // std::istringstream iss_inner(entry);
+//           // if (iss_inner.good() && iss_inner >> x) {
+//           if (iss_outer >> x) {
+//             data.push_back(x);
+//             num_entries++;
+//           }
+//         }
+//         rows++;
+//       } else {
+//         LOG(ERROR) << "Error loading file " << file_name;
+//       }
+//     }
+//     fin.close();
+//   } else {
+//     LOG(ERROR) << "Error opening file " << file_name;
+//   }
+//   Data<T> d;
+//   d.rows = rows;
+//   d.cols = rows > 0 ? (num_entries / rows) : 0;
+//   d.num_entries = num_entries;
+//   d.data = data;
+//   LOG(INFO) << cv::format("Loaded %d (rows %d x cols %d) data from file %s",
+//                           d.num_entries, d.rows, d.cols, file_name.c_str());
+//   return d;
+// }
 
 // @brief Load 6dof poses from text file and store them into a 2d vector.
 static std::vector<std::vector<double>> LoadPoses(

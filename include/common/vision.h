@@ -62,6 +62,8 @@ static void ProjectPoints(
 
 //@brief Undistort image according to distortion function \Tau specified with
 // distortion coefficients D
+//@note A good tip for using Eigen::Ref with derived types: 
+//@ref https://stackoverflow.com/a/58463638/14007680
 cv::Mat UndistortImage(const cv::Mat& distorted_image,
                        const Eigen::Ref<const Eigen::Matrix3d>& K,
                        const Eigen::Ref<const Eigen::Vector2d>& D,
