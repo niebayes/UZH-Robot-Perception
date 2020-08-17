@@ -8,6 +8,7 @@
 #include "Eigen/Dense"
 #include "common_utils.h"
 #include "google_suite.h"
+#include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
 
 int main(int /*argc*/, char** argv) {

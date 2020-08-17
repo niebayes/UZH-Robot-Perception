@@ -10,7 +10,7 @@
 #include "Eigen/Dense"
 #include "google_suite.h"
 #include "opencv2/opencv.hpp"
-#include "unsupported/Eigen/KroneckerProduct"
+// #include "unsupported/Eigen/KroneckerProduct"
 
 void EstimateCameraPoseWithDLT() {
   //@note You can also use Kronecker Product to obtain the Q matrix.
