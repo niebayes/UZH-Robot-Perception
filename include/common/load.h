@@ -8,39 +8,28 @@
 #include <vector>
 
 #include "Eigen/Core"
+#include "armadillo"
 #include "glog/logging.h"
 #include "opencv2/core/core.hpp"
 #include "opencv2/core/eigen.hpp"
 
-template <typename T>
-class Data {
- public:
-  Data() = default;
-
-  // TODO Overload or modify this function to directly return a dynamic
-  // Eigen::Matrix object whose Scalar, rows, and cols are all dynamic.
-  cv::Mat_<T> matrix() const {
-    cv::Mat_<T> cv_mat(data);
-    cv_mat = cv_mat.reshape(1, rows);
-    return cv_mat;
-  }
-
- public:
-  int rows;
-  int cols;
-  int num_entries;
-  std::vector<T> data;
-};
-
-// TODO Add file extensions provided by the armadillo library.
+//@brief Load the data file utilizing armadillo library.
+//! Recommended load function.
 //@ref https://stackoverflow.com/a/39146048/14007680
-//@ref http://arma.sourceforge.net/
+//@ref http://arma.sourceforge.net
+template <typename M>
+M armaLoad(const std::string& file_name) {
+  arma::mat arma_mat;
+  arma_mat.load(file_name, arma::file_type::auto_detect, true);
+  return Eigen::Map<const M>(arma_mat.memptr(), arma_mat.n_rows,
+                             arma_mat.n_cols);
+}
 
 //@brief Generic load function.
 //@template param M, complete type of the returned matrix, e.g. Eigen::MatrixXd
 template <typename M>
-static M Load(const std::string& file_name,
-              const std::optional<const char>& entry_delimiter = std::nullopt) {
+M Load(const std::string& file_name,
+       const std::optional<const char>& entry_delimiter = std::nullopt) {
   std::vector<typename M::Scalar> data;
   int rows = 0;
 
@@ -58,63 +47,19 @@ static M Load(const std::string& file_name,
       ++rows;
     }
     fin.close();
+  } else {
+    LOG(ERROR) << "Error opening file " << file_name;
   }
-  return Eigen::Map<Eigen::Matrix<typename M::Scalar, M::RowsAtCompileTime,
-                                  M::ColsAtCompileTime, Eigen::RowMajor>>(
+  //! If simply return Eigen::Map<const M>(...), the data order is not expected.
+  return Eigen::Map<
+      const Eigen::Matrix<typename M::Scalar, M::RowsAtCompileTime,
+                          M::ColsAtCompileTime, Eigen::RowMajor>>(
       data.data(), rows, data.size() / rows);
 }
 
-//@brief Load everything into a std::vector object.
-// template <typename T>
-// static Data<T> Load(
-//     const std::string& file_name,
-//     const std::optional<const char>& entry_delimiter = std::nullopt) {
-//   // Returned Data
-//   int rows = 0, cols = 0;
-//   int num_entries = 0;
-//   std::vector<T> data;
-
-//   // Entry delimiter inside each line of the text file
-//   char delimiter = entry_delimiter ? entry_delimiter.value() : ' ';
-
-//   std::ifstream fin(file_name, std::ios::in);
-//   if (fin.is_open()) {
-//     std::string line;
-//     while (std::getline(fin, line)) {
-//       std::istringstream iss_outer(line);
-//       if (iss_outer.good()) {
-//         T x;
-//         std::string entry;
-//         while (!iss_outer.eof()) {
-//           // std::istringstream iss_inner(entry);
-//           // if (iss_inner.good() && iss_inner >> x) {
-//           if (iss_outer >> x) {
-//             data.push_back(x);
-//             num_entries++;
-//           }
-//         }
-//         rows++;
-//       } else {
-//         LOG(ERROR) << "Error loading file " << file_name;
-//       }
-//     }
-//     fin.close();
-//   } else {
-//     LOG(ERROR) << "Error opening file " << file_name;
-//   }
-//   Data<T> d;
-//   d.rows = rows;
-//   d.cols = rows > 0 ? (num_entries / rows) : 0;
-//   d.num_entries = num_entries;
-//   d.data = data;
-//   LOG(INFO) << cv::format("Loaded %d (rows %d x cols %d) data from file %s",
-//                           d.num_entries, d.rows, d.cols, file_name.c_str());
-//   return d;
-// }
-
 // @brief Load 6dof poses from text file and store them into a 2d vector.
-static std::vector<std::vector<double>> LoadPoses(
-    const std::string& file_name) {
+//! Deprecated
+std::vector<std::vector<double>> LoadPoses(const std::string& file_name) {
   std::vector<std::vector<double>> poses;
 
   std::ifstream fin(file_name, std::ios::in);
@@ -136,7 +81,8 @@ static std::vector<std::vector<double>> LoadPoses(
 }
 
 //@brief Load camera calibration matrix K and store it into a vector.
-static std::vector<double> LoadK(const std::string& file_name) {
+//! Deprecated
+std::vector<double> LoadK(const std::string& file_name) {
   std::vector<double> K;
 
   std::ifstream fin(file_name, std::ios::in);
@@ -160,9 +106,10 @@ static std::vector<double> LoadK(const std::string& file_name) {
 
 //@brief Overloaded version of LoadK.
 // Directly store the data into the eigen matrix object.
+//! Deprecated
 template <typename Derived>
-static void LoadK(const std::string& file_name,
-                  Eigen::MatrixBase<Derived>* calibration_matrix) {
+void LoadK(const std::string& file_name,
+           Eigen::MatrixBase<Derived>* calibration_matrix) {
   Eigen::Matrix3d K;
 
   std::ifstream fin(file_name, std::ios::in);
@@ -172,7 +119,8 @@ static void LoadK(const std::string& file_name,
 }
 
 //@brief Load lens distortion coefficients D and store them into a vector.
-static std::vector<double> LoadD(const std::string& file_name) {
+//! Deprecated
+std::vector<double> LoadD(const std::string& file_name) {
   std::vector<double> D;
 
   std::ifstream fin(file_name, std::ios::in);
@@ -195,10 +143,11 @@ static std::vector<double> LoadD(const std::string& file_name) {
 
 //@brief Load 3D scene points from the file where each line stores the X, Y, Z
 // coordinates of a reference 3D scene point.
+//! Deprecated
 //@warning The coordinates are comma separated.
 // FIXME Reduce the number of generated temporary objects
-static void LoadObjectPoints(const std::string& file_name,
-                             Eigen::Matrix3Xd* object_points) {
+void LoadObjectPoints(const std::string& file_name,
+                      Eigen::Matrix3Xd* object_points) {
   std::vector<double> points_3d;
   int num_object_points = 0;
 
@@ -232,13 +181,6 @@ static void LoadObjectPoints(const std::string& file_name,
   Eigen::Matrix3Xd eigen_mat(3, num_object_points);
   cv::cv2eigen(cv_mat, eigen_mat);
   *object_points = eigen_mat;
-}
-
-//@brief Load observations from the file where each line stores 12 2D
-// observations corresponding to 12 3D reference points.
-static void LoadObservations(const std::string& file_name,
-                             Eigen::Matrix2Xd* observations) {
-  //
 }
 
 #endif  // UZH_COMMON_LOAD_H_
