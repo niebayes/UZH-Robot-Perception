@@ -4,7 +4,7 @@
 #include "Eigen/Core"
 
 //@brief Rigid body transformation represented with non-full rank 3 x 4 matrix
-using RigidTransformation = Eigen::Matrix<double, 3, 4>;
+using Matrix34d = Eigen::Matrix<double, 3, 4>;
 // using CameraMatrix = Eigen::Matrix<double, 3, 4>;
 
 //@brief Project modes used in ProjectPoints.

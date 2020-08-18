@@ -44,7 +44,7 @@ int main(int /*argc*/, char** argv) {
   // Rigid transformation from world coord. to camera coord.
   const std::vector<std::vector<double>> poses =
       LoadPoses(kFilePath + "poses.txt");
-  RigidTransformation T_C_W;
+  Matrix34d T_C_W;
   PoseVectorToTransformationMatrix(poses[0], &T_C_W);
   const Eigen::Matrix3Xd p_C_corners =
       T_C_W * p_W_corners.colwise().homogeneous();
@@ -123,7 +123,7 @@ int main(int /*argc*/, char** argv) {
         break;
       }
       const std::vector<double>& camera_pose = poses[pose_index];
-      RigidTransformation T_C_W_cube;
+      Matrix34d T_C_W_cube;
       PoseVectorToTransformationMatrix(camera_pose, &T_C_W_cube);
       const Eigen::Matrix3Xd p_C_cube =
           T_C_W_cube * p_W_cube.colwise().homogeneous();

@@ -33,7 +33,7 @@ static void Rodrigues(const Eigen::Ref<const Eigen::Vector3d>& rotation_vector,
 
 //@brief Construct a rigid transformation matrix from the pose vector
 static void PoseVectorToTransformationMatrix(const std::vector<double>& pose,
-                                             RigidTransformation* T) {
+                                             Matrix34d* T) {
   const Eigen::Vector3d rotation_vector{pose[0], pose[1], pose[2]},
       translation{pose[3], pose[4], pose[5]};
   Eigen::Matrix3d rotation_matrix;
@@ -53,12 +53,15 @@ static bool IsValidRotationMatrix(const Eigen::MatrixBase<Derived>& R,
   eigen_assert(R.rows() == R.cols());
   // Restrict to SO(2) and SO(3)
   eigen_assert(R.size() == 9 || R.size() == 4);
-  return (R * R.transpose() - Eigen::MatrixBase<Derived>::Identity()).norm() <
-         precision;
+  //   return (R * R.transpose() -
+  //   Eigen::MatrixBase<Derived>::Identity()).norm() <
+  //          precision;
+  const double difference = R.determinant() - 1.0;
+  return difference * difference < precision * precision;
 }
 
 //@brief Get Eigen::Matrix from std::vector
-//TODO Implement a more generic version of EigenMatrixFromCVMat
+// TODO Implement a more generic version of EigenMatrixFromCVMat
 template <typename T, typename Derived>
 static void EigenMatrixFromCVMat(const std::vector<T>& vec,
                                  Eigen::MatrixBase<Derived>* eigen_matrix,

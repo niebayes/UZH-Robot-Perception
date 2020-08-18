@@ -58,7 +58,34 @@ static void ProjectPoints(
   const Eigen::Matrix2Xd normalized_image_points =
       object_points.colwise().hnormalized();
   DistortPoints(normalized_image_points, image_points, D);
+  // FIXME Simply taking top rows without normalization is okay?
   *image_points = (K * image_points->colwise().homogeneous()).topRows(2);
+}
+
+//@brief Reproject 3D scene points according to calibration matrix K, camera
+// pose M = [R|t] and optional user provided distortion coefficients D
+// This function differ with the ProjectPoints in that it additionally takes as
+// input camera pose, hence the name "reproject" -- project the 3D scene points
+// visible at one camera pose to another.
+//@warning This function assumes that all 3D scene points are visible for every
+// camera pose, i.e. not condisering visibility.
+// TODO Implement a version considering visibility.
+static void ReprojectPoints(
+    const Eigen::Ref<const Eigen::Matrix3Xd>& object_points,
+    Eigen::Matrix2Xd* image_points, const Eigen::Ref<const Eigen::Matrix3d>& K,
+    const Eigen::Ref<const Matrix34d>& M, const int project_mode,
+    const std::optional<Eigen::Vector2d>& D_opt = std::nullopt) {
+  Eigen::Vector2d D = Eigen::Vector2d::Zero();
+  if (project_mode == PROJECT_WITH_DISTORTION && D_opt) {
+    D = D_opt.value();
+  }
+  const Eigen::Matrix2Xd normalized_image_points =
+      object_points.colwise().hnormalized();
+  DistortPoints(normalized_image_points, image_points, D);
+  *image_points = (K * M * object_points.colwise().homogeneous())
+                      .colwise()
+                      .hnormalized()
+                      .topRows(2);
 }
 
 //@brief Undistort image according to distortion function \Tau specified with
@@ -293,12 +320,12 @@ void Decompose(
   *translation = svd.matrixV().col(smallest_singular_value_index).hnormalized();
 }
 
-//@brief Camera matrix wrapper, containing the data some useful methods.
-class CameraMatrix {
+//@brief Camera matrix wrapper, containing the data and some useful methods.
+class CameraMatrixDLT {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-  CameraMatrix() {
+  CameraMatrixDLT() {
     camera_matrix_.setZero();
     calibration_matrix_.setIdentity();
     rotation_matrix_.setIdentity();
@@ -331,7 +358,8 @@ class CameraMatrix {
       LOG(ERROR) << "The camera matrix M is not set yet";
       return;
     }
-    if (getK().isIdentity()) {
+    if (!getK().isIdentity()) {  // Indicates the M is composed simply with
+                                 // [R|t] and can be easily decomposed
       //! Thus far, we did not impose any constraints on solving for M.
       //! This checking ensures the R to be decomposed from Mis a valid rotation
       //! matrix belongs to SO(3) in which det(R) = +1;
@@ -351,7 +379,8 @@ class CameraMatrix {
       // to 1, whereby the corrected R_tilde is a valid rotation matrix.
       Eigen::JacobiSVD<Eigen::Matrix3d> R_svd;
       R_svd.compute(R, Eigen::ComputeFullU | Eigen::ComputeFullV);
-      const Eigen::Matrix3d R_tilde = R_svd.matrixU() * R_svd.matrixV();
+      const Eigen::Matrix3d R_tilde =
+          R_svd.matrixU() * R_svd.matrixV().transpose();
 
       // Recover the previously unknown scale \alpha by computing the quotient
       // of the norm(R_tilde) wrt. norm(R);

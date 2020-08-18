@@ -14,7 +14,6 @@
 #include "opencv2/opencv.hpp"
 // #include "unsupported/Eigen/KroneckerProduct"
 
-namespace {
 //@brief Estimate camera pose from constructing a DLT (direct linear transform)
 // solver.
 //@param image_points [2xN] 2D observations, expressed in pixel coordinates.
@@ -24,10 +23,10 @@ namespace {
 // observations to get the calibrated / normalized coordinates expressed in
 // camera coordinate system, where Z = 1. Note the unit is adimensional.
 //@return Camera [3x4] matrix M = K[R|t]. If calibration matrix K is given in
-// advance, the returned M is reduced to [R|t], compressing right transformation
+// advance, the returned M is reduced to [R|t], compressing rigid transformation
 // composed of rotation R and translation t wrt. world coordinate. I.e. this is
 // T_C_W, mapping from world coordinate to camera coordinate.
-CameraMatrix EstimatePoseDLT(
+CameraMatrixDLT EstimatePoseDLT(
     const Eigen::Ref<const Eigen::Matrix2Xd>& image_points,
     const Eigen::Ref<const Eigen::Matrix3Xd>& object_points,
     const std::optional<const Eigen::Ref<const Eigen::Matrix3d>>&
@@ -53,7 +52,7 @@ CameraMatrix EstimatePoseDLT(
     // Get the calibrated coordinates, aka. normalized coornidates by
     // multiplying the inverse of the calibration matrix K.
     Eigen::Vector2d normalized =
-        (K * image_points.col(i).homogeneous()).hnormalized();
+        (K.inverse() * image_points.col(i).homogeneous()).hnormalized();
     x = normalized.x();
     y = normalized.y();
     w = 1;
@@ -88,8 +87,8 @@ CameraMatrix EstimatePoseDLT(
   // FIXME In our case, full or thin, both are okay and we choose full here
   // in spirit of the fixed-size columns here.
   Eigen::JacobiSVD<Eigen::MatrixXd> svd(2 * kNumCorrespondences, 12);
-  // FIXME the computed V is transposed or not? So the smallest singular vector
-  // is the last row or last col?
+  //! The computed matrix V is not transposed, and Q = U \Sigma V* is the
+  //! desired SVD of Q.
   svd.compute(Q, Eigen::ComputeFullU | Eigen::ComputeFullV);
   Eigen::VectorXd smallest_singular_vector = svd.matrixV().rightCols(1);
   // FIXME Differ with the codes below?
@@ -97,20 +96,20 @@ CameraMatrix EstimatePoseDLT(
   // svd.singularValues().minCoeff(&smallest_singular_value_index);
   // Eigen::VectorXd smallest_singular_vector =
   //     svd.matrixV().col(smallest_singular_value_index);
-  // std::cout << svd.matrixV() << '\n';
   // TODO Make the code neater (possibly) using Eigen::Map or (conservative)
   // resizing technique.
-  std::cout << smallest_singular_vector << '\n';
-  CameraMatrix M;
-  M.setM(Eigen::Map<Eigen::Matrix<double, 3, 4, Eigen::RowMajor>>(
+  CameraMatrixDLT M_dlt;
+  M_dlt.setM(Eigen::Map<Eigen::Matrix<double, 3, 4, Eigen::RowMajor>>(
       smallest_singular_vector.data()));
+  M_dlt.setK(K);
 
   // Normalize the camera matrix P
   // FIXME Shall we do this?
   // M.array() /= M.coeff(2, 3);
-  return M;
+  return M_dlt;
 }
-}  // namespace
+
+//
 
 int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
@@ -119,20 +118,42 @@ int main(int /*argc*/, char** argv) {
   // Load data files
   const std::string kFilePath{"data/ex2/"};
 
-  Eigen::Matrix3d K = armaLoad<Eigen::Matrix3d>(kFilePath + "K.txt");
-  Eigen::MatrixXd observations =
+  const Eigen::Matrix3d K = armaLoad<Eigen::Matrix3d>(kFilePath + "K.txt");
+  const Eigen::MatrixXd observations =
       armaLoad<Eigen::MatrixXd>(kFilePath + "detected_corners.txt");
   // The p_W_corners.txt contains coordinates of 3D reference points expressed
   // in centimeters which is better to be transformed to canonical unit meter.
-  Eigen::Matrix3Xd p_W_corners =
+  const Eigen::Matrix3Xd p_W_corners =
       0.01 *
       armaLoad<Eigen::MatrixX3d>(kFilePath + "p_W_corners.txt").transpose();
 
   // Run DLT
   Eigen::RowVectorXd row_vec = observations.row(0);
-  Eigen::Matrix2Xd image_points =
+  const Eigen::Matrix2Xd image_points =
       Eigen::Map<Eigen::Matrix<double, 2, 12>>(row_vec.data());
-  std::cout << EstimatePoseDLT(image_points, p_W_corners, K).getM() << '\n';
+  CameraMatrixDLT M_dlt = EstimatePoseDLT(image_points, p_W_corners, K);
+  M_dlt.DecomposeDLT();
+
+  // Compare reprojected points and the obvervations.
+  const int KImageIndex = 1;
+  cv::Mat image = cv::imread(
+      cv::format((kFilePath + "images_undistorted/img_%04d.jpg").c_str(),
+                 KImageIndex),
+      cv::IMREAD_COLOR);
+  const Matrix34d M = M_dlt.getM();
+  Eigen::Matrix2Xd reprojected_points;
+  ReprojectPoints(p_W_corners, &reprojected_points, K, M,
+                  PROJECT_WITHOUT_DISTORTION);
+  const Eigen::VectorXi& reproj_x = reprojected_points.row(0).cast<int>();
+  const Eigen::VectorXi& reproj_y = reprojected_points.row(1).cast<int>();
+  Scatter(image, reproj_x, reproj_y, 4, {0, 0, 255});
+
+  const Eigen::VectorXi& observed_x = image_points.row(0).cast<int>();
+  const Eigen::VectorXi& observed_y = image_points.row(1).cast<int>();
+  Scatter(image, observed_x, observed_y, 4, {0, 255, 0});
+
+  cv::imshow("", image);
+  cv::waitKey(0);
 
   return EXIT_SUCCESS;
 }

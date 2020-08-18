@@ -2,10 +2,10 @@ cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
 project(SFM)
 
 # Configure compile mode: Debug, Release, etc.
-set(CMAKE_BUILD_TYPE Release)
-# if (NOT CMAKE_BUILD_TYPE)
-#     set(CMAKE_BUILD_TYPE Release)
-# endif()
+# set(CMAKE_BUILD_TYPE Release)
+if (NOT CMAKE_BUILD_TYPE)
+    set(CMAKE_BUILD_TYPE Release)
+endif()
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Enable C++17 standard
