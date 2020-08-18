@@ -2,6 +2,7 @@
 #define UZH_COMMON_VISION_H_
 
 #include <cmath>
+#include <limits>
 #include <optional>  // C++17: std::optional
 
 #include "Eigen/Core"
@@ -62,7 +63,7 @@ static void ProjectPoints(
 
 //@brief Undistort image according to distortion function \Tau specified with
 // distortion coefficients D
-//@note A good tip for using Eigen::Ref with derived types: 
+//@note A good tip for using Eigen::Ref with derived types:
 //@ref https://stackoverflow.com/a/58463638/14007680
 cv::Mat UndistortImage(const cv::Mat& distorted_image,
                        const Eigen::Ref<const Eigen::Matrix3d>& K,
@@ -291,6 +292,96 @@ void Decompose(
   svd.singularValues().minCoeff(&smallest_singular_value_index);
   *translation = svd.matrixV().col(smallest_singular_value_index).hnormalized();
 }
+
+//@brief Camera matrix wrapper, containing the data some useful methods.
+class CameraMatrix {
+ public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+
+  CameraMatrix() {
+    camera_matrix_.setZero();
+    calibration_matrix_.setIdentity();
+    rotation_matrix_.setIdentity();
+    translation_.setZero();
+  }
+
+  void setM(const Eigen::Ref<const Eigen::Matrix<double, 3, 4>>& M) {
+    camera_matrix_ = M;
+  }
+  void setK(const Eigen::Ref<const Eigen::Matrix3d>& K) {
+    calibration_matrix_ = K;
+  }
+  void setR(const Eigen::Ref<const Eigen::Matrix3d>& R) {
+    rotation_matrix_ = R;
+  }
+  void sett(const Eigen::Ref<const Eigen::Vector3d>& t) { translation_ = t; }
+
+  Eigen::Matrix<double, 3, 4> getM() const { return camera_matrix_; }
+  Eigen::Matrix3d getK() const { return calibration_matrix_; }
+  Eigen::Matrix3d getR() const { return rotation_matrix_; }
+  Eigen::Vector3d gett() const { return translation_; }
+
+  //@brief Decompose M = \alpha * K[R|t] to get the component K, R and t, where
+  // \alpha is the unknown scale thus far.
+  // The M is computed using unconstrained DLT method. Hence we will do some
+  // post-processing to enforce the R and t to be decomposed is compatible with
+  // the corresponding constraints.
+  void DecomposeDLT() {
+    if (getM().isZero()) {
+      LOG(ERROR) << "The camera matrix M is not set yet";
+      return;
+    }
+    if (getK().isIdentity()) {
+      //! Thus far, we did not impose any constraints on solving for M.
+      //! This checking ensures the R to be decomposed from Mis a valid rotation
+      //! matrix belongs to SO(3) in which det(R) = +1;
+      //
+      //! Alternatively, by checking the sign of the t_z, aka. M(2, 3) the last
+      //! entry of M, if sign(t_z) is negative, flip the sign of all the entries
+      //! of M.
+      if (!IsValidRotationMatrix(getM().leftCols(3),
+                                 std::numeric_limits<double>::epsilon())) {
+        setM(-getM());
+      }
+      // Extract the initial R
+      const Eigen::Matrix3d R = getM().leftCols(3);
+
+      // Enforce the det(R) = +1 constraint by projecting R to SO(3).
+      // This can be done by factorizing R with SVD and set all singular values
+      // to 1, whereby the corrected R_tilde is a valid rotation matrix.
+      Eigen::JacobiSVD<Eigen::Matrix3d> R_svd;
+      R_svd.compute(R, Eigen::ComputeFullU | Eigen::ComputeFullV);
+      const Eigen::Matrix3d R_tilde = R_svd.matrixU() * R_svd.matrixV();
+
+      // Recover the previously unknown scale \alpha by computing the quotient
+      // of the norm(R_tilde) wrt. norm(R);
+      //
+      // This is by observing the fact that when R was not corrected
+      // M = \alpha * K[R|t] and after R was corrected
+      // M = K[R_tilde| \alpha * t];
+      const double alpha = R_tilde.norm() / R.norm();
+
+      // Reconstruct M with the corrected R_tilde and computed scale \alpha.
+      setR(R_tilde);
+      sett(alpha * getM().rightCols(1));
+      Eigen::Matrix<double, 3, 4> M_tilde;
+      M_tilde.leftCols(3) = getR();
+      M_tilde.rightCols(1) = gett();
+      setM(M_tilde);
+    } else {
+      // TODO Implement non-indentity version CameraMatrix::DecomposeDLT
+      LOG(ERROR) << "To be implemented soon!";
+      return;
+    }
+    LOG(INFO) << "Decomposed M";
+  }
+
+ private:
+  Eigen::Matrix<double, 3, 4> camera_matrix_;
+  Eigen::Matrix3d calibration_matrix_;
+  Eigen::Matrix3d rotation_matrix_;
+  Eigen::Vector3d translation_;
+};
 
 struct ResultDLT {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW

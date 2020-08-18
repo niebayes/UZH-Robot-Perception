@@ -5,6 +5,7 @@
 
 //@brief Rigid body transformation represented with non-full rank 3 x 4 matrix
 using RigidTransformation = Eigen::Matrix<double, 3, 4>;
+// using CameraMatrix = Eigen::Matrix<double, 3, 4>;
 
 //@brief Project modes used in ProjectPoints.
 // If PROJECT_WITH_DISTORTION, the function protects 3D scene points considering
