@@ -1,0 +1,4 @@
+#ifndef UZH_FEATURE_HARRIS_H_
+#define UZH_FEATURE_HARRIS_H_
+ 
+#endif  // UZH_FEATURE_HARRIS_H_
