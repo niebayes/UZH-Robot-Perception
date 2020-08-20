@@ -4,7 +4,7 @@ project(SFM)
 # Configure compile mode: Debug, Release, etc.
 # set(CMAKE_BUILD_TYPE Release)
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Release)
+    set(CMAKE_BUILD_TYPE Debu)
 endif()
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
