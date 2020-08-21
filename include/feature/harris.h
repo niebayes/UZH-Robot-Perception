@@ -26,6 +26,9 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
                     const int patch_size, const double kappa = 0.06) {
   // Compute the horizontal and vertical derivatives of the image Ix and Iy by
   // convolving the original image with derivatives of Gaussians.
+  //! The input image is compensated for noise, so there's no need to apply a
+  //! Gaussian filter in advance to attenuate the effect of noise. Thus we
+  //! simply apply the Sobel derivative filters.
   // Here, the Sobel operator is applied and is separated into two 1D filters
   // sobel_hor and sobel_ver.
   // Sobel operators:
@@ -33,15 +36,29 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
   //       [-2 0 +2],        [ 0  0  0],
   //       [-1 0 +1]]        [+1 +2 +1]]
   // Separated 1D components:
-  // sobel_hor = [+1 0 -1], sobel_ver = [+1 +2 +1]
+  // sobel_hor = [-1 0 +1], sobel_ver = [+1 +2 +1]
   // Hence, Gx = sobel_ver' * sobel_hor, Gy = sobel_hor' * sobel_ver.
   cv::Mat Ix, Iy;
-  const cv::Mat sobel_hor = (cv::Mat_<double>(3, 1) << 1, 0, -1);
+  const cv::Mat sobel_hor = (cv::Mat_<double>(3, 1) << -1, 0, 1);
   const cv::Mat sobel_ver = (cv::Mat_<double>(3, 1) << 1, 2, 1);
-  cv::sepFilter2D(image, Ix, image.depth(), sobel_hor, sobel_ver, {-1, -1}, 0.0,
-                  cv::BORDER_ISOLATED);
-  cv::sepFilter2D(image, Iy, image.depth(), sobel_ver, sobel_hor, {-1, -1}, 0.0,
-                  cv::BORDER_ISOLATED);
+  //@note OpenCV's cv::filter2D, cv::sepFilter2D and other filter functions
+  // actually do correlation rather than convolution. To do convolution, use
+  // cv::flip to flip the kernels along the anchor point (default the kernel
+  // center) in advance. N.B. For symmetric kernels, this step could be skipped.
+  // The new anchor point can be computed as (kernel.cols - anchor.x - 1,
+  // kernel.rows - anchor.y - 1). For separable filters as well as the Sobel
+  // operators, the flipping operation can be accomplished with alternating the
+  // sign of the sobel_hor or sobel_ver.
+  //@note cv::BORDER_ISOLATED
+  // When the source image is a part (ROI) of a bigger image, the function will
+  // try to use the pixels outside of the ROI to form a border. To disable this
+  // feature and always do extrapolation, as if src was not a ROI, use
+  // borderType | BORDER_ISOLATED
+  // TODO(bayes) Replace the cv's filter functions with self-implemented Conv2D.
+  cv::sepFilter2D(image, Ix, image.depth(), -sobel_hor, sobel_ver, {-1, -1},
+                  0.0, cv::BORDER_ISOLATED);
+  cv::sepFilter2D(image, Iy, image.depth(), -sobel_ver, sobel_hor, {-1, -1},
+                  0.0, cv::BORDER_ISOLATED);
 
   // Compute the three images corrsponding to the outer products of these
   // gradients, i.e. Ix and Iy as above.
@@ -82,7 +99,9 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
 
   // Compute the Harris response R = det(M) - kappa * trace(M)^2,
   // where M is the structure tensor, aka. the second moment matrix.
-
+  // The vectorization trick - expressing the coefficients in M as matrices
+  // representating the entire filted image - accelates the computation and
+  // simplify the codes.
   // For the sake of computation simplicity, convert cv::Mat to Eigen::Matrix.
   Eigen::MatrixXd s_Ixx, s_Iyy, s_Ixy;
   cv::cv2eigen(ssd_Ixx, s_Ixx);
@@ -90,31 +109,26 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
   cv::cv2eigen(ssd_Ixy, s_Ixy);
 
   // Compute trace and determinant.
-  // A trick is applied.
+  // The structure tensor M = [a, b; c, d] and the trace is computed as trace =
+  // a + d while the determinant = a*d - b*c.
   Eigen::MatrixXd trace, determinant;
   trace = s_Ixx.array() + s_Iyy.array();
-  determinant = s_Ixx.cwiseProduct(s_Iyy) - s_Ixy.array().square().matrix();
+  determinant = s_Ixx.cwiseProduct(s_Iyy) - s_Ixy.cwiseProduct(s_Ixy);
 
-  // TODO(bayes) Explain the comments below.
-  // The eigen values of a matrix M=[a,b;c,d] are
-  // lambda1/2 = (Tr(A)/2 +- ((Tr(A)/2)^2-det(A))^.5
-  // The smaller one is the one with the negative sign
-  // scores = trace/2 - ((trace/2).^2 - determinant).^0.5;
-  // scores(scores<0) = 0;
-  // scores = padarray(scores, [1+pr 1+pr]);
   Eigen::MatrixXd response;
-  response = trace / 2 -
-             ((trace / 2).array().square().matrix() - determinant).cwiseSqrt();
+  response = determinant - kappa * trace.cwiseProduct(trace);
   // Simply set all responses smaller than 0 to 0.
-
   response = response.unaryExpr([](double x) { return x < 0.0 ? 0.0 : x; });
 
   // Convert back to cv::Mat and store it to the output harris_response.
   cv::eigen2cv(response, harris_response);
   // Pad the harris_response making its size consistent with the input image.
-  // TODO Deliberately set the padding behavior.
-  cv::copyMakeBorder(harris_response, harris_response, 1, 1, 1, 1,
-                     cv::BORDER_CONSTANT, {1, 1, 1, 1});
+  // And set the pixels on borders to 0. When the dst.size > src.size whereby
+  // diff < 0, the function truncates the src image, which is exactly what we
+  // need.
+  const int diff = image.rows - harris_response.rows;
+  cv::copyMakeBorder(harris_response, harris_response, diff, diff, diff, diff,
+                     cv::BORDER_CONSTANT, {0, 0, 0, 0});
 }
 
 #endif  // UZH_FEATURE_HARRIS_H_

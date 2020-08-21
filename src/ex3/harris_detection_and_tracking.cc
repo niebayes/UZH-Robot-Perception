@@ -13,11 +13,18 @@ int main(int /*argv*/, char** argv) {
   google::LogToStderr();
 
   const std::string kFilePath = "data/ex3/";
-  cv::Mat image =
-      cv::imread(kFilePath + "KITTI/000000.png", cv::IMREAD_GRAYSCALE);
-  cv::Mat harris_response;
+  cv::Mat image = cv::imread(kFilePath + "KITTI/000000.png",
+                             cv::IMREAD_ANYDEPTH | cv::IMREAD_ANYCOLOR);
+  cv::Mat harris_response, shi_tomasi_response;
   const int kPatchSize = 9;
-  const double harris_kappa = 0.06;
-  HarrisResponse(image, harris_response, kPatchSize, harris_kappa);
+  const double kHarrisKappa = 0.06;
+
+  // Part I: compute response.
+  // The shi_tomasi_response is computed as comparison.
+  HarrisResponse(image, harris_response, kPatchSize, kHarrisKappa);
+  ShiTomasiResponse(image, shi_tomasi_response, 9);
+
+  // Part II: select keypoints
+
   return EXIT_SUCCESS;
 }
