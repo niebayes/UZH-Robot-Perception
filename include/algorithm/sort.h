@@ -14,36 +14,53 @@ using namespace Eigen;
  * sorted_vec: 排序的结果
  * ind: 排序结果中各个元素在原始向量的位置
  */
-void sort_vec(const VectorXd& vec, VectorXd& sorted_vec, VectorXi& ind) {
-  ind = VectorXi::LinSpaced(vec.size(), 0, vec.size() - 1);  //[0 1 2 3 ... N-1]
-  auto rule = [vec](int i, int j) -> bool {
-    return vec(i) > vec(j);
-  };  //正则表达式，作为sort的谓词
-  std::sort(ind.data(), ind.data() + ind.size(), rule);
-  // data成员函数返回VectorXd的第一个元素的指针，类似于begin()
-  sorted_vec.resize(vec.size());
-  for (int i = 0; i < vec.size(); i++) {
-    sorted_vec(i) = vec(ind(i));
-  }
-}
-//测试
-int main() {
-  VectorXd x(5);
-  x << 3, 4, 1, 5, 6;
-  VectorXi ind;
-  VectorXd sorted_vec;
-  sort_vec(x, sorted_vec, ind);
-  cout << "原始向量:\n";
-  cout << x << endl << endl;
-  cout << "排序后:\n";
-  cout << sorted_vec << endl << endl;
-  cout << "排序后向量各元素对应的原始向量中的位置" << endl;
-  cout << ind << endl;
+// void sort_vec(const VectorXd& vec, VectorXd& sorted_vec, VectorXi& ind) {
+//   ind = VectorXi::LinSpaced(vec.size(), 0, vec.size() - 1);  //[0 1 2 3 ...
+//   N-1] auto rule = [vec](int i, int j) -> bool {
+//     return vec(i) > vec(j);
+//   };  //正则表达式，作为sort的谓词
+//   std::sort(ind.data(), ind.data() + ind.size(), rule);
+//   // data成员函数返回VectorXd的第一个元素的指针，类似于begin()
+//   sorted_vec.resize(vec.size());
+//   for (int i = 0; i < vec.size(); i++) {
+//     sorted_vec(i) = vec(ind(i));
+//   }
+// }
 
-  return 0;
-}
+//测试
+// int main() {
+//   VectorXd x(5);
+//   x << 3, 4, 1, 5, 6;
+//   VectorXi ind;
+//   VectorXd sorted_vec;
+//   sort_vec(x, sorted_vec, ind);
+//   cout << "原始向量:\n";
+//   cout << x << endl << endl;
+//   cout << "排序后:\n";
+//   cout << sorted_vec << endl << endl;
+//   cout << "排序后向量各元素对应的原始向量中的位置" << endl;
+//   cout << ind << endl;
+
+//   return 0;
+// }
 
 //@brief Sort the coefficients of a Eigen::Vector object.
-void Sort() {}
+// TODO(bayes) Implement Sort.
+void Sort() {
+  // Add eigen 3.4 (3.3.9) supports
+  //@see https://gitlab.com/libeigen/eigen
+  //@ref
+  // http://eigen.tuxfamily.org/index.php?title=3.4#Changes_that_might_impact_existing_code
+  // New features that'll helpful.
+  //@note http://eigen.tuxfamily.org/dox-devel/group__TutorialSTL.html
+  //@note
+  // http://eigen.tuxfamily.org/dox-devel/group__TutorialSlicingIndexing.html
+  //@note http://eigen.tuxfamily.org/dox-devel/group__TutorialReshape.html
+  Eigen::MatrixXd before(1, 9);
+  before << 1, 3, 4, 8, 1, 0, -1, 0, 9;
+  std::cout << before << '\n';
+  std::sort(before.reshaped().begin(), before.reshaped().end());
+  std::cout << before << '\n';
+}
 
 #endif  // UZH_ALGORITHM_H_

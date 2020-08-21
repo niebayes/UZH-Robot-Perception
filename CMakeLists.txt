@@ -59,12 +59,12 @@ else()
 endif()
 
 # ceres
-find_package(Ceres REQUIRED)
-if (CERES_FOUND)
-    message("Found Ceres" " Path ${CERES_INCLUDE_DIRS}")
-else()
-    message("Not Found Ceres")
-endif()
+# find_package(Ceres REQUIRED)
+# if (CERES_FOUND)
+#     message("Found Ceres" " Path ${CERES_INCLUDE_DIRS}")
+# else()
+#     message("Not Found Ceres")
+# endif()
 
 # glog
 find_package(Glog REQUIRED)
