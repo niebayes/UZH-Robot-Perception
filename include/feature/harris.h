@@ -36,8 +36,8 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
   //       [-2 0 +2],        [ 0  0  0],
   //       [-1 0 +1]]        [+1 +2 +1]]
   // Separated 1D components:
-  // sobel_hor = [-1 0 +1], sobel_ver = [+1 +2 +1]
-  // Hence, Gx = sobel_ver' * sobel_hor, Gy = sobel_hor' * sobel_ver.
+  // sobel_hor = [-1 0 +1]', sobel_ver = [+1 +2 +1]', both are column vectors.
+  // Hence, Gx = sobel_ver * sobel_hor', Gy = sobel_hor * sobel_ver'.
   cv::Mat Ix, Iy;
   const cv::Mat sobel_hor = (cv::Mat_<double>(3, 1) << -1, 0, 1);
   const cv::Mat sobel_ver = (cv::Mat_<double>(3, 1) << 1, 2, 1);
@@ -100,8 +100,9 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
   // Compute the Harris response R = det(M) - kappa * trace(M)^2,
   // where M is the structure tensor, aka. the second moment matrix.
   // The vectorization trick - expressing the coefficients in M as matrices
-  // representating the entire filted image - accelates the computation and
+  // representing the entire filtered image - accelates the computation and
   // simplify the codes.
+
   // For the sake of computation simplicity, convert cv::Mat to Eigen::Matrix.
   Eigen::MatrixXd s_Ixx, s_Iyy, s_Ixy;
   cv::cv2eigen(ssd_Ixx, s_Ixx);

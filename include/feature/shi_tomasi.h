@@ -27,10 +27,10 @@ void ShiTomasiResponse(const cv::Mat& image, cv::Mat& shi_tomasi_response,
   //       [-2 0 +2],        [ 0  0  0],
   //       [-1 0 +1]]        [+1 +2 +1]]
   // Separated 1D components:
-  // sobel_hor = [+1 0 -1], sobel_ver = [+1 +2 +1]
-  // Hence, Gx = sobel_ver' * sobel_hor, Gy = sobel_hor' * sobel_ver
+  // sobel_hor = [-1 0 +1], sobel_ver = [+1 +2 +1], both are column vectors.
+  // Hence, Gx = sobel_ver * sobel_hor', Gy = sobel_hor * sobel_ver'.
   cv::Mat Ix, Iy;
-  const cv::Mat sobel_hor = (cv::Mat_<double>(3, 1) << 1, 0, -1);
+  const cv::Mat sobel_hor = (cv::Mat_<double>(3, 1) << -1, 0, 1);
   const cv::Mat sobel_ver = (cv::Mat_<double>(3, 1) << 1, 2, 1);
   //@note OpenCV's cv::filter2D, cv::sepFilter2D and other filter functions
   // actually do correlation rather than convolution. To do convolution, use
@@ -90,7 +90,7 @@ void ShiTomasiResponse(const cv::Mat& image, cv::Mat& shi_tomasi_response,
   // Compute the Harris response R = det(M) - kappa * trace(M)^2,
   // where M is the structure tensor, aka. the second moment matrix.
   // The vectorization trick - expressing the coefficients in M as matrices
-  // representating the entire filted image - accelates the computation and
+  // representing the entire filtered image - accelates the computation and
   // simplify the codes.
 
   // For the sake of computation simplicity, convert cv::Mat to Eigen::Matrix.
@@ -106,10 +106,10 @@ void ShiTomasiResponse(const cv::Mat& image, cv::Mat& shi_tomasi_response,
   trace = s_Ixx.array() + s_Iyy.array();
   determinant = s_Ixx.cwiseProduct(s_Iyy) - s_Ixy.cwiseProduct(s_Ixy);
 
-  // The eigen values of a 2 x 2 matrix M=[a,b;c,d] are computed from the
+  // The eigen values of a 2 x 2 matrix M = [a,b;c,d] are computed from the
   // characteristic equation det(M-\lambda*I) = 0. And the two eigenvalues
-  // \lambda_1 and \lambda_2 is equal to
-  // 1/2 * (trace +/- sqrt(t^2 - 4*determinant)), where the negative sign lead
+  // \lambda_1 and \lambda_2 are computed as
+  // 1/2 * (trace +/- sqrt(t^2 - 4*determinant)), where the negative sign leads
   // to the smaller eigenvalue lambda_2 which is the shi_tomasi_response.
   Eigen::MatrixXd response;
   response = trace / 2 -
@@ -120,7 +120,9 @@ void ShiTomasiResponse(const cv::Mat& image, cv::Mat& shi_tomasi_response,
   // Convert back to cv::Mat and store it to the output shi_tomasi_response.
   cv::eigen2cv(response, shi_tomasi_response);
   // Pad the harris_response making its size consistent with the input image.
-  // And set the pixels on borders to 0.
+  // And set the pixels on borders to 0. When the dst.size > src.size whereby
+  // diff < 0, the function truncates the src image, which is exactly what we
+  // need.
   const int diff = image.rows - shi_tomasi_response.rows;
   cv::copyMakeBorder(shi_tomasi_response, shi_tomasi_response, diff, diff, diff,
                      diff, cv::BORDER_CONSTANT, {1, 1, 1, 1});
