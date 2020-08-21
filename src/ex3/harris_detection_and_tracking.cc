@@ -26,6 +26,7 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
                       const cv::Mat& database_descriptors, cv::Mat& matches,
                       const double distance_ratio) {
   //
+  //! Hint, use OpenCV's norm function to do the SSD computation in one round.
 }
 
 // function plotMatches(matches, query_keypoints, database_keypoints)
