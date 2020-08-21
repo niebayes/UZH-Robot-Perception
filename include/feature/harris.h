@@ -55,9 +55,9 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
   // feature and always do extrapolation, as if src was not a ROI, use
   // borderType | BORDER_ISOLATED
   // TODO(bayes) Replace the cv's filter functions with self-implemented Conv2D.
-  cv::sepFilter2D(image, Ix, image.depth(), -sobel_hor, sobel_ver, {-1, -1},
+  cv::sepFilter2D(image, Ix, image.depth(), -sobel_hor.t(), sobel_ver, {-1, -1},
                   0.0, cv::BORDER_ISOLATED);
-  cv::sepFilter2D(image, Iy, image.depth(), -sobel_ver, sobel_hor, {-1, -1},
+  cv::sepFilter2D(image, Iy, image.depth(), -sobel_ver.t(), sobel_hor, {-1, -1},
                   0.0, cv::BORDER_ISOLATED);
 
   // Compute the three images corrsponding to the outer products of these

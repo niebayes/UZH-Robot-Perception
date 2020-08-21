@@ -61,6 +61,8 @@ static void Meshgrid3D(const cv::Range& x_range, const cv::Range& y_range,
 }
 
 //@brief Imitate matlab's scatter.
+// TODO(bayes) Templatize this function to make the parameter parsing more
+// flexible.
 static void Scatter(cv::InputOutputArray image,
                     const Eigen::Ref<const Eigen::VectorXi>& x,
                     const Eigen::Ref<const Eigen::VectorXi>& y,

@@ -12,6 +12,7 @@ void ImageSC(const cv::Mat& image, const int colormap = cv::COLORMAP_PARULA,
   cv::Mat img;
   cv::normalize(image, img, 0, 255, cv::NORM_MINMAX, CV_8UC1);
   cv::applyColorMap(img, img, colormap);
+  cv::namedWindow("Colormapped image", cv::WINDOW_NORMAL);
   cv::imshow("Colormapped image", img);
   cv::waitKey(delay);
 }
