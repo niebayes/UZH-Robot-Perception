@@ -22,6 +22,10 @@ exercises
 # googletest source files 
 googletest-master
 
+# externals 
+eigen-dev
+manif-devel
+
 # Prerequisites
 *.d
 
