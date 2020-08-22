@@ -3,6 +3,7 @@
 #include <iostream>
 #include <iterator>
 #include <optional>
+#include <set>
 #include <string>
 #include <vector>
 
@@ -47,6 +48,8 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   std::cout << matches << '\n';
 
   // Find the overall minimal non-zero distance.
+  //@note This could also be accomplished with std::sort / std::statble in
+  // juction with std::find_if
   eigen_assert(distances.rows() == 1);
   Eigen::RowVectorXd dist = distances.row(0);
   const double kMinNonZeroDistance = *std::min_element(
@@ -167,35 +170,68 @@ int main(int /*argv*/, char** argv) {
 
   // Optional: profile the program
 
-  Eigen::VectorXd a(9);
-  a << 1, 2, 3, -1, -2, 0, 0, 0, 4;
+  // // Imitate matlab's unique.
+  // std::vector<int> v = {9, 2, 9, 5};
+  // std::vector<int> c = {2, 5, 9};
 
-  // Imitate matlab's unique.
-  std::vector<int> v = {9, 2, 9, 5};
-  std::vector<int> c = {2, 5, 9};
+  // std::vector<int> u;
+  // u.reserve(v.size());
 
-  std::vector<int> u;
-  u.reserve(v.size());
+  // std::transform(v.begin(), v.end(), std::back_inserter(u), [&](int x) {
+  //   return (std::distance(c.begin(), std::lower_bound(c.begin(), c.end(),
+  //   x)));
+  // });
 
-  std::transform(v.begin(), v.end(), std::back_inserter(u), [&](int x) {
-    return (std::distance(c.begin(), std::lower_bound(c.begin(), c.end(), x)));
-  });
-
-  for (int x : u) std::cout << x << ' ';
-  std::cout << std::endl;
+  // for (int x : u) std::cout << x << ' ';
+  // std::cout << std::endl;
 
   // -------------------------------------------------------------------
-  std::vector<int> v = {9, 2, 9, 5};
-  std::set<int> c(v.begin(), v.end());
+  //@ref https://stackoverflow.com/q/63537619/14007680
+  // std::vector<int> v = {9, 2, 9, 5};
+  Eigen::VectorXd A(9);
+  // std::vector<int> A = {};
+  A << 1, 2, 3, -1, -2, 0, 0, 0, 4;
+  std::set<int> C(A.begin(), A.end());
+  std::cout << "A";
+  for (auto e : A) std::cout << " " << e;
+  std::cout << '\n';
 
-  std::vector<int> u;
-  u.reserve(v.size());
+  std::cout << "C";
+  for (auto e : C) std::cout << " " << e;
+  std::cout << '\n';
 
-  std::transform(v.begin(), v.end(), std::back_inserter(u),
-                 [&](int x) { return (std::distance(c.begin(), c.find(x))); });
+  std::vector<int> ic;
+  ic.reserve(A.size());
+  std::transform(A.begin(), A.end(), std::back_inserter(ic),
+                 [&](int x) { return (std::distance(C.begin(), C.find(x))); });
 
-  for (int x : u) std::cout << x << ' ';
+  std::cout << "ic ";
+  for (int x : ic) std::cout << x << ' ';
   std::cout << std::endl;
+
+  std::vector<int> ia;
+  ia.reserve(C.size());
+  std::transform(C.begin(), C.end(), std::back_inserter(ia), [&](int x) {
+    return std::distance(A.begin(), std::find(A.begin(), A.end(), x));
+  });
+
+  std::cout << "ia ";
+  for (int x : ia) std::cout << x << " ";
+  std::cout << std::endl;
+
+  // Reduce A
+  std::cout << A(ia).transpose() << '\n';
+
+  double min1 = *std::min_element(
+      A.begin(),
+      std::remove_if(A.begin(), A.end(), [](double x) { return x <= 0; }));
+
+  std::sort(A.begin(), A.end());
+  double min2 =
+      *std::find_if(A.begin(), A.end(), [](double x) { return x > 0; });
+
+  std::cout << "min1: " << min1 << " "
+            << "min2: " << min2 << '\n';
 
   return EXIT_SUCCESS;
 }
