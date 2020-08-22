@@ -47,10 +47,13 @@ void PDist2(const Eigen::Ref<const Eigen::MatrixXd>& X,
 
   // Compute pairwise distances
   // TODO(bayes) Vectorization technique applicable?
+  //@note Possibly helpful:
+  //@ref https://stackoverflow.com/a/45773308/14007680
   for (int j = 0; j < D.cols(); ++j) {
     for (int i = 0; i < D.rows(); ++i) {
       if (distance == EUCLIDEAN) {
         D(i, j) = Euclidean(X.col(i), Y.col(j));
+        std::cout << D(i, j) << '\n';
       }
       // else if (distance == ...) {...}
     }
@@ -69,6 +72,7 @@ void PDist2(const Eigen::Ref<const Eigen::MatrixXd>& X,
     Eigen::Index i = 0;
     for (auto vec : D.colwise()) {
       // Determin sorting rule.
+      // FIXME Optimize this checking to make it fire only once.
       auto less = [&vec](int i, int j) { return vec[i] < vec[j]; };
       auto greater = [&vec](int i, int j) { return vec[i] > vec[j]; };
       std::function<bool(int, int)> comp;

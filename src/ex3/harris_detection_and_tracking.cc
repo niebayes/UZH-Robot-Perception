@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <iterator>
 #include <optional>
 #include <string>
 #include <vector>
@@ -26,19 +27,38 @@
 //@param distance_ratio A parameter controls the range of the acceptable
 // SSD distance within which two descriptors will be viewed as matched.
 void MatchDescriptors(const cv::Mat& query_descriptors,
-                      const cv::Mat& database_descriptors, cv::Mat& matches,
+                      const cv::Mat& database_descriptors, cv::Mat& matches_,
                       const double distance_ratio) {
   // Convert to Eigen::Matrix
   Eigen::MatrixXd query, database;
   cv::cv2eigen(query_descriptors, query);
   cv::cv2eigen(query_descriptors, database);
 
-  Eigen::MatrixXd D;
-  Eigen::MatrixXi I;
-  PDist2(database, query, &D, EUCLIDEAN, &I,
-         SMALLEST_FIRST, 1);
-  std::cout << D << '\n';
-  std::cout << I << '\n';
+  std::cout << query.rows() << " " << query.cols() << '\n';
+  std::cout << database.rows() << " " << database.cols() << '\n';
+
+  // For each query descriptor, find the nearest descriptor in database
+  // descriptors whose index is stored in the matches matrix and the
+  // corresponding distance is stored in the distances matrix.
+  Eigen::MatrixXd distances;
+  Eigen::MatrixXi matches;
+  PDist2(database, query, &distances, EUCLIDEAN, &matches, SMALLEST_FIRST, 1);
+  std::cout << distances << '\n';
+  std::cout << matches << '\n';
+
+  // Find the overall minimal non-zero distance.
+  eigen_assert(distances.rows() == 1);
+  Eigen::RowVectorXd dist = distances.row(0);
+  const double kMinNonZeroDistance = *std::min_element(
+      dist.begin(), std::remove_if(dist.begin(), dist.end(),
+                                   [](double x) { return x <= 0; }));
+
+  // Discard -- set to 0 -- all matches that out of the
+  // distance_ratio * kMinNonZeroDistance range.
+  matches = (distances.array() > distance_ratio * kMinNonZeroDistance)
+                .select(0, matches);
+
+  //
 }
 
 // function plotMatches(matches, query_keypoints, database_keypoints)
@@ -146,6 +166,36 @@ int main(int /*argv*/, char** argv) {
   }
 
   // Optional: profile the program
+
+  Eigen::VectorXd a(9);
+  a << 1, 2, 3, -1, -2, 0, 0, 0, 4;
+
+  // Imitate matlab's unique.
+  std::vector<int> v = {9, 2, 9, 5};
+  std::vector<int> c = {2, 5, 9};
+
+  std::vector<int> u;
+  u.reserve(v.size());
+
+  std::transform(v.begin(), v.end(), std::back_inserter(u), [&](int x) {
+    return (std::distance(c.begin(), std::lower_bound(c.begin(), c.end(), x)));
+  });
+
+  for (int x : u) std::cout << x << ' ';
+  std::cout << std::endl;
+
+  // -------------------------------------------------------------------
+  std::vector<int> v = {9, 2, 9, 5};
+  std::set<int> c(v.begin(), v.end());
+
+  std::vector<int> u;
+  u.reserve(v.size());
+
+  std::transform(v.begin(), v.end(), std::back_inserter(u),
+                 [&](int x) { return (std::distance(c.begin(), c.find(x))); });
+
+  for (int x : u) std::cout << x << ' ';
+  std::cout << std::endl;
 
   return EXIT_SUCCESS;
 }

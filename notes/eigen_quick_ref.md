@@ -1,0 +1,1 @@
+# cf. http://eigen.tuxfamily.org/dox/AsciiQuickReference.txt
