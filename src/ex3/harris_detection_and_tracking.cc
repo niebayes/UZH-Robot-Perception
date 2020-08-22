@@ -7,45 +7,38 @@
 
 #include "Eigen/Dense"
 #include "common/plot.h"
+#include "common/type.h"
 #include "feature.h"
 #include "glog/logging.h"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
 
-namespace {
-enum Distance : int { EUCLIDEAN, SQUARED_EUCLIDEAN, MAHALANOBIS, HAMMING };
-
-enum ReturnOrder : int { SMALLEST, LARGEST };
-}  // namespace
-
-//@brief Imitate matlab's pdist. Calculate the pair-wise distance between every
-// pair of the two sets of observations X and Y.
-void PDist(const Eigen::Ref<const Eigen::MatrixXd>& X,
-           const Eigen::Ref<const Eigen::MatrixXd>& Y,
-           Eigen::MatrixXd* distances,
-           std::optional<Eigen::MatrixXd*> indices = std::nullopt,
-           int distance = EUCLIDEAN, int return_order = -1,
-           int num_returned = -1) {
-  //
-}
-
 //@brief Match descriptors based on the Sum of Squared Distance (SSD) measure.
 //@param query_descriptors [m x q] matrix where each column corresponds to a
 // m-dimensional descriptor vector formed by stacking the intensities inside a
 // patch and q is the number of descriptors.
-//@param database_descriptors [m x n] matrix where each column corresponds to a
-// m-dimensional descriptor vector and n is the number of descriptors to be
+//@param database_descriptors [m x p] matrix where each column corresponds to
+// a m-dimensional descriptor vector and p is the number of descriptors to be
 // matched against the query descriptors.
 //@param matches [1 x q] row vector where the i-th column contains the column
-// index of the keypoint in the database_keypoints which matches the keypoint in
-// the query_keypoints stored in the i-th column.
+// index of the keypoint in the database_keypoints which matches the i-th
+// keypoint in the query_keypoints.
 //@param distance_ratio A parameter controls the range of the acceptable
 // SSD distance within which two descriptors will be viewed as matched.
 void MatchDescriptors(const cv::Mat& query_descriptors,
                       const cv::Mat& database_descriptors, cv::Mat& matches,
                       const double distance_ratio) {
-  //
-  //! Hint, use OpenCV's norm function to do the SSD computation in one round.
+  // Convert to Eigen::Matrix
+  Eigen::MatrixXd query, database;
+  cv::cv2eigen(query_descriptors, query);
+  cv::cv2eigen(query_descriptors, database);
+
+  Eigen::MatrixXd D;
+  Eigen::MatrixXi I;
+  PDist2(database, query, &D, EUCLIDEAN, &I,
+         SMALLEST_FIRST, 1);
+  std::cout << D << '\n';
+  std::cout << I << '\n';
 }
 
 // function plotMatches(matches, query_keypoints, database_keypoints)
@@ -62,11 +55,12 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
 
 //@brief Draw a line between each matched pair of keypoints.
 //@param matches [1 x q] row vector where the i-th column contains the column
-// index of the keypoint in the database_keypoints which matches the keypoint in
-// the query_keypoints stored in the i-th column.
+// index of the keypoint in the database_keypoints which matches the keypoint
+// in the query_keypoints stored in the i-th column.
 //@param query_keypoints [2 x q] matrix where each column contains the x and y
 // coordinates of the detected keypoints in the query frame.
-//@param database_keypoints [2 x n] matrix where each column contains the x and
+//@param database_keypoints [2 x n] matrix where each column contains the x
+// and
 // y coordinates of the detected keypoints in the database frames.
 void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
                  const cv::Mat& database_keypoints) {
@@ -144,17 +138,12 @@ int main(int /*argv*/, char** argv) {
   MatchDescriptors(query_descriptors, descriptors, matches, kDistanceRatio);
   PlotMatches(matches, query_keypoints, keypoints);
 
-  // Part V: match descriptors for all 200 images in the reduced KITTI dataset.
+  // Part V: match descriptors for all 200 images in the reduced KITTI
+  // dataset.
   const int kNumImages = 200;
   for (int i = 0; i < kNumImages; ++i) {
     // Wrap Part IV
   }
-  cv::Matx32d X, Y;
-  X << 0.0975, 0.9575, 0.2785, 0.9649, 0.5469, 0.1576;
-  Y << 0.9706, 0.8003, 0.9572, 0.1419, 0.4854, 0.4218;
-  std::cout << X << '\n' << '\n';
-  std::cout << Y << '\n';
-  std::cout << cv::norm(X, Y, cv::NORM_L2) << '\n';
 
   // Optional: profile the program
 

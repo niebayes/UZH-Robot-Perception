@@ -81,8 +81,8 @@ static void Scatter(cv::InputOutputArray image,
   for (int i = 0; i < kNumPoints; ++i) {
     cv::circle(image, {x(i), y(i)}, radius, color, thickness);
   }
-  LOG(INFO) << "Created a scatter plot with " << kNumPoints
-            << " points rendered";
+  // LOG(INFO) << "Created a scatter plot with " << kNumPoints
+  //           << " points rendered";
 }
 
 #endif  // UZH_COMMON_PLOT_H_
