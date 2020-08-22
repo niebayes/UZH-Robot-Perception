@@ -443,6 +443,9 @@ class CameraMatrixDLT {
 // advance, the returned M is reduced to [R|t], compressing rigid transformation
 // composed of rotation R and translation t wrt. world coordinate. I.e. this is
 // T_C_W, mapping from world coordinate to camera coordinate.
+// TODO Incorporate normalization.
+//@ref
+// https://docs.opencv.org/4.3.0/da/d8b/group__conditioning.html#ga2c1df04b9b822fbbb5f3a3c0c1c66ebb
 CameraMatrixDLT EstimatePoseDLT(
     const Eigen::Ref<const Eigen::Matrix2Xd>& image_points,
     const Eigen::Ref<const Eigen::Matrix3Xd>& object_points,

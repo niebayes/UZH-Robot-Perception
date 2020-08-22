@@ -1,6 +1,7 @@
 #include <algorithm>
 #include <cmath>
 #include <iostream>
+#include <optional>
 #include <string>
 #include <vector>
 
@@ -10,6 +11,23 @@
 #include "glog/logging.h"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
+
+namespace {
+enum Distance : int { EUCLIDEAN, SQUARED_EUCLIDEAN, MAHALANOBIS, HAMMING };
+
+enum ReturnOrder : int { SMALLEST, LARGEST };
+}  // namespace
+
+//@brief Imitate matlab's pdist. Calculate the pair-wise distance between every
+// pair of the two sets of observations X and Y.
+void PDist(const Eigen::Ref<const Eigen::MatrixXd>& X,
+           const Eigen::Ref<const Eigen::MatrixXd>& Y,
+           Eigen::MatrixXd* distances,
+           std::optional<Eigen::MatrixXd*> indices = std::nullopt,
+           int distance = EUCLIDEAN, int return_order = -1,
+           int num_returned = -1) {
+  //
+}
 
 //@brief Match descriptors based on the Sum of Squared Distance (SSD) measure.
 //@param query_descriptors [m x q] matrix where each column corresponds to a
@@ -131,10 +149,14 @@ int main(int /*argv*/, char** argv) {
   for (int i = 0; i < kNumImages; ++i) {
     // Wrap Part IV
   }
+  cv::Matx32d X, Y;
+  X << 0.0975, 0.9575, 0.2785, 0.9649, 0.5469, 0.1576;
+  Y << 0.9706, 0.8003, 0.9572, 0.1419, 0.4854, 0.4218;
+  std::cout << X << '\n' << '\n';
+  std::cout << Y << '\n';
+  std::cout << cv::norm(X, Y, cv::NORM_L2) << '\n';
 
   // Optional: profile the program
-  Eigen::Matrix2X<int> s;
-  Eigen::Vector2<int> a;
 
   return EXIT_SUCCESS;
 }
