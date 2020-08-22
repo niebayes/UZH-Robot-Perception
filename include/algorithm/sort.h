@@ -47,20 +47,7 @@ using namespace Eigen;
 //@brief Sort the coefficients of a Eigen::Vector object.
 // TODO(bayes) Implement Sort.
 void Sort() {
-  // Add eigen 3.4 (3.3.9) supports
-  //@see https://gitlab.com/libeigen/eigen
-  //@ref
-  // http://eigen.tuxfamily.org/index.php?title=3.4#Changes_that_might_impact_existing_code
-  // New features that'll helpful.
-  //@note http://eigen.tuxfamily.org/dox-devel/group__TutorialSTL.html
-  //@note
-  // http://eigen.tuxfamily.org/dox-devel/group__TutorialSlicingIndexing.html
-  //@note http://eigen.tuxfamily.org/dox-devel/group__TutorialReshape.html
-  Eigen::MatrixXd before(1, 9);
-  before << 1, 3, 4, 8, 1, 0, -1, 0, 9;
-  std::cout << before << '\n';
-  std::sort(before.reshaped().begin(), before.reshaped().end());
-  std::cout << before << '\n';
+  //
 }
 
 #endif  // UZH_ALGORITHM_H_

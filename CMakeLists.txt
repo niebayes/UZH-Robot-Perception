@@ -100,9 +100,11 @@ include_directories(BEFORE
     ${PROJECT_SOURCE_DIR}/src
     ${OpenCV_INCLUDE_DIRS}
     ${CERES_INCLUDE_DIRS}
+    "/usr/local/include/eigen3"
+    "/usr/local/include/eigen3/unsupported"
     "/usr/include"
     ${EIGEN3_INCLUDE_DIRS}
-    "/usr/include/eigen3/unsupported"
+    # "/usr/include/eigen3/unsupported"
     ${manif_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     # ${Sophus_INCLUDE_DIRS}

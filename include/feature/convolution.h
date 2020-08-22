@@ -6,47 +6,24 @@
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 
-using namespace cv;
+// TODO(bayes) Remove OpenCV dependency or (recommended) make a overloaded
+// version for Eigen::Matrix
+//@ref http://eigen.tuxfamily.org/dox-devel/group__TutorialSlicingIndexing.html#
+//@see the Custom index list section at the bottom of the page.
+// E.g.
+// struct pad {
+//   Index size() const { return out_size; }
+//   Index operator[] (Index i) const { return
+//   std::max<Index>(0,i-(out_size-in_size)); } Index in_size, out_size;
+// };
 
-namespace external {
-enum ConvolutionType {
-  /* Return the full convolution, including border */
-  CONVOLUTION_FULL,
+// Matrix3i A;
+// A.reshaped() = VectorXi::LinSpaced(9,1,9);
+// cout << "Initial matrix A:\n" << A << "\n\n";
+// MatrixXi B(5,5);
+// B = A(pad{3,5}, pad{3,5});
+// cout << "A(pad{3,N}, pad{3,N}):\n" << B << "\n\n";
 
-  /* Return only the part that corresponds to the original image */
-  CONVOLUTION_SAME,
-
-  /* Return only the submatrix containing elements that were not influenced by
-   * the border
-   */
-  CONVOLUTION_VALID
-};
-
-void conv2(const Mat& img, const Mat& kernel, ConvolutionType type, Mat& dest) {
-  Mat source = img;
-  if (CONVOLUTION_FULL == type) {
-    source = Mat();
-    const int additionalRows = kernel.rows - 1,
-              additionalCols = kernel.cols - 1;
-    copyMakeBorder(img, source, (additionalRows + 1) / 2, additionalRows / 2,
-                   (additionalCols + 1) / 2, additionalCols / 2,
-                   BORDER_CONSTANT, Scalar(0));
-  }
-
-  Point anchor(kernel.cols - kernel.cols / 2 - 1,
-               kernel.rows - kernel.rows / 2 - 1);
-  int borderMode = BORDER_CONSTANT;
-  // filter2D(source, dest, img.depth(), /*flip(kernel)*/, anchor, 0,
-  // borderMode);
-
-  if (CONVOLUTION_VALID == type) {
-    dest = dest.colRange((kernel.cols - 1) / 2, dest.cols - kernel.cols / 2)
-               .rowRange((kernel.rows - 1) / 2, dest.rows - kernel.rows / 2);
-  }
-}
-}  // namespace external
-
-// TODO(bayes) Remove OpenCV dependency.
 //@brief Imitate matlab's padarray. Pad the input image using the given pad_size
 // and pad_value.
 //@param image Input image to be padded.
@@ -64,6 +41,44 @@ void PadArray(cv::Mat& image, const cv::Scalar_<int> pad_size,
   cv::copyMakeBorder(image, image, pad_size(0), pad_size(1), pad_size(2),
                      pad_size(3), cv::BORDER_CONSTANT, {pad_value});
 }
+
+// enum ConvolutionType {
+//   /* Return the full convolution, including border */
+//   CONVOLUTION_FULL,
+
+//   /* Return only the part that corresponds to the original image */
+//   CONVOLUTION_SAME,
+
+//   /* Return only the submatrix containing elements that were not influenced
+//   by
+//    * the border
+//    */
+//   CONVOLUTION_VALID
+// };
+
+// void conv2(const Mat& img, const Mat& kernel, ConvolutionType type, Mat&
+// dest) {
+//   Mat source = img;
+//   if (CONVOLUTION_FULL == type) {
+//     source = Mat();
+//     const int additionalRows = kernel.rows - 1,
+//               additionalCols = kernel.cols - 1;
+//     copyMakeBorder(img, source, (additionalRows + 1) / 2, additionalRows / 2,
+//                    (additionalCols + 1) / 2, additionalCols / 2,
+//                    BORDER_CONSTANT, Scalar(0));
+//   }
+
+//   Point anchor(kernel.cols - kernel.cols / 2 - 1,
+//                kernel.rows - kernel.rows / 2 - 1);
+//   int borderMode = BORDER_CONSTANT;
+//   // filter2D(source, dest, img.depth(), /*flip(kernel)*/, anchor, 0,
+//   // borderMode);
+
+//   if (CONVOLUTION_VALID == type) {
+//     dest = dest.colRange((kernel.cols - 1) / 2, dest.cols - kernel.cols / 2)
+//                .rowRange((kernel.rows - 1) / 2, dest.rows - kernel.rows / 2);
+//   }
+// }
 
 //@brief Imitate matlab's conv2. Convolve the image with the given kernel.
 // TODO(bayes) Remove OpenCV dependency.

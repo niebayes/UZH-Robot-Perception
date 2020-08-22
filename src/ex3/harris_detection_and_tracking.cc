@@ -97,11 +97,16 @@ int main(int /*argv*/, char** argv) {
   for (int i = 0; i < 16; ++i) {
     if (show_descriptors) {
       cv::Mat descriptor = descriptors.col(i);
-      Eigen::MatrixXi d;
-      cv::cv2eigen(descriptor, d);
-      d.resize(19, 19);
-      cv::eigen2cv(d, descriptor);
-      ImageSC(descriptor);
+      // Eigen::MatrixXi d;
+      // cv::cv2eigen(descriptor, d);
+      // d.resize(19, 19);
+      // cv::eigen2cv(d, descriptor);
+
+      // reshaped introduced since eigen 3.4
+      //@note assigning a reshaped matrix to itself is currently not supported
+      // and will result to undefined-behavior because of aliasing
+
+      // ImageSC();
     }
   }
 
@@ -128,6 +133,8 @@ int main(int /*argv*/, char** argv) {
   }
 
   // Optional: profile the program
+  Eigen::Matrix2X<int> s;
+  Eigen::Vector2<int> a;
 
   return EXIT_SUCCESS;
 }

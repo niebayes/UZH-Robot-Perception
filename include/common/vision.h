@@ -335,6 +335,13 @@ void Decompose(
 //@brief Camera matrix wrapper, containing the data and some useful methods.
 class CameraMatrixDLT {
  public:
+  // Eigen now uses c++11 alignas keyword for static alignment. Users
+  // targeting c++17 only and recent compilers (e.g., GCC>=7, clang>=5,
+  // MSVC>=19.12) will thus be able to completely forget about all issues
+  // related to static alignment, including EIGEN_MAKE_ALIGNED_OPERATOR_NEW.
+  //@ref https://en.cppreference.com/w/cpp/language/alignas
+  // TODO(bayes) Use alignas in place of eigen alignment macros.
+  // alignas(CameraMatrixDLT);
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
   CameraMatrixDLT() {
