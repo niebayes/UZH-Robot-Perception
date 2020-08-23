@@ -3,6 +3,7 @@
 
 #include <optional>
 
+#include "Eigen/Core"
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 
@@ -42,49 +43,59 @@ void PadArray(cv::Mat& image, const cv::Scalar_<int> pad_size,
                      pad_size(3), cv::BORDER_CONSTANT, {pad_value});
 }
 
-// enum ConvolutionType {
-//   /* Return the full convolution, including border */
-//   CONVOLUTION_FULL,
+// TODO(bayes) Overload this function taking as input Eigen::Matrix. The padding
+// behavior can be accomplised by using block operation.
+template <typename Derived>
+void PadArray(Eigen::DenseBase<Derived>& image, const cv::Scalar_<int> pad_size, const double pad_value = 0) {
+  // 
+}
 
-//   /* Return only the part that corresponds to the original image */
-//   CONVOLUTION_SAME,
+    // enum ConvolutionType {
+    //   /* Return the full convolution, including border */
+    //   CONVOLUTION_FULL,
 
-//   /* Return only the submatrix containing elements that were not influenced
-//   by
-//    * the border
-//    */
-//   CONVOLUTION_VALID
-// };
+    //   /* Return only the part that corresponds to the original image */
+    //   CONVOLUTION_SAME,
 
-// void conv2(const Mat& img, const Mat& kernel, ConvolutionType type, Mat&
-// dest) {
-//   Mat source = img;
-//   if (CONVOLUTION_FULL == type) {
-//     source = Mat();
-//     const int additionalRows = kernel.rows - 1,
-//               additionalCols = kernel.cols - 1;
-//     copyMakeBorder(img, source, (additionalRows + 1) / 2, additionalRows / 2,
-//                    (additionalCols + 1) / 2, additionalCols / 2,
-//                    BORDER_CONSTANT, Scalar(0));
-//   }
+    //   /* Return only the submatrix containing elements that were not
+    //   influenced by
+    //    * the border
+    //    */
+    //   CONVOLUTION_VALID
+    // };
 
-//   Point anchor(kernel.cols - kernel.cols / 2 - 1,
-//                kernel.rows - kernel.rows / 2 - 1);
-//   int borderMode = BORDER_CONSTANT;
-//   // filter2D(source, dest, img.depth(), /*flip(kernel)*/, anchor, 0,
-//   // borderMode);
+    // void conv2(const Mat& img, const Mat& kernel, ConvolutionType type, Mat&
+    // dest) {
+    //   Mat source = img;
+    //   if (CONVOLUTION_FULL == type) {
+    //     source = Mat();
+    //     const int additionalRows = kernel.rows - 1,
+    //               additionalCols = kernel.cols - 1;
+    //     copyMakeBorder(img, source, (additionalRows + 1) / 2, additionalRows
+    //     / 2,
+    //                    (additionalCols + 1) / 2, additionalCols / 2,
+    //                    BORDER_CONSTANT, Scalar(0));
+    //   }
 
-//   if (CONVOLUTION_VALID == type) {
-//     dest = dest.colRange((kernel.cols - 1) / 2, dest.cols - kernel.cols / 2)
-//                .rowRange((kernel.rows - 1) / 2, dest.rows - kernel.rows / 2);
-//   }
-// }
+    //   Point anchor(kernel.cols - kernel.cols / 2 - 1,
+    //                kernel.rows - kernel.rows / 2 - 1);
+    //   int borderMode = BORDER_CONSTANT;
+    //   // filter2D(source, dest, img.depth(), /*flip(kernel)*/, anchor, 0,
+    //   // borderMode);
 
-//@brief Imitate matlab's conv2. Convolve the image with the given kernel.
-// TODO(bayes) Remove OpenCV dependency.
-void Conv2D(cv::InputArray src, cv::OutputArray dst, int ddepth,
-            cv::InputArray kernel, cv::Point anchor = cv::Point(-1, -1),
-            double delta = 0.0, int border_type = 4) {
+    //   if (CONVOLUTION_VALID == type) {
+    //     dest = dest.colRange((kernel.cols - 1) / 2, dest.cols - kernel.cols /
+    //     2)
+    //                .rowRange((kernel.rows - 1) / 2, dest.rows - kernel.rows /
+    //                2);
+    //   }
+    // }
+
+    //@brief Imitate matlab's conv2. Convolve the image with the given kernel.
+    // TODO(bayes) Remove OpenCV dependency.
+    void Conv2D(cv::InputArray src, cv::OutputArray dst, int ddepth,
+                cv::InputArray kernel, cv::Point anchor = cv::Point(-1, -1),
+                double delta = 0.0, int border_type = 4) {
   cv::filter2D(src, dst, ddepth, kernel, anchor, delta, border_type);
 }
 

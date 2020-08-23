@@ -81,11 +81,15 @@ Unique(const Eigen::ArrayXd& A) {
 template <typename T, typename Derived>
 T find_min_if_not(const Eigen::DenseBase<Derived>& X,
                   std::function<bool(typename Derived::Scalar)> pred) {
+  // Derived X_(X.size());
+  // std::copy(X.cbegin(), X.cend(), X_.template begin());
+  // return (*std::min_element(
+  //     X_.template begin(),
+  //     std::remove_if(X_.template begin(), X_.template end(), pred)));
   Derived X_(X.size());
-  std::copy(X.cbegin(), X.cend(), X_.template begin());
-  return (*std::min_element(
-      X_.template begin(),
-      std::remove_if(X_.template begin(), X_.template end(), pred)));
+  std::copy(X.cbegin(), X.cend(), X_.begin());
+  return (*std::min_element(X_.begin(),
+                            std::remove_if(X_.begin(), X_.end(), pred)));
 }
 
 //@brief Match descriptors based on the Sum of Squared Distance (SSD) measure.
@@ -253,7 +257,7 @@ int main(int /*argv*/, char** argv) {
   // The shi_tomasi_response is computed as comparison whilst the
   // harris_response is used through out the remainder of this program.
   const int kPatchSize = 9;
-  const double kHarrisKappa = 0.06;
+  const double kHarrisKappa = 0.08;
   cv::Mat harris_response, shi_tomasi_response;
   HarrisResponse(image, harris_response, kPatchSize, kHarrisKappa);
   ShiTomasiResponse(image, shi_tomasi_response, 9);
@@ -349,122 +353,149 @@ int main(int /*argv*/, char** argv) {
     }
   }
 
-  // cv::Mat_<double> im{1, 3, 2, 3, 1, 5, 1, 3, 3, 4, 4, 2, 1,
-  //                     2, 2, 2, 1, 5, 5, 2, 3, 1, 5, 2, 3};
-  // im = im.reshape(1, 5);
-  arma::mat X;
-  X.load(kFilePath + "test_mat.txt", arma::file_type::auto_detect, true);
-  // std::cout << X << '\n';
-  // im.convertTo(im, CV_32F);
-  cv::Mat im(X.n_rows, X.n_cols, CV_64F, X.memptr());
-  std::cout << im << '\n';
+  // // cv::Mat_<double> im{1, 3, 2, 3, 1, 5, 1, 3, 3, 4, 4, 2, 1,
+  // //                     2, 2, 2, 1, 5, 5, 2, 3, 1, 5, 2, 3};
+  // // im = im.reshape(1, 5);
+  // arma::mat X;
+  // X.load(kFilePath + "test_mat.txt", arma::file_type::auto_detect, true);
+  // // std::cout << X << '\n';
+  // // im.convertTo(im, CV_32F);
+  // cv::Mat im(X.n_rows, X.n_cols, CV_64F, X.memptr());
+  // std::cout << im << '\n';
 
-  cv::Mat Ix, Iy;
-  const cv::Mat sobel_hor = (cv::Mat_<double>(3, 1) << -1, 0, 1);
-  const cv::Mat sobel_ver = (cv::Mat_<double>(3, 1) << 1, 2, 1);
-  //@note OpenCV's cv::filter2D, cv::sepFilter2D and other filter functions
-  // actually do correlation rather than convolution. To do convolution, use
-  // cv::flip to flip the kernels along the anchor point (default the kernel
-  // center) in advance. N.B. For symmetric kernels, this step could be skipped.
-  // The new anchor point can be computed as (kernel.cols - anchor.x - 1,
-  // kernel.rows - anchor.y - 1). For separable filters as well as the Sobel
-  // operators, the flipping operation can be accomplished with alternating the
-  // sign of the sobel_hor or sobel_ver.
-  //@note cv::BORDER_ISOLATED
-  // When the source image is a part (ROI) of a bigger image, the function will
-  // try to use the pixels outside of the ROI to form a border. To disable this
-  // feature and always do extrapolation, as if src was not a ROI, use
-  // borderType | BORDER_ISOLATED
-  // TODO(bayes) Replace the cv's filter functions with self-implemented Conv2D.
-  cv::sepFilter2D(im, Ix, im.depth(), -sobel_hor.t(), sobel_ver, {-1, -1}, 0.0,
-                  cv::BORDER_ISOLATED);
-  cv::sepFilter2D(im, Iy, im.depth(), -sobel_ver.t(), sobel_hor, {-1, -1}, 0.0,
-                  cv::BORDER_ISOLATED);
+  // cv::Mat Ix, Iy;
+  // const cv::Mat sobel_hor = (cv::Mat_<double>(3, 1) << -1, 0, 1);
+  // const cv::Mat sobel_ver = (cv::Mat_<double>(3, 1) << 1, 2, 1);
+  // //@note OpenCV's cv::filter2D, cv::sepFilter2D and other filter functions
+  // // actually do correlation rather than convolution. To do convolution, use
+  // // cv::flip to flip the kernels along the anchor point (default the kernel
+  // // center) in advance. N.B. For symmetric kernels, this step could be skipped.
+  // // The new anchor point can be computed as (kernel.cols - anchor.x - 1,
+  // // kernel.rows - anchor.y - 1). For separable filters as well as the Sobel
+  // // operators, the flipping operation can be accomplished with alternating the
+  // // sign of the sobel_hor or sobel_ver.
+  // //@note cv::BORDER_ISOLATED
+  // // When the source image is a part (ROI) of a bigger image, the function will
+  // // try to use the pixels outside of the ROI to form a border. To disable this
+  // // feature and always do extrapolation, as if src was not a ROI, use
+  // // borderType | BORDER_ISOLATED
+  // // TODO(bayes) Replace the cv's filter functions with self-implemented Conv2D.
+  // cv::sepFilter2D(im, Ix, im.depth(), -sobel_hor.t(), sobel_ver, {-1, -1}, 0.0,
+  //                 cv::BORDER_ISOLATED);
+  // cv::sepFilter2D(im, Iy, im.depth(), -sobel_ver.t(), sobel_hor, {-1, -1}, 0.0,
+  //                 cv::BORDER_ISOLATED);
 
-  std::cout << "Ix , Iy\n\n";
-  std::cout << Ix << '\n';
-  std::cout << Iy << '\n';
+  // std::cout << "Ix , Iy\n\n";
+  // std::cout << Ix << '\n';
+  // std::cout << Iy << '\n';
 
-  // cv::Mat Ixp, Iyp;
-  // Gx = [[-1 0 +1],  Gy = [[-1 -2 -1],
-  //       [-2 0 +2],        [ 0  0  0],
-  //       [-1 0 +1]]        [+1 +2 +1]]
-  // cv::Mat_<int> sobel_x{-1, 0, 1, -2, 0, 2, -1, 0, 1},
-  //     sobel_y{-1, -2, -1, 0, 0, 0, 1, 2, 1};
-  // sobel_x = sobel_x.reshape(1, 3);
-  // sobel_y = sobel_y.reshape(1, 3);
-  // std::cout << sobel_x << '\n';
-  // std::cout << sobel_y << '\n';
-  cv::Mat Ixx, Iyy, Ixy;
-  Ixx = Ix.mul(Ix);
-  Iyy = Iy.mul(Iy);
-  Ixy = Ix.mul(Iy);
+  // // cv::Mat Ixp, Iyp;
+  // // Gx = [[-1 0 +1],  Gy = [[-1 -2 -1],
+  // //       [-2 0 +2],        [ 0  0  0],
+  // //       [-1 0 +1]]        [+1 +2 +1]]
+  // // cv::Mat_<int> sobel_x{-1, 0, 1, -2, 0, 2, -1, 0, 1},
+  // //     sobel_y{-1, -2, -1, 0, 0, 0, 1, 2, 1};
+  // // sobel_x = sobel_x.reshape(1, 3);
+  // // sobel_y = sobel_y.reshape(1, 3);
+  // // std::cout << sobel_x << '\n';
+  // // std::cout << sobel_y << '\n';
+  // cv::Mat Ixx, Iyy, Ixy;
+  // Ixx = Ix.mul(Ix);
+  // Iyy = Iy.mul(Iy);
+  // Ixy = Ix.mul(Iy);
 
-  std::cout << "Ixx, Iyy, Ixy" << '\n' << '\n';
-  std::cout << Ixx << '\n';
-  std::cout << Iyy << '\n';
-  std::cout << Ixy << '\n';
+  // std::cout << "Ixx, Iyy, Ixy" << '\n' << '\n';
+  // std::cout << Ixx << '\n';
+  // std::cout << Iyy << '\n';
+  // std::cout << Ixy << '\n';
 
-  int patch_size = 3;
-  int patch_radius = std::floor(patch_size / 2);
-  const cv::Mat patch = cv::Mat::ones(patch_size, patch_size, image.depth());
-  cv::Mat ssd_Ixx, ssd_Iyy, ssd_Ixy;
-  cv::filter2D(Ixx, ssd_Ixx, Ixx.depth(), patch, {-1, -1}, 0.0,
-               cv::BORDER_ISOLATED);
-  cv::filter2D(Iyy, ssd_Iyy, Iyy.depth(), patch, {-1, -1}, 0.0,
-               cv::BORDER_ISOLATED);
-  cv::filter2D(Ixy, ssd_Ixy, Ixy.depth(), patch, {-1, -1}, 0.0,
-               cv::BORDER_ISOLATED);
+  // int patch_size = 9;
+  // int patch_radius = std::floor(patch_size / 2);
+  // const cv::Mat patch = cv::Mat::ones(patch_size, patch_size, image.depth());
+  // cv::Mat ssd_Ixx, ssd_Iyy, ssd_Ixy;
+  // cv::filter2D(Ixx, ssd_Ixx, Ixx.depth(), patch, {-1, -1}, 0.0,
+  //              cv::BORDER_ISOLATED);
+  // cv::filter2D(Iyy, ssd_Iyy, Iyy.depth(), patch, {-1, -1}, 0.0,
+  //              cv::BORDER_ISOLATED);
+  // cv::filter2D(Ixy, ssd_Ixy, Ixy.depth(), patch, {-1, -1}, 0.0,
+  //              cv::BORDER_ISOLATED);
 
-  std::cout << "ssd Ixx, Iyy, Ixy"
-            << "\n\n";
-  std::cout << ssd_Ixx << '\n';
-  std::cout << ssd_Iyy << '\n';
-  std::cout << ssd_Ixy << '\n';
+  // std::cout << "ssd Ixx, Iyy, Ixy"
+  //           << "\n\n";
+  // std::cout << ssd_Ixx << '\n';
+  // std::cout << ssd_Iyy << '\n';
+  // std::cout << ssd_Ixy << '\n';
 
-  Eigen::MatrixXd s_Ixx, s_Iyy, s_Ixy;
-  cv::cv2eigen(ssd_Ixx, s_Ixx);
-  cv::cv2eigen(ssd_Iyy, s_Iyy);
-  cv::cv2eigen(ssd_Ixy, s_Ixy);
+  // Eigen::MatrixXd s_Ixx, s_Iyy, s_Ixy;
+  // cv::cv2eigen(ssd_Ixx, s_Ixx);
+  // cv::cv2eigen(ssd_Iyy, s_Iyy);
+  // cv::cv2eigen(ssd_Ixy, s_Ixy);
 
-  std::cout << "eigen ssd Ixx, Iyy, Ixy"
-            << "\n\n";
-  std::cout << s_Ixx << '\n' << '\n';
-  std::cout << s_Iyy << '\n' << '\n';
-  std::cout << s_Ixy << '\n' << '\n';
+  // std::cout << "eigen ssd Ixx, Iyy, Ixy"
+  //           << "\n\n";
+  // std::cout << s_Ixx << '\n' << '\n';
+  // std::cout << s_Iyy << '\n' << '\n';
+  // std::cout << s_Ixy << '\n' << '\n';
 
-  // Compute trace and determinant.
-  // The structure tensor M = [a, b; c, d] and the trace is computed as trace =
-  // a + d while the determinant = a*d - b*c.
-  Eigen::MatrixXd trace, determinant;
-  trace = s_Ixx.array() + s_Iyy.array();
-  determinant = s_Ixx.cwiseProduct(s_Iyy) - s_Ixy.cwiseProduct(s_Ixy);
+  // // Compute trace and determinant.
+  // // The structure tensor M = [a, b; c, d] and the trace is computed as trace =
+  // // a + d while the determinant = a*d - b*c.
+  // Eigen::MatrixXd trace, determinant;
+  // trace = s_Ixx.array() + s_Iyy.array();
+  // determinant = s_Ixx.cwiseProduct(s_Iyy) - s_Ixy.cwiseProduct(s_Ixy);
 
-  std::cout << trace << "\n\n";
-  std::cout << determinant << "\n\n";
+  // std::cout << trace << "\n\n";
+  // std::cout << determinant << "\n\n";
 
-  double kappa = 0.08;
-  Eigen::MatrixXd response;
-  response = determinant - kappa * trace.cwiseProduct(trace);
-  // Simply set all responses smaller than 0 to 0.
-  response = response.unaryExpr([](double x) { return x < 0.0 ? 0.0 : x; });
+  // double kappa = 0.08;
+  // Eigen::MatrixXd response;
+  // response = determinant - kappa * trace.cwiseProduct(trace);
+  // // Simply set all responses smaller than 0 to 0.
+  // response = response.unaryExpr([](double x) { return x < 0.0 ? 0.0 : x; });
 
-  std::cout << "response\n\n";
-  std::cout << response << '\n' << '\n';
+  // std::cout << "response\n\n";
+  // std::cout << response << '\n' << '\n';
 
-  // Convert back to cv::Mat and store it to the output harris_response.
-  cv::Mat harriss;
-  cv::eigen2cv(response, harriss);
-  // Pad the harris_response making its size consistent with the input image.
-  // And set the pixels on borders to 0. When the dst.size > src.size whereby
-  // diff < 0, the function truncates the src image, which is exactly what we
-  // need.
-  const int diff = im.rows - harriss.rows;
-  cv::copyMakeBorder(harriss, harriss, diff, diff, diff, diff,
-                     cv::BORDER_CONSTANT, {0, 0, 0, 0});
+  // // Keep only the parts which do not include zero-padded edges.
+  // // For the "valid" optional, `C = conv2(A, B, "valid")` returns C with size as
+  // // max(size(A) - size(B) + 1, 0).
+  // // Because we've convolved twice, so the desired size(C) = size(A) - size(B1)
+  // // - size(B2) + 2, where size is the length one dimension, #rows or #cols.
+  // int valid_rows = im.rows - sobel_hor.rows - patch.rows + 2;
+  // int valid_cols = im.cols - sobel_ver.rows - patch.cols + 2;
+  // valid_rows = std::max(valid_rows, 0);
+  // valid_cols = std::max(valid_cols, 0);
+  // if (valid_rows == 0 || valid_cols == 0) {
+  //   LOG(ERROR) << "Invalid ROI";
+  // }
+  // std::cout << "valid size: " << valid_rows << " " << valid_cols << '\n';
 
-  std::cout << "harris\n\n";
-  std::cout << harriss << '\n';
+  // // Compute the starting point of the valid block.
+  // // starting_point = radius(B1) + radius(B2).
+  // const int sobel_radius = static_cast<int>(std::floor(sobel_hor.rows / 2));
+
+  // // Assume the kernels are square, then starting_x = starting_y.
+  // const int starting_x = sobel_radius + patch_radius, starting_y = starting_x;
+  // Eigen::MatrixXd response_valid =
+  //     response.block(starting_x, starting_y, valid_rows, valid_cols);
+
+  // // Convert back to cv::Mat and store it to the output harris_response.
+  // cv::Mat harriss;
+  // cv::eigen2cv(response_valid, harriss);
+  // // Pad the harris_response making its size consistent with the input image.
+  // // And set the pixels on borders to 0. When the dst.size > src.size whereby
+  // // diff < 0, the function truncates the src image, which is exactly what we
+  // // need.
+  // // const int diff = im.rows - harriss.rows;
+  // // cv::copyMakeBorder(harriss, harriss, diff, diff, diff, diff,
+  // //                    cv::BORDER_CONSTANT, {0, 0, 0, 0});
+
+  // const int padding_size = sobel_radius + patch_radius;
+  // std::cout << "padding_size: " << padding_size << '\n';
+  // PadArray(harriss, {padding_size, padding_size, padding_size, padding_size});
+
+  // std::cout << "harris\n\n";
+  // std::cout << harriss << '\n';
   // -------------------------------------------------------------------
   // Optional: profile the program
 
