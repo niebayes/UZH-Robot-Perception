@@ -5,6 +5,7 @@
 #include <optional>
 #include <set>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "Eigen/Dense"
@@ -14,6 +15,75 @@
 #include "glog/logging.h"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
+
+//@brief Imitate matlab's unique. Unique values in an array and store them in a
+// sorted order (by default descending).
+//@param A One dimensional array containing the original values.
+//@return C One dimensional array containing the unique values of A.
+//@return ia One dimensional array containing indices such that C = A(ia).
+//@return ic One dimensional array containing indices such that A = C(ic).
+//
+//! Eigen provides surprising flexibility and genericity, so you can pass as
+//! arguments ArrayXd, VectorXd, RowVectorXd as well as MatrixXd to the
+//! parameter A and the returned object C. They all work properly.
+//
+//@note Return unmovable and uncopyable values with C++17.
+//@ref https://stackoverflow.com/a/38531743/14007680
+// TODO(bayes) Templatize this function to make the parameter parsing more
+// flexible.
+std::tuple<Eigen::ArrayXd /*C*/, std::vector<int> /*ia*/,
+           std::vector<int> /*ic*/>
+Unique(const Eigen::ArrayXd& A) {
+  //! Alternatively, explicitly passing into pointers.
+  // Eigen::ArrayXd* C,
+  // std::optional<Eigen::ArrayXi*> ia = std::nullopt,
+  // std::optional<Eigen::ArrayXi*> ic = std::nullopt) {
+
+  // Copy the values of A.
+  const std::vector<double> original(A.begin(), A.end());
+
+  // Get uniqued values.
+  const std::set<double> uniqued(original.begin(), original.end());
+  // Eigen::ArrayXd uniqued;
+
+  // Get ia.
+  std::vector<int> indices_ori;
+  indices_ori.reserve(uniqued.size());
+  std::transform(uniqued.cbegin(), uniqued.cend(),
+                 std::back_inserter(indices_ori), [&original](double x) {
+                   return std::distance(
+                       original.cbegin(),
+                       std::find(original.cbegin(), original.cend(), x));
+                 });
+
+  // Get ic.
+  std::vector<int> indices_uni;
+  indices_uni.reserve(original.size());
+  std::transform(original.cbegin(), original.cend(),
+                 std::back_inserter(indices_uni), [&uniqued](double x) {
+                   return std::distance(
+                       uniqued.cbegin(),
+                       std::find(uniqued.cbegin(), uniqued.cend(), x));
+                 });
+
+  // Output C.
+  Eigen::ArrayXd C_out(uniqued.size());
+  std::copy(uniqued.cbegin(), uniqued.cend(), C_out.begin());
+
+  return {C_out, indices_ori, indices_uni};
+}
+
+//@brief Wrap STL's std::min_element and std::remove_if. Find the minimum
+// not satisfying the given rule.
+template <typename T, typename Derived>
+T find_min_if_not(const Eigen::DenseBase<Derived>& X,
+                  std::function<bool(typename Derived::Scalar)> pred) {
+  Derived X_(X.size());
+  std::copy(X.cbegin(), X.cend(), X_.template begin());
+  return (*std::min_element(
+      X_.template begin(),
+      std::remove_if(X_.template begin(), X_.template end(), pred)));
+}
 
 //@brief Match descriptors based on the Sum of Squared Distance (SSD) measure.
 //@param query_descriptors [m x q] matrix where each column corresponds to a
@@ -35,8 +105,8 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   cv::cv2eigen(query_descriptors, query);
   cv::cv2eigen(query_descriptors, database);
 
-  std::cout << query.rows() << " " << query.cols() << '\n';
-  std::cout << database.rows() << " " << database.cols() << '\n';
+  // std::cout << query.rows() << " " << query.cols() << '\n';
+  // std::cout << database.rows() << " " << database.cols() << '\n';
 
   // For each query descriptor, find the nearest descriptor in database
   // descriptors whose index is stored in the matches matrix and the
@@ -44,8 +114,8 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   Eigen::MatrixXd distances;
   Eigen::MatrixXi matches;
   PDist2(database, query, &distances, EUCLIDEAN, &matches, SMALLEST_FIRST, 1);
-  std::cout << distances << '\n';
-  std::cout << matches << '\n';
+  // std::cout << distances << '\n';
+  // std::cout << matches << '\n';
 
   // Find the overall minimal non-zero distance.
   //@note This could also be accomplished with std::sort / std::statble in
@@ -56,12 +126,31 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
       dist.begin(), std::remove_if(dist.begin(), dist.end(),
                                    [](double x) { return x <= 0; }));
 
+  const double min =
+      find_min_if_not<double>(dist, [](double x) { return x <= 0; });
+
+  // std::cout << "kmin: " << kMinNonZeroDistance << '\n';
+  // std::cout << "min: " << min << '\n';
+
   // Discard -- set to 0 -- all matches that out of the
   // distance_ratio * kMinNonZeroDistance range.
   matches = (distances.array() > distance_ratio * kMinNonZeroDistance)
                 .select(0, matches);
 
-  //
+  // Remove duplicate matches.
+  std::vector<int> unique_match_indices;
+  std::tie(std::ignore, unique_match_indices, std::ignore) =
+      Unique(matches.cast<double>().reshaped());
+  // for (int e : unique_matches) std::cout << " " << e;
+  // std::cout << '\n';
+  Eigen::MatrixXi unique_matches(1, matches.size());
+  unique_matches.setZero();
+  unique_matches.reshaped()(unique_match_indices) =
+      matches.reshaped()(unique_match_indices);
+  std::cout << unique_matches << '\n';
+
+  // Convert back to cv::Mat
+  cv::eigen2cv(unique_matches, matches_);
 }
 
 // function plotMatches(matches, query_keypoints, database_keypoints)
@@ -169,69 +258,10 @@ int main(int /*argv*/, char** argv) {
   }
 
   // Optional: profile the program
-
-  // // Imitate matlab's unique.
-  // std::vector<int> v = {9, 2, 9, 5};
-  // std::vector<int> c = {2, 5, 9};
-
-  // std::vector<int> u;
-  // u.reserve(v.size());
-
-  // std::transform(v.begin(), v.end(), std::back_inserter(u), [&](int x) {
-  //   return (std::distance(c.begin(), std::lower_bound(c.begin(), c.end(),
-  //   x)));
-  // });
-
-  // for (int x : u) std::cout << x << ' ';
-  // std::cout << std::endl;
-
   // -------------------------------------------------------------------
   //@ref https://stackoverflow.com/q/63537619/14007680
-  // std::vector<int> v = {9, 2, 9, 5};
   Eigen::VectorXd A(9);
-  // std::vector<int> A = {};
   A << 1, 2, 3, -1, -2, 0, 0, 0, 4;
-  std::set<int> C(A.begin(), A.end());
-  std::cout << "A";
-  for (auto e : A) std::cout << " " << e;
-  std::cout << '\n';
-
-  std::cout << "C";
-  for (auto e : C) std::cout << " " << e;
-  std::cout << '\n';
-
-  std::vector<int> ic;
-  ic.reserve(A.size());
-  std::transform(A.begin(), A.end(), std::back_inserter(ic),
-                 [&](int x) { return (std::distance(C.begin(), C.find(x))); });
-
-  std::cout << "ic ";
-  for (int x : ic) std::cout << x << ' ';
-  std::cout << std::endl;
-
-  std::vector<int> ia;
-  ia.reserve(C.size());
-  std::transform(C.begin(), C.end(), std::back_inserter(ia), [&](int x) {
-    return std::distance(A.begin(), std::find(A.begin(), A.end(), x));
-  });
-
-  std::cout << "ia ";
-  for (int x : ia) std::cout << x << " ";
-  std::cout << std::endl;
-
-  // Reduce A
-  std::cout << A(ia).transpose() << '\n';
-
-  double min1 = *std::min_element(
-      A.begin(),
-      std::remove_if(A.begin(), A.end(), [](double x) { return x <= 0; }));
-
-  std::sort(A.begin(), A.end());
-  double min2 =
-      *std::find_if(A.begin(), A.end(), [](double x) { return x > 0; });
-
-  std::cout << "min1: " << min1 << " "
-            << "min2: " << min2 << '\n';
 
   return EXIT_SUCCESS;
 }
