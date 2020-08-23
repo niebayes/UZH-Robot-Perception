@@ -27,6 +27,8 @@
 //! arguments ArrayXd, VectorXd, RowVectorXd as well as MatrixXd to the
 //! parameter A and the returned object C. They all work properly.
 //
+//@note How to implement matlab's unique using C++?
+//@ref https://stackoverflow.com/q/63537619/14007680
 //@note Return unmovable and uncopyable values with C++17.
 //@ref https://stackoverflow.com/a/38531743/14007680
 // TODO(bayes) Templatize this function to make the parameter parsing more
@@ -153,17 +155,57 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   cv::eigen2cv(unique_matches, matches_);
 }
 
-// function plotMatches(matches, query_keypoints, database_keypoints)
+//@brief Remove zeros in an array.
+template <typename T>
+T RemoveZeros(const T& A) {
+  // std::vector<int> A_(A.cbegin(), A.cend());
+  // std::vector<int>::const_iterator last_non_zero =
+  //     std::remove_if(A_.begin(), A_.end(), [](int x) { return x != 0; });
+  // std::vector<int> A_no_zeros(A_.cbegin(), last_non_zero);
+  const auto num_non_zeros =
+      std::count_if(A.cbegin(), A.cend(), [](int x) { return x != 0; });
+  T A_no_zeros(num_non_zeros);
+  std::copy_if(A.cbegin(), A.cend(), A_no_zeros.begin(),
+               [](int x) { return x != 0; });
+  return A_no_zeros;
+}
 
-// [~, query_indices, match_indices] = find(matches);
+//@brief Imitate matlab's `[row, col, v] = find(A)` function. Find non-zero
+// elements in an array A.
+//@param A One dimensional array.
+//@return row An array containing the row subscripts of the non-zero elements in
+// A.
+//@return col An array containing the column subscripts of the non-zero elements
+// in A.
+//@return v One dimensional array containing the non-zero elements with order
+// being consistent with the original order in A. I.e. this function is stable.
+// TODO(bayes) Generalize this function to multi-dimensional array and make the
+// parameter parsing more flexible by using template.
+std::tuple<std::vector<int> /*row*/, std::vector<int> /*col*/,
+           Eigen::ArrayXi /*v*/>
+Find(const Eigen::ArrayXi& A) {
+  // Assure all elements are greater than or equal to 0.
+  //! This constraint can be simply removed later on. For now, it is set for
+  //! safety.
+  eigen_assert(!(A.unaryExpr([](int x) { return x < 0; }).any()));
 
-// x_from = query_keypoints(1, query_indices);
-// x_to = database_keypoints(1, match_indices);
-// y_from = query_keypoints(2, query_indices);
-// y_to = database_keypoints(2, match_indices);
-// plot([y_from; y_to], [x_from; x_to], 'g-', 'Linewidth', 3);
+  // Get row
+  std::vector<int> row(A.count(), 1);
 
-// end
+  // Get col
+  std::vector<int> indices(A.size());
+  std::iota(indices.begin(), indices.end(), 0);
+  std::transform(indices.begin(), indices.end(), indices.begin(),
+                 [&A](int i) { return A(i) > 0 ? i : 0; });
+  std::vector<int> col = RemoveZeros<std::vector<int>>(indices);
+  if (A(0) != 0) col.insert(col.begin(), 0);
+
+  // Get v
+  Eigen::ArrayXi v(A.count());
+  std::copy_if(A.cbegin(), A.cend(), v.begin(), [](int x) { return x > 0; });
+
+  return {row, col, v};
+}
 
 //@brief Draw a line between each matched pair of keypoints.
 //@param matches [1 x q] row vector where the i-th column contains the column
@@ -172,11 +214,48 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
 //@param query_keypoints [2 x q] matrix where each column contains the x and y
 // coordinates of the detected keypoints in the query frame.
 //@param database_keypoints [2 x n] matrix where each column contains the x
-// and
-// y coordinates of the detected keypoints in the database frames.
+// and y coordinates of the detected keypoints in the database frames.
+//@param image The image on which the plot is rendered.
 void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
-                 const cv::Mat& database_keypoints) {
-  //
+                 const cv::Mat& database_keypoints, cv::Mat& image) {
+  // Convert to Eigen::Matrix
+  Eigen::MatrixXi matches_;
+  Eigen::MatrixXi query_kps, database_kps;
+  cv::cv2eigen(matches, matches_);
+  cv::cv2eigen(query_keypoints, query_kps);
+  cv::cv2eigen(database_keypoints, database_kps);
+
+  // Isolate query and match indices.
+  //! These indices are used to access corresponding keypoints later on.
+  std::vector<int> query_indices;
+  Eigen::ArrayXi match_indices;
+  std::tie(std::ignore, query_indices, match_indices) =
+      Find(matches_.reshaped());
+
+  // [~, query_indices, match_indices] = find(matches);
+  // x_from = query_keypoints(1, query_indices);
+  // x_to = database_keypoints(1, match_indices);
+  // y_from = query_keypoints(2, query_indices);
+  // y_to = database_keypoints(2, match_indices);
+  // plot([y_from; y_to], [x_from; x_to], 'g-', 'Linewidth', 3);
+
+  // Extract coordinates of keypoints.
+  Eigen::RowVectorXi from_kp_x, from_kp_y, to_kp_x, to_kp_y;
+  from_kp_x = query_kps(0, query_indices);
+  from_kp_y = query_kps(1, query_indices);
+  to_kp_x = database_kps(0, match_indices);
+  to_kp_y = database_kps(1, match_indices);
+
+  // Link the each set of matches.
+  const int kNumMatches = match_indices.size();
+  for (int i = 0; i < kNumMatches; ++i) {
+    int from_x, from_y, to_x, to_y;
+    from_x = from_kp_x(i);
+    from_y = from_kp_y(i);
+    to_x = to_kp_x(i);
+    to_y = to_kp_y(i);
+    cv::line(image, {from_x, from_y}, {to_x, to_y}, {0, 255, 0}, 3);
+  }
 }
 
 int main(int /*argv*/, char** argv) {
@@ -248,20 +327,44 @@ int main(int /*argv*/, char** argv) {
                     kPatchRadius);
   cv::Mat matches;
   MatchDescriptors(query_descriptors, descriptors, matches, kDistanceRatio);
-  PlotMatches(matches, query_keypoints, keypoints);
+  PlotMatches(matches, query_keypoints, keypoints, query_image);
+  // cv::imshow("", query_image);
+  // cv::waitKey(0);
 
   // Part V: match descriptors for all 200 images in the reduced KITTI
   // dataset.
+  // Prepare database containers.
+  cv::Mat database_kps, database_descs;
   const int kNumImages = 200;
   for (int i = 0; i < kNumImages; ++i) {
-    // Wrap Part IV
+    cv::Mat query_img =
+        cv::imread(cv::format((kFilePath + "KITTI/%06d.png").c_str(), i),
+                   cv::IMREAD_GRAYSCALE);
+    // cv::imshow("i-th image", query_img);
+    // cv::waitKey(0);
+
+    // Prepare query containers.
+    cv::Mat query_harris, query_kps, query_descs;
+    cv::Mat matches_qd;
+
+    HarrisResponse(query_img, query_harris, kPatchSize, kHarrisKappa);
+    SelectKeypoints(query_harris, query_kps, kNumKeypoints, kNonMaximumRadius);
+    DescribeKeypoints(query_img, query_kps, query_descs, kPatchRadius);
+
+    // Match query and database after the first iteration.
+    if (i >= 1) {
+      MatchDescriptors(query_descs, database_descs, matches_qd, kDistanceRatio);
+      PlotMatches(matches_qd, query_kps, database_kps, query_img);
+      cv::imshow("Matches", query_img);
+      cv::waitKey(10);  // Pause 10 ms.
+    }
+
+    database_kps = query_kps;
+    database_descs = query_descs;
   }
 
   // Optional: profile the program
   // -------------------------------------------------------------------
-  //@ref https://stackoverflow.com/q/63537619/14007680
-  Eigen::VectorXd A(9);
-  A << 1, 2, 3, -1, -2, 0, 0, 0, 4;
 
   return EXIT_SUCCESS;
 }
