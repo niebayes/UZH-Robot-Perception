@@ -1,9 +1,8 @@
 #ifndef UZH_FEATURE_HARRIS_H_
 #define UZH_FEATURE_HARRIS_H_
 
-#include <functional>
+#include <cmath>  // std::floor
 
-#include "armadillo"
 #include "glog/logging.h"
 #include "opencv2/core.hpp"
 #include "opencv2/core/eigen.hpp"
@@ -16,11 +15,11 @@
 // window used to compute the auto-correlation function, aka. SSD surface. N.B
 // patch_size = patch_radius + 1, where patch_radius is the distance between the
 // pixels on the border of the image patch and the center of the image, aka. the
-// anchor point. Note in OpenCV, the patch_radius is treated the same as
+// anchor point. Note in OpenCV, the patch_radius is treated the same as the
 // aperture size.
-//@param kappa Parameter used in Harris response function. The default 0.06 is a
-// empirically well-investigated value.
-//@note InputArray in Opencv
+//@param kappa Parameter used in Harris response function. The default 0.06 is
+// an empirically well-investigated value.
+//@note InputArray or Mat?
 //@ref https://stackoverflow.com/a/31820323/14007680
 void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
                     const int patch_size, const double kappa = 0.06) {
@@ -88,7 +87,8 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
     LOG(ERROR) << "The aperture size should be odd to drive the "
                   "cv::getGaussianKernel to work properly";
   }
-  const cv::Mat patch = cv::getGaussianKernel(patch_radius - 1, 1);
+  // const cv::Mat patch = cv::getGaussianKernel(patch_radius - 1, 1);
+  const cv::Mat patch = cv::Mat::ones(patch_size, patch_size, image.depth());
   cv::Mat ssd_Ixx, ssd_Iyy, ssd_Ixy;
   cv::filter2D(Ixx, ssd_Ixx, Ixx.depth(), patch, {-1, -1}, 0.0,
                cv::BORDER_ISOLATED);

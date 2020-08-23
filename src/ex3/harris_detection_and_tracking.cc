@@ -9,6 +9,7 @@
 #include <vector>
 
 #include "Eigen/Dense"
+#include "armadillo"
 #include "common/plot.h"
 #include "common/type.h"
 #include "feature.h"
@@ -107,17 +108,12 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   cv::cv2eigen(query_descriptors, query);
   cv::cv2eigen(query_descriptors, database);
 
-  // std::cout << query.rows() << " " << query.cols() << '\n';
-  // std::cout << database.rows() << " " << database.cols() << '\n';
-
   // For each query descriptor, find the nearest descriptor in database
   // descriptors whose index is stored in the matches matrix and the
   // corresponding distance is stored in the distances matrix.
   Eigen::MatrixXd distances;
   Eigen::MatrixXi matches;
   PDist2(database, query, &distances, EUCLIDEAN, &matches, SMALLEST_FIRST, 1);
-  // std::cout << distances << '\n';
-  // std::cout << matches << '\n';
 
   // Find the overall minimal non-zero distance.
   //@note This could also be accomplished with std::sort / std::statble in
@@ -131,9 +127,6 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   const double min =
       find_min_if_not<double>(dist, [](double x) { return x <= 0; });
 
-  // std::cout << "kmin: " << kMinNonZeroDistance << '\n';
-  // std::cout << "min: " << min << '\n';
-
   // Discard -- set to 0 -- all matches that out of the
   // distance_ratio * kMinNonZeroDistance range.
   matches = (distances.array() > distance_ratio * kMinNonZeroDistance)
@@ -143,13 +136,10 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   std::vector<int> unique_match_indices;
   std::tie(std::ignore, unique_match_indices, std::ignore) =
       Unique(matches.cast<double>().reshaped());
-  // for (int e : unique_matches) std::cout << " " << e;
-  // std::cout << '\n';
   Eigen::MatrixXi unique_matches(1, matches.size());
   unique_matches.setZero();
   unique_matches.reshaped()(unique_match_indices) =
       matches.reshaped()(unique_match_indices);
-  std::cout << unique_matches << '\n';
 
   // Convert back to cv::Mat
   cv::eigen2cv(unique_matches, matches_);
@@ -231,13 +221,6 @@ void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
   Eigen::ArrayXi match_indices;
   std::tie(std::ignore, query_indices, match_indices) =
       Find(matches_.reshaped());
-
-  // [~, query_indices, match_indices] = find(matches);
-  // x_from = query_keypoints(1, query_indices);
-  // x_to = database_keypoints(1, match_indices);
-  // y_from = query_keypoints(2, query_indices);
-  // y_to = database_keypoints(2, match_indices);
-  // plot([y_from; y_to], [x_from; x_to], 'g-', 'Linewidth', 3);
 
   // Extract coordinates of keypoints.
   Eigen::RowVectorXi from_kp_x, from_kp_y, to_kp_x, to_kp_y;
@@ -336,35 +319,154 @@ int main(int /*argv*/, char** argv) {
   // Prepare database containers.
   cv::Mat database_kps, database_descs;
   const int kNumImages = 200;
-  for (int i = 0; i < kNumImages; ++i) {
-    cv::Mat query_img =
-        cv::imread(cv::format((kFilePath + "KITTI/%06d.png").c_str(), i),
-                   cv::IMREAD_GRAYSCALE);
-    // cv::imshow("i-th image", query_img);
-    // cv::waitKey(0);
+  bool plot_matches = false;
+  if (plot_matches) {
+    for (int i = 0; i < kNumImages; ++i) {
+      cv::Mat query_img =
+          cv::imread(cv::format((kFilePath + "KITTI/%06d.png").c_str(), i),
+                     cv::IMREAD_GRAYSCALE);
 
-    // Prepare query containers.
-    cv::Mat query_harris, query_kps, query_descs;
-    cv::Mat matches_qd;
+      // Prepare query containers.
+      cv::Mat query_harris, query_kps, query_descs;
+      cv::Mat matches_qd;
 
-    HarrisResponse(query_img, query_harris, kPatchSize, kHarrisKappa);
-    SelectKeypoints(query_harris, query_kps, kNumKeypoints, kNonMaximumRadius);
-    DescribeKeypoints(query_img, query_kps, query_descs, kPatchRadius);
+      HarrisResponse(query_img, query_harris, kPatchSize, kHarrisKappa);
+      SelectKeypoints(query_harris, query_kps, kNumKeypoints,
+                      kNonMaximumRadius);
+      DescribeKeypoints(query_img, query_kps, query_descs, kPatchRadius);
 
-    // Match query and database after the first iteration.
-    if (i >= 1) {
-      MatchDescriptors(query_descs, database_descs, matches_qd, kDistanceRatio);
-      PlotMatches(matches_qd, query_kps, database_kps, query_img);
-      cv::imshow("Matches", query_img);
-      cv::waitKey(10);  // Pause 10 ms.
+      // Match query and database after the first iteration.
+      if (i >= 1) {
+        MatchDescriptors(query_descs, database_descs, matches_qd,
+                         kDistanceRatio);
+        PlotMatches(matches_qd, query_kps, database_kps, query_img);
+        cv::imshow("Matches", query_img);
+        cv::waitKey(10);  // Pause 10 ms.
+      }
+
+      database_kps = query_kps;
+      database_descs = query_descs;
     }
-
-    database_kps = query_kps;
-    database_descs = query_descs;
   }
 
-  // Optional: profile the program
+  // cv::Mat_<double> im{1, 3, 2, 3, 1, 5, 1, 3, 3, 4, 4, 2, 1,
+  //                     2, 2, 2, 1, 5, 5, 2, 3, 1, 5, 2, 3};
+  // im = im.reshape(1, 5);
+  arma::mat X;
+  X.load(kFilePath + "test_mat.txt", arma::file_type::auto_detect, true);
+  // std::cout << X << '\n';
+  // im.convertTo(im, CV_32F);
+  cv::Mat im(X.n_rows, X.n_cols, CV_64F, X.memptr());
+  std::cout << im << '\n';
+
+  cv::Mat Ix, Iy;
+  const cv::Mat sobel_hor = (cv::Mat_<double>(3, 1) << -1, 0, 1);
+  const cv::Mat sobel_ver = (cv::Mat_<double>(3, 1) << 1, 2, 1);
+  //@note OpenCV's cv::filter2D, cv::sepFilter2D and other filter functions
+  // actually do correlation rather than convolution. To do convolution, use
+  // cv::flip to flip the kernels along the anchor point (default the kernel
+  // center) in advance. N.B. For symmetric kernels, this step could be skipped.
+  // The new anchor point can be computed as (kernel.cols - anchor.x - 1,
+  // kernel.rows - anchor.y - 1). For separable filters as well as the Sobel
+  // operators, the flipping operation can be accomplished with alternating the
+  // sign of the sobel_hor or sobel_ver.
+  //@note cv::BORDER_ISOLATED
+  // When the source image is a part (ROI) of a bigger image, the function will
+  // try to use the pixels outside of the ROI to form a border. To disable this
+  // feature and always do extrapolation, as if src was not a ROI, use
+  // borderType | BORDER_ISOLATED
+  // TODO(bayes) Replace the cv's filter functions with self-implemented Conv2D.
+  cv::sepFilter2D(im, Ix, im.depth(), -sobel_hor.t(), sobel_ver, {-1, -1}, 0.0,
+                  cv::BORDER_ISOLATED);
+  cv::sepFilter2D(im, Iy, im.depth(), -sobel_ver.t(), sobel_hor, {-1, -1}, 0.0,
+                  cv::BORDER_ISOLATED);
+
+  std::cout << "Ix , Iy\n\n";
+  std::cout << Ix << '\n';
+  std::cout << Iy << '\n';
+
+  // cv::Mat Ixp, Iyp;
+  // Gx = [[-1 0 +1],  Gy = [[-1 -2 -1],
+  //       [-2 0 +2],        [ 0  0  0],
+  //       [-1 0 +1]]        [+1 +2 +1]]
+  // cv::Mat_<int> sobel_x{-1, 0, 1, -2, 0, 2, -1, 0, 1},
+  //     sobel_y{-1, -2, -1, 0, 0, 0, 1, 2, 1};
+  // sobel_x = sobel_x.reshape(1, 3);
+  // sobel_y = sobel_y.reshape(1, 3);
+  // std::cout << sobel_x << '\n';
+  // std::cout << sobel_y << '\n';
+  cv::Mat Ixx, Iyy, Ixy;
+  Ixx = Ix.mul(Ix);
+  Iyy = Iy.mul(Iy);
+  Ixy = Ix.mul(Iy);
+
+  std::cout << "Ixx, Iyy, Ixy" << '\n' << '\n';
+  std::cout << Ixx << '\n';
+  std::cout << Iyy << '\n';
+  std::cout << Ixy << '\n';
+
+  int patch_size = 3;
+  int patch_radius = std::floor(patch_size / 2);
+  const cv::Mat patch = cv::Mat::ones(patch_size, patch_size, image.depth());
+  cv::Mat ssd_Ixx, ssd_Iyy, ssd_Ixy;
+  cv::filter2D(Ixx, ssd_Ixx, Ixx.depth(), patch, {-1, -1}, 0.0,
+               cv::BORDER_ISOLATED);
+  cv::filter2D(Iyy, ssd_Iyy, Iyy.depth(), patch, {-1, -1}, 0.0,
+               cv::BORDER_ISOLATED);
+  cv::filter2D(Ixy, ssd_Ixy, Ixy.depth(), patch, {-1, -1}, 0.0,
+               cv::BORDER_ISOLATED);
+
+  std::cout << "ssd Ixx, Iyy, Ixy"
+            << "\n\n";
+  std::cout << ssd_Ixx << '\n';
+  std::cout << ssd_Iyy << '\n';
+  std::cout << ssd_Ixy << '\n';
+
+  Eigen::MatrixXd s_Ixx, s_Iyy, s_Ixy;
+  cv::cv2eigen(ssd_Ixx, s_Ixx);
+  cv::cv2eigen(ssd_Iyy, s_Iyy);
+  cv::cv2eigen(ssd_Ixy, s_Ixy);
+
+  std::cout << "eigen ssd Ixx, Iyy, Ixy"
+            << "\n\n";
+  std::cout << s_Ixx << '\n' << '\n';
+  std::cout << s_Iyy << '\n' << '\n';
+  std::cout << s_Ixy << '\n' << '\n';
+
+  // Compute trace and determinant.
+  // The structure tensor M = [a, b; c, d] and the trace is computed as trace =
+  // a + d while the determinant = a*d - b*c.
+  Eigen::MatrixXd trace, determinant;
+  trace = s_Ixx.array() + s_Iyy.array();
+  determinant = s_Ixx.cwiseProduct(s_Iyy) - s_Ixy.cwiseProduct(s_Ixy);
+
+  std::cout << trace << "\n\n";
+  std::cout << determinant << "\n\n";
+
+  double kappa = 0.08;
+  Eigen::MatrixXd response;
+  response = determinant - kappa * trace.cwiseProduct(trace);
+  // Simply set all responses smaller than 0 to 0.
+  response = response.unaryExpr([](double x) { return x < 0.0 ? 0.0 : x; });
+
+  std::cout << "response\n\n";
+  std::cout << response << '\n' << '\n';
+
+  // Convert back to cv::Mat and store it to the output harris_response.
+  cv::Mat harriss;
+  cv::eigen2cv(response, harriss);
+  // Pad the harris_response making its size consistent with the input image.
+  // And set the pixels on borders to 0. When the dst.size > src.size whereby
+  // diff < 0, the function truncates the src image, which is exactly what we
+  // need.
+  const int diff = im.rows - harriss.rows;
+  cv::copyMakeBorder(harriss, harriss, diff, diff, diff, diff,
+                     cv::BORDER_CONSTANT, {0, 0, 0, 0});
+
+  std::cout << "harris\n\n";
+  std::cout << harriss << '\n';
   // -------------------------------------------------------------------
+  // Optional: profile the program
 
   return EXIT_SUCCESS;
 }

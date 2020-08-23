@@ -53,7 +53,6 @@ void PDist2(const Eigen::Ref<const Eigen::MatrixXd>& X,
     for (int i = 0; i < D.rows(); ++i) {
       if (distance == EUCLIDEAN) {
         D(i, j) = Euclidean(X.col(i), Y.col(j));
-        std::cout << D(i, j) << '\n';
       }
       // else if (distance == ...) {...}
     }
