@@ -241,7 +241,7 @@ void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
     from_y = from_kp_y(i);
     to_x = to_kp_x(i);
     to_y = to_kp_y(i);
-    cv::line(image, {from_x, from_y}, {to_x, to_y}, {0, 255, 0}, 3);
+    cv::line(image, {from_x, from_y}, {to_x, to_y}, {0, 255, 0}, 1);
   }
 }
 
@@ -250,8 +250,16 @@ int main(int /*argv*/, char** argv) {
   google::LogToStderr();
 
   const std::string kFilePath = "data/ex3/";
-  cv::Mat image = cv::imread(kFilePath + "KITTI/000000.png",
-                             cv::IMREAD_ANYDEPTH | cv::IMREAD_ANYCOLOR);
+  //! For debugging ...
+  // Image to show the rendered objects.
+  // cv::Mat image_show =
+  //     cv::imread(kFilePath + "KITTI/000000.png", cv::IMREAD_COLOR);
+  arma::mat X;
+  X.load("img.csv");
+  cv::Mat image_show(X.n_rows, X.n_cols, CV_64F, X.memptr());
+  cv::Mat image_show_shi = image_show.clone();
+  cv::Mat image = image_show.clone();
+  // cv::cvtColor(image_show, image, cv::COLOR_BGR2GRAY, 1);
 
   // Part I: compute response.
   // The shi_tomasi_response is computed as comparison whilst the
@@ -260,9 +268,10 @@ int main(int /*argv*/, char** argv) {
   const double kHarrisKappa = 0.08;
   cv::Mat harris_response, shi_tomasi_response;
   HarrisResponse(image, harris_response, kPatchSize, kHarrisKappa);
-  ShiTomasiResponse(image, shi_tomasi_response, 9);
-  // ImageSC(harris_response);
-  // ImageSC(shi_tomasi_response);
+  ShiTomasiResponse(image, shi_tomasi_response, kPatchSize);
+  // Compare the colormaps to see the detail of differences.
+  ImageSC(harris_response);
+  ImageSC(shi_tomasi_response);
 
   // Part II: select keypoints
   const int kNumKeypoints = 200;
@@ -273,9 +282,21 @@ int main(int /*argv*/, char** argv) {
   Eigen::MatrixXd k;
   cv::cv2eigen(keypoints, k);
   const Eigen::VectorXi x = k.row(0).cast<int>(), y = k.row(1).cast<int>();
-  Scatter(image, x, y, 4, {0, 0, 255});
-  // cv::imshow("", image);
-  // cv::waitKey(0);
+  Scatter(image_show, x, y, 4, {0, 0, 255}, cv::FILLED);
+  cv::imshow("Harris keypoints", image_show);
+  cv::waitKey(0);
+
+  // Show the Shi-Tomasi keypoints for comparison.
+  cv::Mat shi_keypoints;
+  SelectKeypoints(shi_tomasi_response, shi_keypoints, kNumKeypoints,
+                  kNonMaximumRadius);
+  Eigen::MatrixXd shi_k;
+  cv::cv2eigen(shi_keypoints, shi_k);
+  const Eigen::VectorXi shi_x = shi_k.row(0).cast<int>(),
+                        shi_y = shi_k.row(1).cast<int>();
+  Scatter(image_show_shi, shi_x, shi_y, 4, {0, 255, 0}, cv::FILLED);
+  cv::imshow("Shi-Tomasi keypoints", image_show_shi);
+  cv::waitKey(0);
 
   // Part III: describe keypoints
   const int kPatchRadius = 9;
@@ -302,8 +323,11 @@ int main(int /*argv*/, char** argv) {
 
   // Part IV: match descriptors
   const double kDistanceRatio = 4;
-  cv::Mat query_image =
-      cv::imread(kFilePath + "KITTI/000001.png", cv::IMREAD_GRAYSCALE);
+  cv::Mat match_show =
+      cv::imread(kFilePath + "KITTI/000001.png", cv::IMREAD_COLOR);
+  cv::Mat query_image;
+  cv::cvtColor(match_show, query_image, cv::COLOR_BGR2GRAY, 1);
+
   cv::Mat query_harris_response;
   HarrisResponse(query_image, query_harris_response, kPatchSize, kHarrisKappa);
   cv::Mat query_keypoints;
@@ -314,21 +338,23 @@ int main(int /*argv*/, char** argv) {
                     kPatchRadius);
   cv::Mat matches;
   MatchDescriptors(query_descriptors, descriptors, matches, kDistanceRatio);
-  PlotMatches(matches, query_keypoints, keypoints, query_image);
-  // cv::imshow("", query_image);
-  // cv::waitKey(0);
+  PlotMatches(matches, query_keypoints, keypoints, match_show);
+  cv::imshow("", match_show);
+  cv::waitKey(0);
 
   // Part V: match descriptors for all 200 images in the reduced KITTI
   // dataset.
   // Prepare database containers.
   cv::Mat database_kps, database_descs;
   const int kNumImages = 200;
-  bool plot_matches = false;
+  bool plot_matches = true;
   if (plot_matches) {
     for (int i = 0; i < kNumImages; ++i) {
-      cv::Mat query_img =
+      cv::Mat img_show =
           cv::imread(cv::format((kFilePath + "KITTI/%06d.png").c_str(), i),
-                     cv::IMREAD_GRAYSCALE);
+                     cv::IMREAD_COLOR);
+      cv::Mat query_img;
+      cv::cvtColor(img_show, query_img, cv::COLOR_BGR2GRAY, 1);
 
       // Prepare query containers.
       cv::Mat query_harris, query_kps, query_descs;
@@ -343,9 +369,10 @@ int main(int /*argv*/, char** argv) {
       if (i >= 1) {
         MatchDescriptors(query_descs, database_descs, matches_qd,
                          kDistanceRatio);
-        PlotMatches(matches_qd, query_kps, database_kps, query_img);
-        cv::imshow("Matches", query_img);
-        cv::waitKey(10);  // Pause 10 ms.
+        PlotMatches(matches_qd, query_kps, database_kps, img_show);
+        cv::imshow("Matches", img_show);
+        char key = cv::waitKey(10);  // Pause 10 ms.
+        if (key == 27) break;        // 'ESC' key -> exit.
       }
 
       database_kps = query_kps;
@@ -369,20 +396,26 @@ int main(int /*argv*/, char** argv) {
   // //@note OpenCV's cv::filter2D, cv::sepFilter2D and other filter functions
   // // actually do correlation rather than convolution. To do convolution, use
   // // cv::flip to flip the kernels along the anchor point (default the kernel
-  // // center) in advance. N.B. For symmetric kernels, this step could be skipped.
+  // // center) in advance. N.B. For symmetric kernels, this step could be
+  // skipped.
   // // The new anchor point can be computed as (kernel.cols - anchor.x - 1,
   // // kernel.rows - anchor.y - 1). For separable filters as well as the Sobel
-  // // operators, the flipping operation can be accomplished with alternating the
+  // // operators, the flipping operation can be accomplished with alternating
+  // the
   // // sign of the sobel_hor or sobel_ver.
   // //@note cv::BORDER_ISOLATED
-  // // When the source image is a part (ROI) of a bigger image, the function will
-  // // try to use the pixels outside of the ROI to form a border. To disable this
+  // // When the source image is a part (ROI) of a bigger image, the function
+  // will
+  // // try to use the pixels outside of the ROI to form a border. To disable
+  // this
   // // feature and always do extrapolation, as if src was not a ROI, use
   // // borderType | BORDER_ISOLATED
-  // // TODO(bayes) Replace the cv's filter functions with self-implemented Conv2D.
-  // cv::sepFilter2D(im, Ix, im.depth(), -sobel_hor.t(), sobel_ver, {-1, -1}, 0.0,
+  // // TODO(bayes) Replace the cv's filter functions with self-implemented
+  // Conv2D. cv::sepFilter2D(im, Ix, im.depth(), -sobel_hor.t(), sobel_ver, {-1,
+  // -1}, 0.0,
   //                 cv::BORDER_ISOLATED);
-  // cv::sepFilter2D(im, Iy, im.depth(), -sobel_ver.t(), sobel_hor, {-1, -1}, 0.0,
+  // cv::sepFilter2D(im, Iy, im.depth(), -sobel_ver.t(), sobel_hor, {-1, -1},
+  // 0.0,
   //                 cv::BORDER_ISOLATED);
 
   // std::cout << "Ix , Iy\n\n";
@@ -438,7 +471,8 @@ int main(int /*argv*/, char** argv) {
   // std::cout << s_Ixy << '\n' << '\n';
 
   // // Compute trace and determinant.
-  // // The structure tensor M = [a, b; c, d] and the trace is computed as trace =
+  // // The structure tensor M = [a, b; c, d] and the trace is computed as trace
+  // =
   // // a + d while the determinant = a*d - b*c.
   // Eigen::MatrixXd trace, determinant;
   // trace = s_Ixx.array() + s_Iyy.array();
@@ -457,9 +491,11 @@ int main(int /*argv*/, char** argv) {
   // std::cout << response << '\n' << '\n';
 
   // // Keep only the parts which do not include zero-padded edges.
-  // // For the "valid" optional, `C = conv2(A, B, "valid")` returns C with size as
+  // // For the "valid" optional, `C = conv2(A, B, "valid")` returns C with size
+  // as
   // // max(size(A) - size(B) + 1, 0).
-  // // Because we've convolved twice, so the desired size(C) = size(A) - size(B1)
+  // // Because we've convolved twice, so the desired size(C) = size(A) -
+  // size(B1)
   // // - size(B2) + 2, where size is the length one dimension, #rows or #cols.
   // int valid_rows = im.rows - sobel_hor.rows - patch.rows + 2;
   // int valid_cols = im.cols - sobel_ver.rows - patch.cols + 2;
@@ -475,8 +511,8 @@ int main(int /*argv*/, char** argv) {
   // const int sobel_radius = static_cast<int>(std::floor(sobel_hor.rows / 2));
 
   // // Assume the kernels are square, then starting_x = starting_y.
-  // const int starting_x = sobel_radius + patch_radius, starting_y = starting_x;
-  // Eigen::MatrixXd response_valid =
+  // const int starting_x = sobel_radius + patch_radius, starting_y =
+  // starting_x; Eigen::MatrixXd response_valid =
   //     response.block(starting_x, starting_y, valid_rows, valid_cols);
 
   // // Convert back to cv::Mat and store it to the output harris_response.
@@ -492,7 +528,8 @@ int main(int /*argv*/, char** argv) {
 
   // const int padding_size = sobel_radius + patch_radius;
   // std::cout << "padding_size: " << padding_size << '\n';
-  // PadArray(harriss, {padding_size, padding_size, padding_size, padding_size});
+  // PadArray(harriss, {padding_size, padding_size, padding_size,
+  // padding_size});
 
   // std::cout << "harris\n\n";
   // std::cout << harriss << '\n';

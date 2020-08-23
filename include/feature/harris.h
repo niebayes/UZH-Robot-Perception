@@ -87,6 +87,8 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
     LOG(ERROR) << "The aperture size should be odd to drive the "
                   "cv::getGaussianKernel to work properly";
   }
+
+  // Chooes a Gaussian kernel or a simpler box moving average.
   // const cv::Mat patch = cv::getGaussianKernel(patch_radius - 1, 1);
   const cv::Mat patch = cv::Mat::ones(patch_size, patch_size, image.depth());
   cv::Mat ssd_Ixx, ssd_Iyy, ssd_Ixy;
@@ -146,6 +148,7 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
 
   // Convert back to cv::Mat and store it to the output harris_response.
   cv::eigen2cv(response_valid, harris_response);
+
   // Pad the harris_response making its size consistent with the input image.
   // And set the pixels on borders to 0.
 

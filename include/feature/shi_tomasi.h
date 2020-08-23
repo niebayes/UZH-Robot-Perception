@@ -45,9 +45,9 @@ void ShiTomasiResponse(const cv::Mat& image, cv::Mat& shi_tomasi_response,
   // try to use the pixels outside of the ROI to form a border. To disable this
   // feature and always do extrapolation, as if src was not a ROI, use
   // borderType | BORDER_ISOLATE
-  cv::sepFilter2D(image, Ix, image.depth(), -sobel_hor, sobel_ver, {-1, -1},
+  cv::sepFilter2D(image, Ix, image.depth(), -sobel_hor.t(), sobel_ver, {-1, -1},
                   0.0, cv::BORDER_ISOLATED);
-  cv::sepFilter2D(image, Iy, image.depth(), -sobel_ver, sobel_hor, {-1, -1},
+  cv::sepFilter2D(image, Iy, image.depth(), -sobel_ver.t(), sobel_hor, {-1, -1},
                   0.0, cv::BORDER_ISOLATED);
 
   // Compute the three images corrsponding to the outer products of these
@@ -78,7 +78,10 @@ void ShiTomasiResponse(const cv::Mat& image, cv::Mat& shi_tomasi_response,
     LOG(ERROR) << "The aperture size should be odd to drive the "
                   "cv::getGaussianKernel to work properly";
   }
-  const cv::Mat patch = cv::getGaussianKernel(patch_radius - 1, 1);
+
+  // Chooes a Gaussian kernel or a simpler box moving average.
+  // const cv::Mat patch = cv::getGaussianKernel(patch_radius - 1, 1);
+  const cv::Mat patch = cv::Mat::ones(patch_size, patch_size, image.depth());
   cv::Mat ssd_Ixx, ssd_Iyy, ssd_Ixy;
   cv::filter2D(Ixx, ssd_Ixx, Ixx.depth(), patch, {-1, -1}, 0.0,
                cv::BORDER_ISOLATED);
@@ -117,15 +120,40 @@ void ShiTomasiResponse(const cv::Mat& image, cv::Mat& shi_tomasi_response,
   // Simply set all responses smaller than 0 to 0.
   response = response.unaryExpr([](double x) { return x < 0.0 ? 0.0 : x; });
 
+  // Keep only the parts that do not include zero-padded edges to be consistent
+  // with the "valid" option of the matlab's conv2 function.
+
+  // For the "valid" optional, `C = conv2(A, B, "valid")` returns C with size as
+  // max(size(A) - size(B) + 1, 0).
+  // Because we've convolved twice, so the desired size(C) = size(A) - size(B1)
+  // - size(B2) + 2, where size is the length one dimension, #rows or #cols.
+  int valid_rows = image.rows - sobel_hor.rows - patch.rows + 2;
+  int valid_cols = image.cols - sobel_ver.rows - patch.cols + 2;
+  valid_rows = std::max(valid_rows, 0);
+  valid_cols = std::max(valid_cols, 0);
+  if (valid_rows == 0 || valid_cols == 0) {
+    LOG(ERROR) << "Invalid ROI";
+  }
+
+  // Compute the starting point of the valid block.
+  // starting_point = radius(B1) + radius(B2).
+  const int sobel_radius = static_cast<int>(std::floor(sobel_hor.rows / 2));
+  // Assume the kernels are square, then starting_x = starting_y.
+  const int starting_x = sobel_radius + patch_radius, starting_y = starting_x;
+  Eigen::MatrixXd response_valid =
+      response.block(starting_x, starting_y, valid_rows, valid_cols);
+
   // Convert back to cv::Mat and store it to the output shi_tomasi_response.
-  cv::eigen2cv(response, shi_tomasi_response);
+  cv::eigen2cv(response_valid, shi_tomasi_response);
+
   // Pad the harris_response making its size consistent with the input image.
-  // And set the pixels on borders to 0. When the dst.size > src.size whereby
-  // diff < 0, the function truncates the src image, which is exactly what we
-  // need.
-  const int diff = image.rows - shi_tomasi_response.rows;
-  cv::copyMakeBorder(shi_tomasi_response, shi_tomasi_response, diff, diff, diff,
-                     diff, cv::BORDER_CONSTANT, {1, 1, 1, 1});
+  // And set the pixels on borders to 0.
+
+  // The pad_size is computed as size(padding) = radius(B1) + radius(B2).
+  const int pad_size = sobel_radius + patch_radius;
+  PadArray(shi_tomasi_response, {pad_size, pad_size, pad_size, pad_size});
+  assert((shi_tomasi_response.rows == image.rows) &&
+         (shi_tomasi_response.cols == image.cols));
 }
 
 #endif  // UZH_FEATURE_SHI_TOMASI_H_

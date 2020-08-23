@@ -50,6 +50,7 @@ void SelectKeypoints(const cv::Mat& response, cv::Mat& keypoints,
     // ones selected before.
     //! We adopt a box filter to simplify the codes.
     //! Due the pre-padding, no need to worry about boundary issues.
+    // FIXME Error occurs here!
     R.block(y - non_maximum_radius, x - non_maximum_radius,
             2 * non_maximum_radius + 1, 2 * non_maximum_radius + 1)
         .setZero();
