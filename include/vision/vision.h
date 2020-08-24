@@ -146,6 +146,7 @@ cv::Mat UndistortImage(const cv::Mat& distorted_image,
       // left direction; vp_0, in the same principle.
       const double up_0 = std::floor(up), vp_0 = std::floor(vp);
       uchar intensity = 0;
+      // TODO(bayes) Modularize the interpolation methods below.
       switch (interpolation_method) {
         case NEAREST_NEIGHBOR:
           // Nearest-neighbor interpolation

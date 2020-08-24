@@ -11,6 +11,8 @@
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
 
+// TODO(bayes) Rewrite this to incorporate new written functions.
+
 int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
