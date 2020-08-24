@@ -5,15 +5,14 @@
 #include <limits>
 #include <optional>  // C++17: std::optional
 
-#include "Eigen/Core"
-#include "Eigen/Geometry"
-#include "Eigen/QR"
-#include "Eigen/SVD"
-#include "common/normalize.h"
+#include "Eigen/Dense"
 #include "common/type.h"
+#include "feature/normalize.h"
 #include "glog/logging.h"
 #include "opencv2/core/core.hpp"
 #include "opencv2/core/eigen.hpp"
+
+// TODO(bayes) Isolate the functions.
 
 //@brief Distort normalized image points to get the image points expressed in
 // pixel coords.

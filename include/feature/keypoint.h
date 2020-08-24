@@ -26,7 +26,7 @@ void SelectKeypoints(const cv::Mat& response, cv::Mat& keypoints,
   // on.
   const cv::Scalar_<int> kPadSize{non_maximum_radius, non_maximum_radius,
                                   non_maximum_radius, non_maximum_radius};
-  cv::Mat response_tmp = response.clone();
+  cv::Mat_<double> response_tmp = response.clone();
   PadArray(response_tmp, kPadSize);
 
   // Use eigen to speed up the computation

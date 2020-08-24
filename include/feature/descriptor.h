@@ -23,13 +23,13 @@ void DescribeKeypoints(const cv::Mat& image, const cv::Mat& keypoints,
   PadArray(padded, pad_size);
 
   // Convert to eigen to speed up computation
-  Eigen::MatrixXd img;
+  Eigen::MatrixXi img;
   cv::cv2eigen(padded, img);
 
   // Construct descriptors matrix to be populated
   const int kPatchSize = 2 * patch_radius + 1;
   const int kNumKeypoints = keypoints.cols;
-  Eigen::MatrixXd d(kPatchSize * kPatchSize, kNumKeypoints);
+  Eigen::MatrixXi d(kPatchSize * kPatchSize, kNumKeypoints);
 
   // Collect intensities inside the patch centered around each keypoint and
   // unroll it to a column vector.
@@ -43,7 +43,7 @@ void DescribeKeypoints(const cv::Mat& image, const cv::Mat& keypoints,
     y = keypoints.at<int>(1, i) + patch_radius;
 
     // Stack the intensities
-    Eigen::MatrixXd patch =
+    Eigen::MatrixXi patch =
         img.block(y - patch_radius, x - patch_radius, kPatchSize, kPatchSize);
     patch.resize(kPatchSize * kPatchSize, 1);
     d.col(i) = patch;
@@ -53,6 +53,15 @@ void DescribeKeypoints(const cv::Mat& image, const cv::Mat& keypoints,
   cv::eigen2cv(d, descriptors);
 
   // Normalize descriptors to 8-bit range, i.e. [0, 255]
-  cv::normalize(descriptors, descriptors, 0, 255, cv::NORM_MINMAX, CV_8UC1);
+  //! The "normalization" is actually refering to the bits convertion, that is
+  //! assure the range of values of the descriptors is in 8-bit. This is
+  //! accomplished by cv::convertTo rather than cv::normalize which is designed
+  //! to normalize the scale and shift the values to accomodate some rules.
+  //! This convertion is redundant since this function does not scale of shift
+  //! the intensities of the pixels.
+  cv::Mat normalized_descriptors;
+  descriptors.convertTo(normalized_descriptors, CV_8U);
+  descriptors = normalized_descriptors;
 }
+
 #endif  // UZH_FEATURE_DESCRIPTOR_H_

@@ -1,14 +1,10 @@
-#ifndef UZH_COMMON_PLOT_H_
-#define UZH_COMMON_PLOT_H_
+#ifndef UZH_MATLAB_PORT_MESHGRID_H_
+#define UZH_MATLAB_PORT_MESHGRID_H_
 
 #include <vector>
 
 #include "Eigen/Core"
-#include "glog/logging.h"
-#include "opencv2/core/core.hpp"
-#include "opencv2/imgproc/imgproc.hpp"
-
-// #include "unsupported/Eigen/CXX11/Tensor"
+#include "opencv2/core.hpp"
 
 //@brief Imitate matlab's meshgrid.
 // TODO Generalize this function to arbitrarily accomodating [low, hight] range
@@ -59,30 +55,4 @@ static void Meshgrid3D(const cv::Range& x_range, const cv::Range& y_range,
     Z->push_back(Z_d_depth);
   }
 }
-
-//@brief Imitate matlab's scatter.
-// TODO(bayes) Templatize this function to make the parameter parsing more
-// flexible.
-static void Scatter(cv::InputOutputArray image,
-                    const Eigen::Ref<const Eigen::VectorXi>& x,
-                    const Eigen::Ref<const Eigen::VectorXi>& y,
-                    const int radius, const cv::Scalar& color,
-                    const int thickness = 1) {
-  if (x.size() <= 0 || y.size() <= 0) {
-    LOG(ERROR) << "Invalid input vectors";
-    return;
-  } else if (x.size() != y.size()) {
-    LOG(ERROR)
-        << "YOU_MIXED_DIFFERENT_SIZED_VECTORS";  // Mimic eigen's behavior
-    return;
-  }
-
-  const int kNumPoints = x.size();
-  for (int i = 0; i < kNumPoints; ++i) {
-    cv::circle(image, {x(i), y(i)}, radius, color, thickness);
-  }
-  // LOG(INFO) << "Created a scatter plot with " << kNumPoints
-  //           << " points rendered";
-}
-
-#endif  // UZH_COMMON_PLOT_H_
+#endif  // UZH_MATLAB_PORT_MESHGRID_H_

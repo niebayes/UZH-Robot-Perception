@@ -7,110 +7,127 @@
 #include <optional>    // std::optional
 
 #include "Eigen/Core"
+#include "common/tools.h"
 #include "common/type.h"
+#include "matlab_port/find.h"
+#include "matlab_port/pdist2.h"
+#include "matlab_port/scatter.h"
+#include "matlab_port/unique.h"
 
-//@brief Imitate matlab's pdist. Calculate the pair-wise distance between every
-// pair of the two sets of observations X and Y.
-//@param X [m x p] matrix where m is the dimension of the observations and p is
-// the number of observations. When used in feature matching, X is the database
-// descriptors in which each column is a data descriptor.
-//@param Y [m x q] matrix where m is the dimension of the observations and q is
-// the number of observations. When used in feature matching, Y is the query
-// descriptors in which each column is a query descriptor.
-//@param distances Pointer to a [p x q] matrix where the (i, j)-th entry
-// represents the pairwise distance between the i-th observation in X and the
-// j-th observation in Y.
-//@param distance Distance metric used to compute the pairwise distances. By
-// default, Euclidean distance is applied.
-//@param indices Optional pointer to a [p x q] matrix where the (i, j)-th entry
-// contains the corresponding index of the observation in X with which the
-// (i, j)-th distance in matrix distances is computed out.
-//@param return_order Ascending or descending order when the parameter indices
-// is passed into. Applied to each column of distances matrix, both the entries
-// of distances matrix and indices matrix are reordered accordingly.
-//@param num_returned Number of entries keeped for each column of distances
-// matrix and indices matrix after the reordering.
-//! Only when the indices matrix is passed into and the return_order and
-//! num_returned are given by the user at the same time, this function would
-//! then sort the D matrix and return the expected reduced D and I matrix.
-void PDist2(const Eigen::Ref<const Eigen::MatrixXd>& X,
-            const Eigen::Ref<const Eigen::MatrixXd>& Y,
-            Eigen::MatrixXd* distances, int distance = EUCLIDEAN,
-            std::optional<Eigen::MatrixXi*> indices = std::nullopt,
-            int return_order = -1, int num_returned = -1) {
-  // Assure the dimension of the descriptors is consistent.
-  eigen_assert(X.rows() == Y.rows());
+//@brief Match descriptors based on the Sum of Squared Distance (SSD) measure.
+//@param query_descriptors [m x q] matrix where each column corresponds to a
+// m-dimensional descriptor vector formed by stacking the intensities inside a
+// patch and q is the number of descriptors.
+//@param database_descriptors [m x p] matrix where each column corresponds to
+// a m-dimensional descriptor vector and p is the number of descriptors to be
+// matched against the query descriptors.
+//@param matches [1 x q] row vector where the i-th column contains the column
+// index of the keypoint in the database_keypoints which matches the i-th
+// keypoint in the query_keypoints.
+//@param distance_ratio A parameter controls the range of the acceptable
+// SSD distance within which two descriptors will be viewed as matched.
+void MatchDescriptors(const cv::Mat& query_descriptors,
+                      const cv::Mat& database_descriptors, cv::Mat& matches_,
+                      const double distance_ratio) {
+  // Convert to Eigen::Matrix
+  Eigen::MatrixXd query, database;
+  cv::cv2eigen(query_descriptors, query);
+  cv::cv2eigen(database_descriptors, database);
 
-  // Construct distances matrix D to be populated.
-  Eigen::MatrixXd D(X.cols(), Y.cols());
-  D.setZero();
+  // For each query descriptor, find the nearest descriptor in database
+  // descriptors whose index is stored in the matches matrix and the
+  // corresponding distance is stored in the distances matrix.
+  Eigen::MatrixXd distances;
+  Eigen::MatrixXi matches;
+  PDist2(database, query, &distances, EUCLIDEAN, &matches, SMALLEST_FIRST, 1);
 
-  // Compute pairwise distances
-  // TODO(bayes) Vectorization technique applicable?
-  //@note Possibly helpful:
-  //@ref https://stackoverflow.com/a/45773308/14007680
-  for (int j = 0; j < D.cols(); ++j) {
-    for (int i = 0; i < D.rows(); ++i) {
-      if (distance == EUCLIDEAN) {
-        D(i, j) = Euclidean(X.col(i), Y.col(j));
-      }
-      // else if (distance == ...) {...}
-    }
+  std::cout << "distances\n";
+  std::cout << distances.leftCols(50) << '\n';
+  std::cout << "matches\n";
+  std::cout << matches.leftCols(50) << '\n';
+
+  // Find the overall minimal non-zero distance.
+  //@note This could also be accomplished with std::sort / std::statble in
+  // juction with std::find_if
+  eigen_assert(distances.rows() == 1);
+  Eigen::RowVectorXd dist = distances.row(0);
+  const double kMinNonZeroDistance = *std::min_element(
+      dist.begin(), std::remove_if(dist.begin(), dist.end(),
+                                   [](double x) { return x <= 0; }));
+  std::cout << "kmin: " << kMinNonZeroDistance << '\n';
+
+  const double min =
+      find_min_if_not<double>(dist, [](double x) { return x <= 0; });
+  std::cout << "min: " << min << '\n';
+
+  // Discard -- set to 0 -- all matches that out of the
+  // distance_ratio * kMinNonZeroDistance range.
+  matches = (distances.array() > distance_ratio * kMinNonZeroDistance)
+                .select(0, matches);
+
+  // Remove duplicate matches.
+  std::vector<int> unique_match_indices;
+  std::tie(std::ignore, unique_match_indices, std::ignore) =
+      Unique(matches.cast<double>().reshaped());
+  Eigen::MatrixXi unique_matches(1, matches.size());
+  unique_matches.setZero();
+  unique_matches.reshaped()(unique_match_indices) =
+      matches.reshaped()(unique_match_indices);
+
+  // Convert back to cv::Mat
+  cv::eigen2cv(unique_matches, matches_);
+}
+
+//@brief Draw a line between each matched pair of keypoints.
+//@param matches [1 x q] row vector where the i-th column contains the column
+// index of the keypoint in the database_keypoints which matches the keypoint
+// in the query_keypoints stored in the i-th column.
+//@param query_keypoints [2 x q] matrix where each column contains the x and y
+// coordinates of the detected keypoints in the query frame.
+//@param database_keypoints [2 x n] matrix where each column contains the x
+// and y coordinates of the detected keypoints in the database frames.
+//@param image The image on which the plot is rendered.
+void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
+                 const cv::Mat& database_keypoints, cv::Mat& image) {
+  // Convert to Eigen::Matrix
+  Eigen::MatrixXi matches_;
+  Eigen::MatrixXi query_kps, database_kps;
+  cv::cv2eigen(matches, matches_);
+  cv::cv2eigen(query_keypoints, query_kps);
+  cv::cv2eigen(database_keypoints, database_kps);
+
+  // Plot the keypoints, query as red whilst database as blue.
+  const Eigen::VectorXi query_x = query_kps.row(0);
+  const Eigen::VectorXi query_y = query_kps.row(1);
+  const Eigen::VectorXi database_x = database_kps.row(0);
+  const Eigen::VectorXi database_y = database_kps.row(1);
+  Scatter(image, query_x, query_y, 3, {0, 0, 255}, cv::FILLED);
+  Scatter(image, database_x, database_y, 3, {255, 0, 0}, cv::FILLED);
+
+  // Isolate query and match indices.
+  //! These indices are used to access corresponding keypoints later on.
+  std::vector<int> query_indices;
+  Eigen::ArrayXi match_indices;
+  std::tie(std::ignore, query_indices, match_indices) =
+      Find(matches_.reshaped());
+
+  // Extract coordinates of keypoints.
+  Eigen::RowVectorXi from_kp_x, from_kp_y, to_kp_x, to_kp_y;
+  from_kp_x = query_kps(0, query_indices);
+  from_kp_y = query_kps(1, query_indices);
+  to_kp_x = database_kps(0, match_indices);
+  to_kp_y = database_kps(1, match_indices);
+
+  // Link each set of matches.
+  const int kNumMatches = match_indices.size();
+  for (int i = 0; i < kNumMatches; ++i) {
+    int from_x, from_y, to_x, to_y;
+    from_x = from_kp_x(i);
+    from_y = from_kp_y(i);
+    to_x = to_kp_x(i);
+    to_y = to_kp_y(i);
+    cv::line(image, {from_x, from_y}, {to_x, to_y}, {0, 255, 0}, 2);
   }
-
-  // Rearrange matrix D and I according to the parameters.
-  if (indices && return_order != -1 && num_returned != -1) {
-    // Construct indices matrix I to be populated.
-    Eigen::MatrixXi I(D.rows(), D.cols());
-    I.setZero();
-
-    // if (return_order == SMALLEST_FIRST) {
-    //! The vec is itself a reference type. Hence no need to qualify it as
-    //! reference and it's also forbidden.
-    // Variable to keep track of column of matrix I (and D).
-    Eigen::Index i = 0;
-    for (auto vec : D.colwise()) {
-      // Determin sorting rule.
-      // FIXME Optimize this checking to make it fire only once.
-      auto less = [&vec](int i, int j) { return vec[i] < vec[j]; };
-      auto greater = [&vec](int i, int j) { return vec[i] > vec[j]; };
-      std::function<bool(int, int)> comp;
-      if (return_order == SMALLEST_FIRST) {
-        comp = less;
-      } else if (return_order == LARGEST_FIRST) {
-        comp = greater;
-      }
-
-      // Create the idx vector keeping track of the indices.
-      Eigen::VectorXi idx(vec.size());
-      std::iota(idx.begin(), idx.end(), 0);
-
-      //! Sort idx vector rather than vec vector.
-      //@note using std::stable_sort instead of std::sort
-      // to avoid unnecessary index re-orderings
-      // when vec contains elements of equal values.
-      std::stable_sort(idx.begin(), idx.end(), comp);
-
-      // Populate I.
-      I.col(i++) = idx;
-
-      // Sort vec according to the sorted indices.
-      //! New feature introduced since eigen 3.4
-      vec = vec(idx).eval();
-    }
-
-    // Truncate D and I according to the num_returned parameter.
-    if (num_returned <= 0 || num_returned > D.rows()) {
-      LOG(ERROR) << "num_retunred should be in range [1, D.rows]";
-    }
-    D.noalias() = D.topRows(num_returned);
-    I.noalias() = I.topRows(num_returned);
-
-    // Output I
-    *(indices.value()) = I;
-  }
-  // Output D
-  *distances = D;
 }
 
 #endif  // UZH_FEATURE_MATCHING_H_

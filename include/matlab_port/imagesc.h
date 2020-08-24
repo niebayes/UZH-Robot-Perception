@@ -1,5 +1,5 @@
-#ifndef UZH_FEATURE_IMAGESC_H
-#define UZH_FEATURE_IMAGESC_H
+#ifndef UZH_MATLAB_PORT_IMAGESC_H_
+#define UZH_MATLAB_PORT_IMAGESC_H_
 
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
@@ -17,4 +17,4 @@ void ImageSC(const cv::Mat& image,
   cv::imshow(winname, img);
   cv::waitKey(delay);
 }
-#endif  // UZH_FEATURE_IMAGESC_H
+#endif  // UZH_MATLAB_PORT_IMAGESC_H_

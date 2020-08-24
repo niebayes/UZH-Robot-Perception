@@ -1,5 +1,5 @@
-#ifndef UZH_ALGORITHM_H_
-#define UZH_ALGORITHM_H_
+#ifndef UZH_ALGORITHM_SORT_H_
+#define UZH_ALGORITHM_SORT_H_
 
 #include <algorithm>   // std::sort, std::stable_sort
 #include <functional>  // std::function
@@ -20,4 +20,4 @@ void StableSort() {
   //
 }
 
-#endif  // UZH_ALGORITHM_H_
+#endif  // UZH_ALGORITHM_SORT_H_

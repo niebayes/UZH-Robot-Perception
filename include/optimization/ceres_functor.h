@@ -4,8 +4,8 @@
 #include "Eigen/Core"
 #include "ceres/ceres.h"
 #include "common/type.h"
-#include "common/vision.h"
 #include "opencv2/core/core.hpp"
+#include "vision/vision.h"
 
 struct ReprojectionError {
   ReprojectionError(const cv::Point2d& observed, const cv::Point3d& object)
