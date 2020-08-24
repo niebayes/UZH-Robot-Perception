@@ -153,6 +153,8 @@ include_directories(BEFORE
 
 ##################################################################
 # Add subdirectory in which put the source files
+# TODO(bayes) Use cmake generator to rewrite the logic.
 # add_subdirectory(src/ex1)
 # add_subdirectory(src/ex2)
-add_subdirectory(src/ex3)
+# add_subdirectory(src/ex3)
+add_subdirectory(src/ex4)
