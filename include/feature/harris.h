@@ -21,8 +21,13 @@
 // an empirically well-investigated value.
 //@note InputArray or Mat?
 //@ref https://stackoverflow.com/a/31820323/14007680
-void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
+void HarrisResponse(const cv::Mat& image_, cv::Mat& harris_response,
                     const int patch_size, const double kappa = 0.06) {
+  //! When dealing with filtering, the image must be converted to float point
+  //! type.
+  cv::Mat_<double> image;
+  image_.convertTo(image, CV_64F);
+
   // Compute the horizontal and vertical derivatives of the image Ix and Iy by
   // convolving the original image with derivatives of Gaussians.
   //! The input image is compensated for noise, so there's no need to apply a
@@ -37,9 +42,9 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
   // Separated 1D components:
   // sobel_hor = [-1 0 +1]', sobel_ver = [+1 +2 +1]', both are column vectors.
   // Hence, Gx = sobel_ver * sobel_hor', Gy = sobel_hor * sobel_ver'.
-  cv::Mat Ix, Iy;
-  const cv::Mat sobel_hor = (cv::Mat_<double>(3, 1) << -1, 0, 1);
-  const cv::Mat sobel_ver = (cv::Mat_<double>(3, 1) << 1, 2, 1);
+  cv::Mat_<double> Ix, Iy;
+  const cv::Mat_<double> sobel_hor = (cv::Mat_<double>(3, 1) << -1, 0, 1);
+  const cv::Mat_<double> sobel_ver = (cv::Mat_<double>(3, 1) << 1, 2, 1);
   //@note OpenCV's cv::filter2D, cv::sepFilter2D and other filter functions
   // actually do correlation rather than convolution. To do convolution, use
   // cv::flip to flip the kernels along the anchor point (default the kernel
@@ -62,7 +67,7 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
   // Compute the three images corrsponding to the outer products of these
   // gradients, i.e. Ix and Iy as above.
   // Coz the structure tensor M is a 2x2 symmetric matrix, Ixy = Iyx.
-  cv::Mat Ixx, Iyy, Ixy;
+  cv::Mat_<double> Ixx, Iyy, Ixy;
   Ixx = Ix.mul(Ix);
   Iyy = Iy.mul(Iy);
   Ixy = Ix.mul(Iy);
@@ -90,8 +95,9 @@ void HarrisResponse(const cv::Mat& image, cv::Mat& harris_response,
 
   // Chooes a Gaussian kernel or a simpler box moving average.
   // const cv::Mat patch = cv::getGaussianKernel(patch_radius - 1, 1);
-  const cv::Mat patch = cv::Mat::ones(patch_size, patch_size, image.depth());
-  cv::Mat ssd_Ixx, ssd_Iyy, ssd_Ixy;
+  const cv::Mat_<double> patch =
+      cv::Mat::ones(patch_size, patch_size, image.depth());
+  cv::Mat_<double> ssd_Ixx, ssd_Iyy, ssd_Ixy;
   cv::filter2D(Ixx, ssd_Ixx, Ixx.depth(), patch, {-1, -1}, 0.0,
                cv::BORDER_ISOLATED);
   cv::filter2D(Iyy, ssd_Iyy, Iyy.depth(), patch, {-1, -1}, 0.0,

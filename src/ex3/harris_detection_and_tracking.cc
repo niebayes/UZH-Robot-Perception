@@ -252,14 +252,16 @@ int main(int /*argv*/, char** argv) {
   const std::string kFilePath = "data/ex3/";
   //! For debugging ...
   // Image to show the rendered objects.
-  // cv::Mat image_show =
-  //     cv::imread(kFilePath + "KITTI/000000.png", cv::IMREAD_COLOR);
-  arma::mat X;
-  X.load("img.csv");
-  cv::Mat image_show(X.n_rows, X.n_cols, CV_64F, X.memptr());
+  cv::Mat image_show =
+      cv::imread(kFilePath + "KITTI/000000.png", cv::IMREAD_COLOR);
+  // arma::mat X;
+  // X.load("img.csv");
+  // cv::Mat image_show(X.n_rows, X.n_cols, CV_64F, X.memptr());
   cv::Mat image_show_shi = image_show.clone();
   cv::Mat image = image_show.clone();
-  // cv::cvtColor(image_show, image, cv::COLOR_BGR2GRAY, 1);
+  cv::cvtColor(image_show, image, cv::COLOR_BGR2GRAY, 1);
+  std::cout << "image\n";
+  std::cout << image.rowRange(0, 10).colRange(0, 10) << '\n';
 
   // Part I: compute response.
   // The shi_tomasi_response is computed as comparison whilst the
@@ -269,9 +271,20 @@ int main(int /*argv*/, char** argv) {
   cv::Mat harris_response, shi_tomasi_response;
   HarrisResponse(image, harris_response, kPatchSize, kHarrisKappa);
   ShiTomasiResponse(image, shi_tomasi_response, kPatchSize);
+  std::cout << "shi_tomasi\n";
+  std::cout << shi_tomasi_response.rowRange(0, 10).colRange(0, 10) << '\n';
+  std::cout << "harris\n";
+  std::cout << harris_response.rowRange(0, 10).colRange(0, 10) << '\n';
   // Compare the colormaps to see the detail of differences.
-  ImageSC(harris_response);
-  ImageSC(shi_tomasi_response);
+  ImageSC(harris_response, "Harris response");
+  ImageSC(shi_tomasi_response, "Shi-Tomasi response");
+
+  cv::Mat opencv_mat =
+      harris_response.clone();  // opencv's mat, already transposed.
+  arma::mat arma_mat(reinterpret_cast<double*>(opencv_mat.data),
+                     opencv_mat.rows, opencv_mat.cols);
+
+  arma_mat.save("harris_response.csv", arma::file_type::csv_ascii, true);
 
   // Part II: select keypoints
   const int kNumKeypoints = 200;
