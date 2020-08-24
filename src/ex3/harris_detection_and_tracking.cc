@@ -1,15 +1,7 @@
-#include <algorithm>
-#include <cmath>
-#include <iostream>
-#include <iterator>
-#include <optional>
-#include <set>
 #include <string>
-#include <tuple>
 #include <vector>
 
 #include "Eigen/Dense"
-#include "common/type.h"
 #include "feature.h"
 #include "glog/logging.h"
 #include "matlab_port.h"
