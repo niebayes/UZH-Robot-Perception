@@ -37,8 +37,8 @@ int main(int /*argv*/, char** argv) {
   HarrisResponse(image, harris_response, kPatchSize, kHarrisKappa);
   ShiTomasiResponse(image, shi_tomasi_response, kPatchSize);
   // Compare the colormaps to see the detail of differences.
-  ImageSC(harris_response, "Harris response");
-  ImageSC(shi_tomasi_response, "Shi-Tomasi response");
+  ImageSC(harris_response, true, "Harris response");
+  ImageSC(shi_tomasi_response, true, "Shi-Tomasi response");
 
   // Part II: select keypoints
   const int kNumKeypoints = 200;
@@ -70,23 +70,27 @@ int main(int /*argv*/, char** argv) {
   cv::Mat descriptors;
   DescribeKeypoints(image, keypoints, descriptors, kPatchRadius);
 
-  // Show the top 16 descritors ranked by strengh of response.
-  bool show_descriptors = false;
+  // Show the top 16 descriptors ranked by strengh of response.
+  std::vector<cv::Mat> Mat_vec;
+  bool show_descriptors_at_once = true;
   for (int i = 0; i < 16; ++i) {
-    if (show_descriptors) {
-      cv::Mat descriptor = descriptors.col(i);
-      // TODO(bayes) Use self-implement subplot to do this ploting.
-      // Eigen::MatrixXi d;
-      // cv::cv2eigen(descriptor, d);
-      // d.resize(19, 19);
-      // cv::eigen2cv(d, descriptor);
-
-      // reshaped introduced since eigen 3.4
-      //@note assigning a reshaped matrix to itself is currently not supported
-      // and will result to undefined-behavior because of aliasing
-
-      // ImageSC();
+    cv::Mat descriptor = descriptors.col(i);
+    //@note When dealing with ROI, the Mat may be not continious and the
+    // reshape operation is disabled. To solve this, simply clone itself.
+    if (!descriptor.isContinuous()) {
+      descriptor = descriptor.clone();
     }
+    cv::Mat desc_patch = descriptor.reshape(1, 2 * kPatchRadius + 1);
+    Mat_vec.push_back(ImageSC(desc_patch, false));
+  }
+  cv::Mat top_sixteen_patches;
+  if (show_descriptors_at_once) {
+    // FIXME The images composited by MakeCanvas are not keeping the original
+    // orientation.
+    top_sixteen_patches = MakeCanvas(Mat_vec, image.rows, 4);
+    cv::namedWindow("Top 16 descriptors", cv::WINDOW_NORMAL);
+    cv::imshow("Top 16 descriptors", top_sixteen_patches);
+    cv::waitKey(0);
   }
 
   // Part IV: match descriptors
