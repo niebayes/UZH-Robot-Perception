@@ -41,24 +41,13 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   Eigen::MatrixXi matches;
   PDist2(database, query, &distances, EUCLIDEAN, &matches, SMALLEST_FIRST, 1);
 
-  std::cout << "distances\n";
-  std::cout << distances.leftCols(50) << '\n';
-  std::cout << "matches\n";
-  std::cout << matches.leftCols(50) << '\n';
-
   // Find the overall minimal non-zero distance.
   //@note This could also be accomplished with std::sort / std::statble in
   // juction with std::find_if
   eigen_assert(distances.rows() == 1);
   Eigen::RowVectorXd dist = distances.row(0);
-  const double kMinNonZeroDistance = *std::min_element(
-      dist.begin(), std::remove_if(dist.begin(), dist.end(),
-                                   [](double x) { return x <= 0; }));
-  std::cout << "kmin: " << kMinNonZeroDistance << '\n';
-
-  const double min =
+  const double kMinNonZeroDistance =
       find_min_if_not<double>(dist, [](double x) { return x <= 0; });
-  std::cout << "min: " << min << '\n';
 
   // Discard -- set to 0 -- all matches that out of the
   // distance_ratio * kMinNonZeroDistance range.

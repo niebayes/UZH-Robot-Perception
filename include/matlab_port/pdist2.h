@@ -49,26 +49,14 @@ void PDist2(const Eigen::Ref<const Eigen::MatrixXd>& X,
   // TODO(bayes) Vectorization technique applicable?
   //@note Possibly helpful:
   //@ref https://stackoverflow.com/a/45773308/14007680
-  int cnt = 0;
   for (int j = 0; j < D.cols(); ++j) {
     for (int i = 0; i < D.rows(); ++i) {
       if (distance == EUCLIDEAN) {
-        // std::cout << "X.col" << i << '\n';
-        // std::cout << X.col(i).topRows(10).transpose() << '\n';
-        // std::cout << "Y.col" << i << '\n';
-        // std::cout << Y.col(i).topRows(10).transpose() << '\n';
-        // std::cout << "Eculidean" << i << '\n';
-        // std::cout << Euclidean(X.col(i), Y.col(j)) << '\n';
         D(i, j) = Euclidean(X.col(i), Y.col(j));
-        ++cnt;
       }
       // else if (distance == ...) {...}
     }
   }
-  // std::cout << "cnt: " << cnt << '\n';
-  // std::cout << "nonzero cnt: " << D.count() << '\n';
-  // std::cout << "D\n";
-  // std::cout << D.topRows(10).leftCols(10) << '\n';
 
   // Rearrange matrix D and I according to the parameters.
   if (indices && return_order != -1 && num_returned != -1) {
@@ -79,7 +67,7 @@ void PDist2(const Eigen::Ref<const Eigen::MatrixXd>& X,
     //! The vec is itself a reference type. Hence no need to qualify it as
     //! reference and it's also forbidden.
     // Variable to keep track of column of matrix I (and D).
-    Eigen::Index i = 0;
+    Eigen::Index c = 0;
     for (auto vec : D.colwise()) {
       // Determin sorting rule.
       // FIXME Optimize this checking to make it fire only once.
@@ -103,19 +91,23 @@ void PDist2(const Eigen::Ref<const Eigen::MatrixXd>& X,
       std::stable_sort(idx.begin(), idx.end(), comp);
 
       // Populate I.
-      I.col(i++) = idx;
+      I.col(c) = idx;
 
       // Sort vec according to the sorted indices.
       //! New feature introduced since eigen 3.4
       vec = vec(idx).eval();
+
+      // Forward to next column.
+      ++c;
     }
 
     // Truncate D and I according to the num_returned parameter.
     if (num_returned <= 0 || num_returned > D.rows()) {
       LOG(ERROR) << "num_retunred should be in range [1, D.rows]";
     }
-    D.noalias() = D.topRows(num_returned);
-    I.noalias() = I.topRows(num_returned);
+    //! Note the ubiquitous alias issues!
+    D = D.topRows(num_returned).eval();
+    I = I.topRows(num_returned).eval();
 
     // Output I
     *(indices.value()) = I;

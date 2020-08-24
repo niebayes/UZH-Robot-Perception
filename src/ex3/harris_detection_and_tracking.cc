@@ -72,7 +72,7 @@ int main(int /*argv*/, char** argv) {
 
   // Show the top 16 descriptors ranked by strengh of response.
   std::vector<cv::Mat> Mat_vec;
-  bool show_descriptors_at_once = true;
+  bool show_descriptors = true;
   for (int i = 0; i < 16; ++i) {
     cv::Mat descriptor = descriptors.col(i);
     //@note When dealing with ROI, the Mat may be not continious and the
@@ -84,7 +84,7 @@ int main(int /*argv*/, char** argv) {
     Mat_vec.push_back(ImageSC(desc_patch, false));
   }
   cv::Mat top_sixteen_patches;
-  if (show_descriptors_at_once) {
+  if (show_descriptors) {
     // FIXME The images composited by MakeCanvas are not keeping the original
     // orientation.
     top_sixteen_patches = MakeCanvas(Mat_vec, image.rows, 4);
@@ -111,11 +111,6 @@ int main(int /*argv*/, char** argv) {
 
   cv::Mat matches;
   MatchDescriptors(query_descriptors, descriptors, matches, kDistanceRatio);
-  //! Cout for debugging ...
-  std::cout << "matches:\n";
-  std::cout << matches.colRange(0, 10) << '\n';
-  std::cout << "descs last 10:\n";
-  std::cout << matches.colRange(190, 200) << '\n';
   PlotMatches(matches, query_keypoints, keypoints, match_show);
   cv::namedWindow("Matches between the first two frames", cv::WINDOW_AUTOSIZE);
   cv::imshow("Matches between the first two frames", match_show);
@@ -149,6 +144,10 @@ int main(int /*argv*/, char** argv) {
         MatchDescriptors(query_descs, database_descs, matches_qd,
                          kDistanceRatio);
         PlotMatches(matches_qd, query_kps, database_kps, img_show);
+        cv::putText(img_show,
+                    cv::format("Matches / Totabl: %d / %d",
+                               cv::countNonZero(matches_qd) + 1, kNumKeypoints),
+                    {50, 30}, cv::FONT_HERSHEY_PLAIN, 2, {0, 0, 255}, 2);
         cv::imshow("Matches", img_show);
         char key = cv::waitKey(10);  // Pause 10 ms.
         if (key == 27)
@@ -164,7 +163,7 @@ int main(int /*argv*/, char** argv) {
 
   // -------------------------------------------------------------------
   // Optional: profile the program
-  // TODO(bayes)
+  // TODO(bayes) Profile the program.
 
   return EXIT_SUCCESS;
 }
