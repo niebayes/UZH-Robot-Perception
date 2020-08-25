@@ -6,12 +6,12 @@
 namespace uzh {
 //@brief Imitate matlab's im2double. Convert an uint8 image to double image
 // where the elements are in range [0, 1].
-// The uint8 elements are first convert to double type and then rescaled to
+// The uint8 elements are first converted to double type and then rescaled to
 // range [0, 1] by being divided by 255.0.
 cv::Mat_<double> im2double(const cv::Mat& image) {
-  cv::Mat_<double> dst;
-  image.convertTo(dst, CV_64FC1, 1.0 / 255.0);
-  return dst;
+  cv::Mat_<double> double_image;
+  image.convertTo(double_image, CV_64FC1, 1.0 / 255.0);
+  return double_image;
 }
 
 }  // namespace uzh

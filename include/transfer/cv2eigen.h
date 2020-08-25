@@ -5,6 +5,8 @@
 #include "opencv2/core.hpp"
 #include "opencv2/core/eigen.hpp"
 
+namespace uzh {
+
 // MatrixX<float> x; instead of Eigen::MatrixXf x;
 template <typename V>
 using MatrixX = typename Eigen::Matrix<V, Eigen::Dynamic, Eigen::Dynamic>;
@@ -22,5 +24,7 @@ MatrixX<V> cv2eigen(cv::Mat &C) {
   Eigen::Map<MatrixXrm<V>> E(C.ptr<V>(), C.rows, C.cols);
   return E;
 }
+
+}  // namespace uzh
 
 #endif  // UZH_TRAITS_CV2EIGEN_H_

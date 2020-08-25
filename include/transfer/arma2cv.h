@@ -4,6 +4,8 @@
 #include "Eigen/Core"
 #include "opencv2/core.hpp"
 
+namespace uzh {
+
 template <class V>
 void arma2cv(const arma::Mat<V> &A, cv::Mat_<V> &C) {
   cv::transpose(
@@ -11,5 +13,7 @@ void arma2cv(const arma::Mat<V> &A, cv::Mat_<V> &C) {
                   const_cast<V *>(A.memptr())),
       C);
 };
+
+}  // namespace uzh
 
 #endif  // UZH_TRANSFER_ARMA2CV_H_

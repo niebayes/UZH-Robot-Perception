@@ -4,6 +4,8 @@
 #include "armadillo"
 #include "opencv2/core.hpp"
 
+namespace uzh {
+
 template <class V>
 arma::Mat<V> cv2arma(cv::Mat &C, bool copy = true) {
   /*
@@ -19,5 +21,7 @@ arma::Mat<V> cv2arma(cv::Mat &C, bool copy = true) {
                       /*copy_aux_mem*/ copy,
                       /*strict*/ false);
 }
+
+}  // namespace uzh
 
 #endif  // UZH_TRANSFER_CV2ARMA_H_
