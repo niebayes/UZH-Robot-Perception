@@ -23,8 +23,8 @@
 // or CV_64F etc.
 //@param rescale_factor The returned image is rescaled according to this factor.
 //@return An cv::Mat object.
-cv::Mat GetImage(const std::string& file_name,
-                 const double rescale_factor = 1.0) {
+cv::Mat GetRescaledImage(const std::string& file_name,
+                         const double rescale_factor = 1.0) {
   cv::Mat img = cv::imread(file_name, cv::IMREAD_GRAYSCALE);
   cv::resize(img, img, {}, rescale_factor, rescale_factor, cv::INTER_AREA);
   return Im2Double(img);
@@ -44,8 +44,10 @@ int main(int /*argc*/, char** argv) {
   // Decimate the images for speed.
   // The original images are [3024 x 4032 x 3] color images.
   const double kRescaleFactor = 0.3;
-  cv::Mat left_image = GetImage(kFilePath + "img_1.jpg", kRescaleFactor);
-  cv::Mat right_image = GetImage(kFilePath + "img_2.jpg", kRescaleFactor);
+  cv::Mat left_image =
+      GetRescaledImage(kFilePath + "img_1.jpg", kRescaleFactor);
+  cv::Mat right_image =
+      GetRescaledImage(kFilePath + "img_2.jpg", kRescaleFactor);
 
   // Degrees to which the right image is rotated to test SIFT rotation
   // invariance. Positive -> counter-clockwise and negative -> clockwise.

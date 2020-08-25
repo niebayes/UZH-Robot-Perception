@@ -1,8 +1,6 @@
 #ifndef UZH_TRANSFER_H_
 #define UZH_TRANSFER_H_
 
-// #include "transfer/dtt.h"
-
 #include "transfer/arma2cv.h"
 #include "transfer/arma2eigen.h"
 #include "transfer/cv2arma.h"
