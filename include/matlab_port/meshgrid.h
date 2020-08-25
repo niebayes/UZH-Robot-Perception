@@ -6,13 +6,14 @@
 #include "Eigen/Core"
 #include "opencv2/core.hpp"
 
+namespace uzh {
+
 //@brief Imitate matlab's meshgrid.
 // TODO Generalize this function to arbitrarily accomodating [low, hight] range
 // values. E.g. use OpenCV's cv::Range
 template <typename Derived>
-static void Meshgrid(const int width, const int height,
-                     Eigen::MatrixBase<Derived>* X,
-                     Eigen::MatrixBase<Derived>* Y) {
+void meshgrid(const int width, const int height, Eigen::MatrixBase<Derived>* X,
+              Eigen::MatrixBase<Derived>* Y) {
   const Eigen::VectorXi x = Eigen::VectorXi::LinSpaced(width, 0, width - 1),
                         y = Eigen::VectorXi::LinSpaced(height, 0, height - 1);
   *X = x.transpose().replicate(height, 1);
@@ -28,11 +29,10 @@ static void Meshgrid(const int width, const int height,
 //@ref https://eigen.tuxfamily.org/dox/group__TopicStlContainers.html
 //? Why "template argument deduction failed"?
 // template <typename Derived>
-static void Meshgrid3D(const cv::Range& x_range, const cv::Range& y_range,
-                       const cv::Range& z_range,
-                       std::vector<Eigen::MatrixXi>* X,
-                       std::vector<Eigen::MatrixXi>* Y,
-                       std::vector<Eigen::MatrixXi>* Z) {
+void meshgrid(const cv::Range& x_range, const cv::Range& y_range,
+              const cv::Range& z_range, std::vector<Eigen::MatrixXi>* X,
+              std::vector<Eigen::MatrixXi>* Y,
+              std::vector<Eigen::MatrixXi>* Z) {
   //  std::vector<typename Eigen::MatrixBase<Derived>>* X,
   //  std::vector<typename Eigen::MatrixBase<Derived>>* Y,
   //  std::vector<typename Eigen::MatrixBase<Derived>>* Z) {
@@ -55,4 +55,7 @@ static void Meshgrid3D(const cv::Range& x_range, const cv::Range& y_range,
     Z->push_back(Z_d_depth);
   }
 }
+
+}  // namespace uzh
+
 #endif  // UZH_MATLAB_PORT_MESHGRID_H_

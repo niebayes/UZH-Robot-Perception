@@ -9,6 +9,8 @@
 #include "common/type.h"
 #include "feature/distance.h"
 
+namespace uzh {
+
 //@brief Imitate matlab's pdist. Calculate the pair-wise distance between every
 // pair of the two sets of observations X and Y.
 //@param X [m x p] matrix where m is the dimension of the observations and p is
@@ -34,7 +36,7 @@
 //! num_returned are given by the user at the same time, this function would
 //! then sort the D matrix and return the expected reduced D and I matrix.
 // TODO(bayes) Use std::tuple to rewrite this function.
-void PDist2(const Eigen::Ref<const Eigen::MatrixXd>& X,
+void pdist2(const Eigen::Ref<const Eigen::MatrixXd>& X,
             const Eigen::Ref<const Eigen::MatrixXd>& Y,
             Eigen::MatrixXd* distances, int distance = EUCLIDEAN,
             std::optional<Eigen::MatrixXi*> indices = std::nullopt,
@@ -116,5 +118,7 @@ void PDist2(const Eigen::Ref<const Eigen::MatrixXd>& X,
   // Output D
   *distances = D;
 }
+
+}  // namespace uzh
 
 #endif  // UZH_MATLAB_PORT_PDIST2_H_

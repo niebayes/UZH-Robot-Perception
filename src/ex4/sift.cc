@@ -27,7 +27,7 @@ cv::Mat GetRescaledImage(const std::string& file_name,
                          const double rescale_factor = 1.0) {
   cv::Mat img = cv::imread(file_name, cv::IMREAD_GRAYSCALE);
   cv::resize(img, img, {}, rescale_factor, rescale_factor, cv::INTER_AREA);
-  return Im2Double(img);
+  return uzh::im2double(img);
 }
 
 int main(int /*argc*/, char** argv) {
@@ -53,7 +53,7 @@ int main(int /*argc*/, char** argv) {
   // invariance. Positive -> counter-clockwise and negative -> clockwise.
   const double degree = 0;
   if (degree != 0) {
-    right_image = ImRotate(right_image, degree);
+    right_image = uzh::imrotate(right_image, degree);
   }
 
   return EXIT_SUCCESS;

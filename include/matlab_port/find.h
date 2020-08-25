@@ -9,6 +9,8 @@
 #include "Eigen/Core"
 #include "common/tools.h"
 
+namespace uzh {
+
 //@brief Imitate matlab's `[row, col, v] = find(A)` function. Find non-zero
 // elements in an array A.
 //@param A One dimensional array.
@@ -22,7 +24,7 @@
 // parameter parsing more flexible by using template.
 std::tuple<std::vector<int> /*row*/, std::vector<int> /*col*/,
            Eigen::ArrayXi /*v*/>
-Find(const Eigen::ArrayXi& A) {
+find(const Eigen::ArrayXi& A) {
   // Assure all elements are greater than or equal to 0.
   //! This constraint can be simply removed later on. For now, it is set for
   //! safety.
@@ -45,5 +47,7 @@ Find(const Eigen::ArrayXi& A) {
 
   return {row, col, v};
 }
+
+}  // namespace uzh
 
 #endif  // UZH_MATLAB_PORT_FIND_H_

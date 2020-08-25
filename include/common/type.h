@@ -23,8 +23,8 @@ enum InterpolationMethods : int { NEAREST_NEIGHBOR, BILINEAR };
 //@brief General distance metrics.
 enum Distance : int { EUCLIDEAN, SQUARED_EUCLIDEAN, MAHALANOBIS, HAMMING };
 
-//@brief Return order used in PDist2 function.
-//@see PDist2
+//@brief Return order used in pdist2 function.
+//@see pdist2
 enum ReturnOrder : int { SMALLEST_FIRST, LARGEST_FIRST };
 }  // namespace
 

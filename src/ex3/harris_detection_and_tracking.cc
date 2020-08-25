@@ -29,8 +29,8 @@ int main(int /*argv*/, char** argv) {
   HarrisResponse(image, harris_response, kPatchSize, kHarrisKappa);
   ShiTomasiResponse(image, shi_tomasi_response, kPatchSize);
   // Compare the colormaps to see the detail of differences.
-  ImageSC(harris_response, true, "Harris response");
-  ImageSC(shi_tomasi_response, true, "Shi-Tomasi response");
+  uzh::imagesc(harris_response, true, "Harris response");
+  uzh::imagesc(shi_tomasi_response, true, "Shi-Tomasi response");
 
   // Part II: select keypoints
   const int kNumKeypoints = 200;
@@ -41,7 +41,7 @@ int main(int /*argv*/, char** argv) {
   Eigen::MatrixXd k;
   cv::cv2eigen(keypoints, k);
   const Eigen::VectorXi x = k.row(0).cast<int>(), y = k.row(1).cast<int>();
-  Scatter(image_show, x, y, 4, {0, 0, 255}, cv::FILLED);
+  uzh::scatter(image_show, x, y, 4, {0, 0, 255}, cv::FILLED);
   cv::imshow("Harris keypoints", image_show);
   cv::waitKey(0);
 
@@ -53,7 +53,7 @@ int main(int /*argv*/, char** argv) {
   cv::cv2eigen(shi_keypoints, shi_k);
   const Eigen::VectorXi shi_x = shi_k.row(0).cast<int>(),
                         shi_y = shi_k.row(1).cast<int>();
-  Scatter(image_show_shi, shi_x, shi_y, 4, {0, 255, 0}, cv::FILLED);
+  uzh::scatter(image_show_shi, shi_x, shi_y, 4, {0, 255, 0}, cv::FILLED);
   cv::imshow("Shi-Tomasi keypoints", image_show_shi);
   cv::waitKey(0);
 
@@ -73,7 +73,7 @@ int main(int /*argv*/, char** argv) {
       descriptor = descriptor.clone();
     }
     cv::Mat desc_patch = descriptor.reshape(1, 2 * kPatchRadius + 1);
-    Mat_vec.push_back(ImageSC(desc_patch, false));
+    Mat_vec.push_back(uzh::imagesc(desc_patch, false));
   }
   cv::Mat top_sixteen_patches;
   if (show_descriptors) {

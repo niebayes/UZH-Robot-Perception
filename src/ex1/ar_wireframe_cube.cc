@@ -27,7 +27,7 @@ int main(int /*argc*/, char** argv) {
   const double kCellSize = 0.04;  // Unit: meters
 
   Eigen::MatrixXi X, Y;
-  Meshgrid(checkerboard.width, checkerboard.height, &X, &Y);
+  uzh::meshgrid(checkerboard.width, checkerboard.height, &X, &Y);
   X.resize(1, kNumCorners);
   Y.resize(1, kNumCorners);
 
@@ -78,7 +78,7 @@ int main(int /*argc*/, char** argv) {
   cv::Mat image = cv::imread(kImageName, cv::IMREAD_COLOR);
   const Eigen::VectorXi& x = image_points.row(0).cast<int>();
   const Eigen::VectorXi& y = image_points.row(1).cast<int>();
-  Scatter(image, x, y, 3, {0, 0, 255}, cv::FILLED);
+  uzh::scatter(image, x, y, 3, {0, 0, 255}, cv::FILLED);
   cv::imshow("Scatter plot with corners reprojected", image);
   // cv::waitKey(0);
 
@@ -86,8 +86,8 @@ int main(int /*argc*/, char** argv) {
   // TODO Modularize the codes below.
   const Eigen::Vector3i cube{2, 2, 2};
   std::vector<Eigen::MatrixXi> cube_X, cube_Y, cube_Z;
-  Meshgrid3D(cv::Range(0, cube.x() - 1), cv::Range(0, cube.y() - 1),
-             cv::Range(-cube.z() + 1, 0), &cube_X, &cube_Y, &cube_Z);
+  uzh::meshgrid(cv::Range(0, cube.x() - 1), cv::Range(0, cube.y() - 1),
+                cv::Range(-cube.z() + 1, 0), &cube_X, &cube_Y, &cube_Z);
   const int kNumVerticesPerDepth = cube.x() * cube.y();
   const int depth = cube.z();
   Eigen::Matrix3Xd p_W_cube(3, kNumVerticesPerDepth * depth);
@@ -132,7 +132,7 @@ int main(int /*argc*/, char** argv) {
       Eigen::Matrix2Xd cube_image_points;
       ProjectPoints(p_C_cube, &cube_image_points, K, PROJECT_WITH_DISTORTION,
                     D);
-      //! The Meshgrid3D returns points with column-major order, not a cyclic
+      //! The uzh::meshgrid returns points with column-major order, not a cyclic
       //! order. Hence, you need to swap the corresponding columns to get a
       //! cyclic order in order to bootstrap the cube drawing.
       cube_image_points.leftCols(4).col(2).swap(

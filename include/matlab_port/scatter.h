@@ -6,10 +6,12 @@
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
 
+namespace uzh {
+
 //@brief Imitate matlab's scatter.
 // TODO(bayes) Templatize this function to make the parameter parsing more
 // flexible.
-static void Scatter(cv::Mat& image, const Eigen::Ref<const Eigen::VectorXi>& x,
+static void scatter(cv::Mat& image, const Eigen::Ref<const Eigen::VectorXi>& x,
                     const Eigen::Ref<const Eigen::VectorXi>& y,
                     const int radius, const cv::Scalar& color,
                     const int thickness = 1) {
@@ -27,5 +29,7 @@ static void Scatter(cv::Mat& image, const Eigen::Ref<const Eigen::VectorXi>& x,
     cv::circle(image, {x(i), y(i)}, radius, color, thickness);
   }
 }
+
+}  // namespace uzh
 
 #endif  // UZH_MATLAB_PORT_SCATTER_H_

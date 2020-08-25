@@ -8,6 +8,8 @@
 
 #include "Eigen/Core"
 
+namespace uzh {
+
 //@brief Imitate matlab's unique. Unique values in an array and store them in a
 // sorted order (by default descending).
 //@param A One dimensional array containing the original values.
@@ -27,7 +29,7 @@
 // flexible.
 std::tuple<Eigen::ArrayXd /*C*/, std::vector<int> /*ia*/,
            std::vector<int> /*ic*/>
-Unique(const Eigen::ArrayXd& A) {
+unique(const Eigen::ArrayXd& A) {
   //! Alternatively, explicitly passing into pointers.
   // Eigen::ArrayXd* C,
   // std::optional<Eigen::ArrayXi*> ia = std::nullopt,
@@ -66,5 +68,7 @@ Unique(const Eigen::ArrayXd& A) {
 
   return {C_out, indices_ori, indices_uni};
 }
+
+}  // namespace uzh
 
 #endif  // UZH_MATLAB_PORT_UNIQUE_H_

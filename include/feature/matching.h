@@ -39,7 +39,8 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   // corresponding distance is stored in the distances matrix.
   Eigen::MatrixXd distances;
   Eigen::MatrixXi matches;
-  PDist2(database, query, &distances, EUCLIDEAN, &matches, SMALLEST_FIRST, 1);
+  uzh::pdist2(database, query, &distances, EUCLIDEAN, &matches, SMALLEST_FIRST,
+              1);
 
   // Find the overall minimal non-zero distance.
   //@note This could also be accomplished with std::sort / std::statble in
@@ -57,7 +58,7 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   // Remove duplicate matches.
   std::vector<int> unique_match_indices;
   std::tie(std::ignore, unique_match_indices, std::ignore) =
-      Unique(matches.cast<double>().reshaped());
+      uzh::unique(matches.cast<double>().reshaped());
   Eigen::MatrixXi unique_matches(1, matches.size());
   unique_matches.setZero();
   unique_matches.reshaped()(unique_match_indices) =
@@ -90,15 +91,15 @@ void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
   const Eigen::VectorXi query_y = query_kps.row(1);
   const Eigen::VectorXi database_x = database_kps.row(0);
   const Eigen::VectorXi database_y = database_kps.row(1);
-  Scatter(image, query_x, query_y, 3, {0, 0, 255}, cv::FILLED);
-  Scatter(image, database_x, database_y, 3, {255, 0, 0}, cv::FILLED);
+  uzh::scatter(image, query_x, query_y, 3, {0, 0, 255}, cv::FILLED);
+  uzh::scatter(image, database_x, database_y, 3, {255, 0, 0}, cv::FILLED);
 
   // Isolate query and match indices.
   //! These indices are used to access corresponding keypoints later on.
   std::vector<int> query_indices;
   Eigen::ArrayXi match_indices;
   std::tie(std::ignore, query_indices, match_indices) =
-      Find(matches_.reshaped());
+      uzh::find(matches_.reshaped());
 
   // Extract coordinates of keypoints.
   Eigen::RowVectorXi from_kp_x, from_kp_y, to_kp_x, to_kp_y;

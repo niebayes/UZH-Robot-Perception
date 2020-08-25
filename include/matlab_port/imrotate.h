@@ -5,12 +5,14 @@
 
 #include "opencv2/core.hpp"
 
+namespace uzh {
+
 //@ref
 // https://docs.opencv.org/2.4/doc/tutorials/imgproc/imgtrans/warp_affine/warp_affine.html
 //@ref https://stackoverflow.com/a/16159670/14007680
 //@ref
 // https://www.pyimagesearch.com/2017/01/02/rotate-images-correctly-with-opencv-and-python/
-cv::Mat ImRotate(const cv::Mat& image, const double degrees) {
+cv::Mat imrotate(const cv::Mat& image, const double degrees) {
   //@note Difference between std::remainder and std::fmod
   //@ref http://www.cplusplus.com/reference/cmath/remainder/
   //@note Difference between matlab's mod and rem.
@@ -29,5 +31,7 @@ cv::Mat ImRotate(const cv::Mat& image, const double degrees) {
     // cv::warpAffine()
   }
 }
+
+}  // namespace uzh
 
 #endif  // UZH_MATLAB_PORT_IMROTATE_H_

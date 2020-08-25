@@ -71,11 +71,11 @@ int main(int /*argc*/, char** argv) {
       // Draw them on current frame.
       const Eigen::VectorXi& reproj_x = reprojected_points.row(0).cast<int>();
       const Eigen::VectorXi& reproj_y = reprojected_points.row(1).cast<int>();
-      Scatter(frame, reproj_x, reproj_y, 4, {0, 0, 255});
+      uzh::scatter(frame, reproj_x, reproj_y, 4, {0, 0, 255});
 
       const Eigen::VectorXi& observed_x = image_points.row(0).cast<int>();
       const Eigen::VectorXi& observed_y = image_points.row(1).cast<int>();
-      Scatter(frame, observed_x, observed_y, 4, {0, 255, 0});
+      uzh::scatter(frame, observed_x, observed_y, 4, {0, 255, 0});
 
       video << frame;
     }

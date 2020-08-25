@@ -5,9 +5,12 @@
 #include "opencv2/highgui.hpp"
 #include "opencv2/imgproc.hpp"
 
+namespace uzh {
+
+
 //@brief Imitate matlab's imagesc. Apply colormap to the input image to display
 // image with scaled colors.
-cv::Mat ImageSC(const cv::Mat& image, bool show_at_once = true,
+cv::Mat imagesc(const cv::Mat& image, bool show_at_once = true,
                 const std::string& winname = "Colormapped image",
                 const int colormap = cv::COLORMAP_PARULA, const int delay = 0) {
   cv::Mat img;
@@ -20,4 +23,7 @@ cv::Mat ImageSC(const cv::Mat& image, bool show_at_once = true,
   }
   return img;
 }
+
+}  // namespace uzh
+
 #endif  // UZH_MATLAB_PORT_IMAGESC_H_
