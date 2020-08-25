@@ -6,6 +6,7 @@
 #include <optional>  // std::optional
 
 #include "Eigen/Core"
+#include "common/type.h"
 #include "feature/distance.h"
 
 //@brief Imitate matlab's pdist. Calculate the pair-wise distance between every
