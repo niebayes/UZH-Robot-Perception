@@ -28,7 +28,7 @@ cv::Mat GetImage(const std::string& file_name,
 }
 
 //@brief Compute image pyramid by recursively decimating the original image.
-//! This function is to generate original images of all octaves. That is
+//! This function generates original images of all octaves. That is
 //! the resolutions of the original image in octave o and the original
 //! image in octave o+1 differ by a factor of 2, i.e. the lower octave is
 //! downsampled by a factor of 2.
@@ -38,6 +38,7 @@ cv::Mat GetImage(const std::string& file_name,
 //@return A image pyramid containing five images with different resolutions.
 arma::field<cv::Mat> ComputeImagePyramid(const cv::Mat& image,
                                          const int num_octaves) {
+  if (image.empty()) LOG(ERROR) << "Empty input image.";
   if (num_octaves <= 1) LOG(ERROR) << "Invalid num_octaves.";
   arma::field<cv::Mat> image_pyramid(num_octaves);
   image_pyramid(0) = image;
@@ -57,10 +58,36 @@ arma::field<cv::Mat> ComputeImagePyramid(const cv::Mat& image,
 // per octave is computed.
 //@param sigma Base sigma from which the set of sigmas used to get different
 // Gaussians are generated.
-arma::field<cv::Mat> ComputeBlurredImages(
+arma::field<arma::cube> ComputeBlurredImages(
     const arma::field<cv::Mat>& image_pyramid, const int num_scales,
-    const double sigma) {
-  //
+    const double base_sigma) {
+  const int kNumOctaves = image_pyramid.size();
+  // This formula is by observing that the each scale is formed from three DoG
+  // images each of which is obtained from two Gaussian blurred images. Hence
+  // the plus 3.
+  const int kImagesPerOctave = num_scales + 3;
+  arma::field<arma::cube> blurred_images(kNumOctaves);
+
+  // Populate each octave with kImagesPerOctave images.
+  for (int o = 0; o < kNumOctaves; ++o) {
+    arma::cube octave = arma::zeros<arma::cube>(
+        image_pyramid(o).rows, image_pyramid(o).cols, kImagesPerOctave);
+    // Gaussian blur images in an octave with increasing sigmas.
+    for (int i = 0; i < kImagesPerOctave; ++i) {
+      // Such that kS = [-1, 0, ..., num_scales + 1], 6 indices in total.
+      // FIXME This range could also be changed,
+      // e.g. kS = [0, ..., num_scales + 2].
+      cv::Mat blurred_image;
+      const int kS = i - 2;
+      const double kSigma = std::pow(2, kS / num_scales) * base_sigma;
+      cv::GaussianBlur(image_pyramid(o), blurred_image, {}, kSigma, kSigma,
+                       cv::BORDER_ISOLATED);
+      octave.slice(i) = uzh::cv2arma<double>(blurred_image).t();
+    }
+    blurred_images(o) = octave;
+  }
+
+  return blurred_images;
 }
 
 int main(int /*argc*/, char** argv) {
@@ -70,8 +97,9 @@ int main(int /*argc*/, char** argv) {
   // Given settings
   const int kNumOctaves = 5;  // Number of levels of the image pyramid.
   const int kNumScales = 3;   // Number of scales per octave.
-  const double kGaussianSigma =
-      1.0;  // Sigma used to do Gaussian blurring on images.
+  const double kBaseSigma =
+      1.0;  // Sigma used to do Gaussian blurring on images. This value is
+            // multiplied to generate sequences of sigmas.
   const double kKeypointsThreshold =
       0.04;  // Exceed which the keypoints is selected as a potential keypoints
 
@@ -113,8 +141,8 @@ int main(int /*argc*/, char** argv) {
     arma::field<cv::Mat> image_pyramid =
         ComputeImagePyramid(images(i), kNumOctaves);
     for (auto& img : image_pyramid) std::cout << img.size << '\n';
-    arma::field<cv::Mat> blurred_images =
-        ComputeBlurredImages(image_pyramid, kNumScales, kGaussianSigma);
+    arma::field<arma::cube> blurred_images =
+        ComputeBlurredImages(image_pyramid, kNumScales, kBaseSigma);
   }
 
   return EXIT_SUCCESS;

@@ -30,6 +30,8 @@ cv::Mat imrotate(const cv::Mat& image, const double degrees) {
     // cv::getRotationMatrix2D()
     // cv::warpAffine()
   }
+
+  return cv::Mat{};
 }
 
 }  // namespace uzh

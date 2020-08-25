@@ -7,11 +7,13 @@
 namespace uzh {
 
 template <class V>
-void arma2cv(const arma::Mat<V> &A, cv::Mat_<V> &C) {
+cv::Mat_<V> arma2cv(const arma::Mat<V> &A) {
+  cv::Mat_<V> C;
   cv::transpose(
       cv::Mat_<V>(static_cast<int>(A.n_cols), static_cast<int>(A.n_rows),
                   const_cast<V *>(A.memptr())),
       C);
+  return C;
 };
 
 }  // namespace uzh

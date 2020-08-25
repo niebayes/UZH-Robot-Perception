@@ -17,6 +17,7 @@ namespace uzh {
 // 1 or squished if less than 1.
 //@param The resized image.
 cv::Mat imresize(const cv::Mat& image, const double resize_factor) {
+  if (image.empty()) LOG(ERROR) << "Empty input image.";
   cv::Mat resized_image;
   int interpolation_method;
   if (resize_factor == 1)
