@@ -1,10 +1,12 @@
 #include <algorithm>
+#include <cmath>
 #include <numeric>
 #include <string>
 #include <vector>
 
 #include "Eigen/Dense"
 #include "armadillo"
+#include "transfer.h"
 // #include "common.h"
 // #include "feature.h"
 #include "google_suite.h"
@@ -44,6 +46,13 @@ int main(int /*argc*/, char** argv) {
   const double kRescaleFactor = 0.3;
   cv::Mat left_image = GetImage(kFilePath + "img_1.jpg", kRescaleFactor);
   cv::Mat right_image = GetImage(kFilePath + "img_2.jpg", kRescaleFactor);
+
+  // Degrees to which the right image is rotated to test SIFT rotation
+  // invariance. Positive -> counter-clockwise and negative -> clockwise.
+  const double degree = 0;
+  if (degree != 0) {
+    right_image = ImRotate(right_image, degree);
+  }
 
   return EXIT_SUCCESS;
 }
