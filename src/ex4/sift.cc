@@ -17,6 +17,35 @@
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
 
+enum GradientMethod : int { SOBEL };
+
+arma::cube imgradient(const arma::mat& image) {
+  if (image.empty()) LOG(ERROR) << "Empty input image.";
+
+  arma::cube mag_dir(image.n_rows, image.n_cols, 2);
+
+  cv::Mat img = uzh::arma2cv<double>(image);
+  cv::Mat_<double> sobel_x, sobel_y, sobel_mag;
+  cv::Sobel(img, sobel_x, CV_64F, 1, 0, 3, 1.0, 0.0, cv::BORDER_ISOLATED);
+  cv::Sobel(img, sobel_y, CV_64F, 0, 1, 3, 1.0, 0.0, cv::BORDER_ISOLATED);
+  cv::pow(sobel_x.mul(sobel_x) + sobel_y.mul(sobel_y), 0.5, sobel_mag);
+  cv::Mat_<double> mag;
+  cv::magnitude(sobel_x, sobel_y, mag);
+  cv::Mat count;
+  cv::bitwise_and(sobel_mag, mag, count);
+  std::cout << (cv::countNonZero(count) == (mag.rows * mag.cols)) << '\n';
+
+  const arma::mat Gmag = uzh::cv2arma<double>(sobel_mag).t();
+  arma::mat Gx, Gy, Gdir;
+  Gx = uzh::cv2arma<double>(sobel_x).t(); 
+  Gy = uzh::cv2arma<double>(sobel_y).t();
+  Gdir = arma::atan2(Gx, Gy);
+
+  mag_dir.slice(0) = Gmag;
+  mag_dir.slice(1) = Gdir;
+  return mag_dir;
+}
+
 //@brief Return an image given file name, data depth and rescale factor.
 //@param file_name String denoting the file name including the relative file
 // path.
@@ -252,9 +281,12 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
     // unique them. These indices are indicators from which we can tell which
     // images in the blurred images of the current octave have contributed to
     // the extraction of keypoints.
-    const arma::uvec kImageIndices = arma::unique(oct_keypoints.row(2));
+    const arma::urowvec kImageIndices = arma::unique(oct_keypoints.row(2));
     for (arma::uword i : kImageIndices) {
       const arma::mat& image = oct_blurred_images.slice(i);
+      const arma::cube gradient = imgradient(image);
+      const arma::mat& grad_magnitude = gradient.slice(0);
+      const arma::mat& grad_direction = gradient.slice(1);
     }
   }
 }
@@ -342,6 +374,9 @@ int main(int /*argc*/, char** argv) {
 
   std::cout << arma::size(arma::find(a)) << '\n';
   std::cout << arma::size(arma::find(b)) << '\n';
+
+  arma::mat m(907, 1210, arma::fill::randn);
+  arma::cube g = imgradient(m);
 
   return EXIT_SUCCESS;
 }

@@ -11,12 +11,14 @@ enum FilterType : int { GAUSSIAN };
 
 cv::Mat fspecial(const int filter_type, const int aperture_size,
                  const double sigma, const int ddepth = CV_64F) {
+  cv::Mat filter;
   if (filter_type == GAUSSIAN) {
     cv::Mat gaussian_vec = cv::getGaussianKernel(aperture_size, sigma, ddepth);
-    return gaussian_vec * gaussian_vec.t();
+    filter = gaussian_vec * gaussian_vec.t();
   } else {
     LOG(ERROR) << "Other filter types are not implemented yet.";
   }
+  return filter;
 }
 
 }  // namespace uzh
