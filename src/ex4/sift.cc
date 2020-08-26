@@ -17,35 +17,6 @@
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
 
-enum GradientMethod : int { SOBEL };
-
-arma::cube imgradient(const arma::mat& image) {
-  if (image.empty()) LOG(ERROR) << "Empty input image.";
-
-  arma::cube mag_dir(image.n_rows, image.n_cols, 2);
-
-  cv::Mat img = uzh::arma2cv<double>(image);
-  cv::Mat_<double> sobel_x, sobel_y, sobel_mag;
-  cv::Sobel(img, sobel_x, CV_64F, 1, 0, 3, 1.0, 0.0, cv::BORDER_ISOLATED);
-  cv::Sobel(img, sobel_y, CV_64F, 0, 1, 3, 1.0, 0.0, cv::BORDER_ISOLATED);
-  cv::pow(sobel_x.mul(sobel_x) + sobel_y.mul(sobel_y), 0.5, sobel_mag);
-  cv::Mat_<double> mag;
-  cv::magnitude(sobel_x, sobel_y, mag);
-  cv::Mat count;
-  cv::bitwise_and(sobel_mag, mag, count);
-  std::cout << (cv::countNonZero(count) == (mag.rows * mag.cols)) << '\n';
-
-  const arma::mat Gmag = uzh::cv2arma<double>(sobel_mag).t();
-  arma::mat Gx, Gy, Gdir;
-  Gx = uzh::cv2arma<double>(sobel_x).t(); 
-  Gy = uzh::cv2arma<double>(sobel_y).t();
-  Gdir = arma::atan2(Gx, Gy);
-
-  mag_dir.slice(0) = Gmag;
-  mag_dir.slice(1) = Gdir;
-  return mag_dir;
-}
-
 //@brief Return an image given file name, data depth and rescale factor.
 //@param file_name String denoting the file name including the relative file
 // path.
@@ -220,6 +191,9 @@ arma::field<arma::umat> ExtractKeypoints(const arma::field<arma::cube>& DoGs,
       for (int c = 0; c < is_kept_kpts.n_cols; ++c) {
         for (int r = 0; r < is_kept_kpts.n_rows; ++r) {
           // Non-maximum suppression
+          //! Consider using arma::approx_equal when the mat type is dmat (mat)
+          //! or fmat, due to the necessarily limited precision of the
+          //! underlying element types.
           if (DoG(r, c, s) == DoG_max(r, c, s) && DoG(r, c, s) != 0)
             is_kept_kpts(r, c, s) = 1;
         }
@@ -271,8 +245,8 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
 
   for (int o = 0; o < kNumOctaves; ++o) {
     // Get the blurred images and keypoints in o-th octave.
-    const arma::cube& oct_blurred_images = blurred_images(o);
-    const arma::umat& oct_keypoints = keypoints(o);
+    const arma::cube oct_blurred_images = blurred_images(o);
+    const arma::umat oct_keypoints = keypoints(o);
 
     // Only consider relevant images involved in the extraction of the
     // keypoints we detected.
@@ -282,11 +256,41 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
     // images in the blurred images of the current octave have contributed to
     // the extraction of keypoints.
     const arma::urowvec kImageIndices = arma::unique(oct_keypoints.row(2));
-    for (arma::uword i : kImageIndices) {
-      const arma::mat& image = oct_blurred_images.slice(i);
-      const arma::cube gradient = imgradient(image);
-      const arma::mat& grad_magnitude = gradient.slice(0);
-      const arma::mat& grad_direction = gradient.slice(1);
+    for (arma::uword img_idx : kImageIndices) {
+      // Filter out irrelevant keypoints based on the image index
+      const arma::uvec is_kept_in_image = (oct_keypoints.row(2) == img_idx);
+      const arma::umat kept_keypoints = oct_keypoints(is_kept_in_image);
+      const arma::umat kept_keypoints_xy = kept_keypoints.head_rows(2);
+
+      // Compute image gradient for use of Histogram of Oriented Gradients.
+      const arma::mat image = oct_blurred_images.slice(img_idx);
+      const arma::cube gradient = uzh::imgradient(image);
+      const arma::mat grad_magnitude = gradient.slice(0);
+      const arma::mat grad_direction = gradient.slice(1);
+
+      // Construct descriptor matrix to be populated.
+      arma::mat descs;
+      const int kNumKeypoints = kept_keypoints_xy.n_cols;
+      // Mask to mask out all invalid keypoints that are out of the boundary.
+      arma::uvec is_valid(kNumKeypoints, arma::fill::zeros);
+      for (int corner_idx = 0; corner_idx < kNumKeypoints; ++corner_idx) {
+        const int x = kept_keypoints_xy(0, corner_idx);
+        const int y = kept_keypoints_xy(0, corner_idx);
+        // Ensure all the pixels inside the patch are within the image boundary.
+        // The patch is 16 x 16 with the radius not being odd. And we take the
+        // point 8 pixels away from the upper left and 7 pixels aways from the
+        // lower right as the anchor point.
+        if (x >= 8 && x < image.n_cols - 7 && y >= 8 && y < image.n_rows - 7) {
+          is_valid(corner_idx) = 1;
+          // Convolve the patch with Gaussian window.
+          // Gmag_loc = Gmag(row - 8 : row + 7, col - 8 : col + 7);
+          // Gmag_loc_w = Gmag_loc.*gausswindow;
+          // Gdir_loc = Gdir(row - 8 : row + 7, col - 8 : col + 7);
+
+          // Gmag_loc_derotated_w = Gmag_loc_w;
+          // Gdir_loc_derotated = Gdir_loc;
+        }
+      }
     }
   }
 }
@@ -376,7 +380,7 @@ int main(int /*argc*/, char** argv) {
   std::cout << arma::size(arma::find(b)) << '\n';
 
   arma::mat m(907, 1210, arma::fill::randn);
-  arma::cube g = imgradient(m);
+  arma::cube g = uzh::imgradient(m);
 
   return EXIT_SUCCESS;
 }
