@@ -2,6 +2,7 @@
 #include <cmath>
 #include <numeric>
 #include <string>
+#include <tuple>
 #include <vector>
 
 #include "Eigen/Dense"
@@ -90,6 +91,174 @@ arma::field<arma::cube> ComputeBlurredImages(
   return blurred_images;
 }
 
+//@brief Compute difference of Gaussians from adjacent images in each octave.
+//@param blurred_images Blurred images obtained from ComputeBlurredImages.
+//@return Difference of Gaussians of all octaves.
+arma::field<arma::cube> ComputeDoGs(
+    const arma::field<arma::cube>& blurred_images) {
+  const int kNumOctaves = blurred_images.size();
+  // DoGs contains DoGs of all octaves.
+  arma::field<arma::cube> DoGs(kNumOctaves);
+
+  //! The data layout:
+  //! image pyramid ->
+  //! num_octaves * octave ->
+  //! num_images_per_octave * image ->
+  //! one image -> one blurred image ->
+  //! two adjacent blurred images -> one DoG
+  // Hence the minus one in the size of DoG as below.
+  for (int o = 0; o < kNumOctaves; ++o) {
+    // DoG contains kNumDoGsPerOctave DoGs in a certain octave.
+    arma::cube DoG = arma::zeros<arma::cube>(arma::size(blurred_images(o)) -
+                                             arma::size(0, 0, 1));
+    const int kNumDoGsPerOctave = DoG.n_slices;
+    for (int d = 0; d < kNumDoGsPerOctave; ++d) {
+      // arma::abs to ensure every element is not negative.
+      DoG.slice(d) = arma::abs(blurred_images(o).slice(d + 1) -
+                               blurred_images(o).slice(d));
+    }
+
+    DoGs(o) = DoG;
+  }
+  return DoGs;
+}
+
+//@brief Extract keypoints from the maximums both in scale and space.
+//@param DoGs Difference of Gaussians computed from ComputeDoGs.
+//@param keypoints_threshold Below which the points are suppressed before
+// selection of keypoitns to attenuate effect of noise.
+//@return Coordinates of the selected putative keypoints. The coordinates are 3D
+// vectors where the first two dimension correspond to space and the last one
+// corresponds to scale.
+arma::field<arma::umat> ExtractKeypoints(const arma::field<arma::cube>& DoGs,
+                                         const double keypoints_threshold) {
+  const int kNumOctaves = DoGs.size();
+  arma::field<arma::umat> keypoints(kNumOctaves);
+
+  // For each octave, locate the maximums both in scale and space from the DoGs
+  // in this octave.
+  for (int o = 0; o < kNumOctaves; ++o) {
+    // Copy the DoG
+    arma::cube DoG = DoGs(o);
+
+    // Locate the maximums
+    //! A neat trick: use dilation in place of moving max filter.
+    //@ref
+    // https://en.wikipedia.org/wiki/Dilation_(morphology)#Flat_structuring_functions
+    //! Here, by making use of armadillo's subview, we can achieve this in an
+    //! efficient manner.
+    // TODO(bayes) Modularize the codes below, wrapping into the imdilate
+    // function.
+    // First pre-pad the cube along each dimension to avoid boundary issues.
+    const arma::cube kMaxFilter = arma::ones<arma::cube>(3, 3, 3);
+    // TODO(bayes) Modularize the codes below, wrappint into the padarray
+    // function.
+    const int kPadSize = static_cast<int>(
+        std::floor(kMaxFilter.n_rows / 2));  // Padding size equals to the
+                                             // radius of the moving max filter.
+    arma::cube padded_DoG = arma::zeros<arma::cube>(
+        arma::size(DoG) + arma::size(kPadSize * 2, kPadSize * 2, kPadSize * 2));
+    // Copy the elements from DoG to the padded_DoG
+    padded_DoG(1, 1, 1, arma::size(DoG)) = DoG;
+    // Apply moving max filter.
+    // Iterate based on the unpadded DoG.
+    arma::cube DoG_max = arma::zeros<arma::cube>(arma::size(DoG));
+    for (int slice = 0; slice < DoG.n_slices; ++slice) {
+      for (int col = 0; col < DoG.n_cols; ++col) {
+        for (int row = 0; row < DoG.n_rows; ++row) {
+          DoG_max(row, col, slice) =
+              padded_DoG(row, col, slice, arma::size(kMaxFilter)).max();
+        }
+      }
+    }
+
+    // Filter out all points but the ones survived in the max filtering which
+    // are then be thresholded.
+    //! This is equivalent to doing a non-maximum suppression around the
+    //! keypoints selected as above followed by a thresholding.
+    //! Actually, based on the function provided by armadillo, we do
+    //! thresholding followed by non-maximum suppression.
+    arma::ucube is_kept_kpts(arma::size(DoG), arma::fill::zeros);
+    // Thresholding
+    std::cout << "before th: " << arma::size(arma::find(DoG.slice(o))) << '\n';
+    // arma::cube DoG, DoG_max;  // Size: 907 x 1210 x 5.
+    arma::ucube is_valid(arma::size(DoG), arma::fill::zeros);
+    DoG.clean(keypoints_threshold);
+    for (int s = 0; s < is_valid.n_slices; ++s) {
+      is_valid.slice(s) = (DoG.slice(s) == DoG_max.slice(s));
+    }
+    for (int s = 0; s < is_kept_kpts.n_slices; ++s) {
+      for (int c = 0; c < is_kept_kpts.n_cols; ++c) {
+        for (int r = 0; r < is_kept_kpts.n_rows; ++r) {
+          // Non-maximum suppression
+          if (DoG(r, c, s) == DoG_max(r, c, s) && DoG(r, c, s) != 0)
+            is_kept_kpts(r, c, s) = 1;
+        }
+      }
+      std::cout << arma::size(arma::find(is_kept_kpts.slice(s))) << '\n';
+    }
+
+    // Discard the keypoints found in the lowest and highest layers of the
+    // current DoG because the two layers are involved with padded borders.
+    is_kept_kpts.slice(0).zeros();
+    is_kept_kpts.slice(is_kept_kpts.n_slices - 1).zeros();
+
+    // Obtain the corresponding 3D coordinates of each putative keypoints.
+    std::cout << "is_kept_kpts size: " << arma::size(is_kept_kpts) << '\n';
+    arma::umat coordinates_3d =
+        arma::ind2sub(arma::size(is_kept_kpts), arma::find(is_kept_kpts));
+
+    // Store them into the keypoints.
+    keypoints(o) = coordinates_3d;
+  }
+
+  return keypoints;
+}
+
+//@brief Compute descriptors from the patches around the putative keypoints.
+//@param blurred_images Blurred images computed from the ComputeBlurredImages
+// function. These images are used to locate the patches around the putative
+// keypoints.
+//@param keypoints Putative keypoints computed from the ExtractKeypoints
+// function. These keypoints are then refined to find the final keypoints.
+//@param descriptors containing the returned descriptors where each column is a
+// descriptor vector.
+//@param final_keypoints TODO
+//@param rotation_invariant Boolean value used to denote whether the computed
+// descriptors are invariant to rotation or not. If true, a dominant orientation
+// will be assigned to each descriptor.
+void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
+                        const arma::field<arma::umat>& keypoints,
+                        arma::mat& descriptors,
+                        arma::field<arma::umat>& final_keypoints,
+                        const bool rotation_invariant = false) {
+  if (blurred_images.size() != keypoints.size())
+    LOG(ERROR) << "The number of octaves are not consistent.";
+  const int kNumOctaves = blurred_images.size();
+
+  // The magic number 1.5 is taken from Lowe's paper.
+  const arma::mat kGaussianWindow =
+      uzh::cv2arma<double>(uzh::fspecial(uzh::GAUSSIAN, 16, 16.0 * 1.5)).t();
+
+  for (int o = 0; o < kNumOctaves; ++o) {
+    // Get the blurred images and keypoints in o-th octave.
+    const arma::cube& oct_blurred_images = blurred_images(o);
+    const arma::umat& oct_keypoints = keypoints(o);
+
+    // Only consider relevant images involved in the extraction of the
+    // keypoints we detected.
+
+    // Extract the scale indices of the coordinates of the keypoints and
+    // unique them. These indices are indicators from which we can tell which
+    // images in the blurred images of the current octave have contributed to
+    // the extraction of keypoints.
+    const arma::uvec kImageIndices = arma::unique(oct_keypoints.row(2));
+    for (arma::uword i : kImageIndices) {
+      const arma::mat& image = oct_blurred_images.slice(i);
+    }
+  }
+}
+
 int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
@@ -140,10 +309,39 @@ int main(int /*argc*/, char** argv) {
     // blurred with different sigma values.
     arma::field<cv::Mat> image_pyramid =
         ComputeImagePyramid(images(i), kNumOctaves);
+    std::cout << "image_pyramid:\n";
     for (auto& img : image_pyramid) std::cout << img.size << '\n';
     arma::field<arma::cube> blurred_images =
         ComputeBlurredImages(image_pyramid, kNumScales, kBaseSigma);
+    std::cout << "blurred_images:\n";
+    for (auto& imgs : blurred_images) std::cout << arma::size(imgs) << '\n';
+    arma::field<arma::cube> DoGs = ComputeDoGs(blurred_images);
+    std::cout << "DoGs:\n";
+    for (auto& d : DoGs) std::cout << arma::size(d) << '\n';
+    arma::field<arma::umat> keypoints_tmp =
+        ExtractKeypoints(DoGs, kKeypointsThreshold);
+    std::cout << "keypoints_tmp:\n";
+    for (auto& k : keypoints_tmp) std::cout << arma::size(k) << '\n';
+    arma::mat descriptors;
+    arma::field<arma::umat> keypoints;
+    ComputeDescriptors(blurred_images, keypoints_tmp, descriptors, keypoints,
+                       false);
+
+    std::cout << "descriptors:\n";
+    std::cout << "final keypoints:\n";
   }
+
+  arma::mat a{1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12};
+  arma::mat b(3, 4, arma::fill::ones);
+  a = arma::reshape(a, 3, 4);
+
+  arma::umat comp = a == b;
+  std::cout << comp << '\n';
+  arma::umat is_valid = arma::ind2sub(arma::size(a), arma::find(comp));
+  std::cout << is_valid << '\n';
+
+  std::cout << arma::size(arma::find(a)) << '\n';
+  std::cout << arma::size(arma::find(b)) << '\n';
 
   return EXIT_SUCCESS;
 }

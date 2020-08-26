@@ -2,11 +2,15 @@
 #define UZH_MATLAB_PORT_H_
 
 #include "matlab_port/find.h"
+#include "matlab_port/fspecial.h"
 #include "matlab_port/im2double.h"
 #include "matlab_port/imagesc.h"
+#include "matlab_port/imdilate.h"
+#include "matlab_port/imgradient.h"
 #include "matlab_port/imresize.h"
 #include "matlab_port/imrotate.h"
 #include "matlab_port/meshgrid.h"
+#include "matlab_port/padarray.h"
 #include "matlab_port/pdist2.h"
 #include "matlab_port/scatter.h"
 #include "matlab_port/subplot.h"

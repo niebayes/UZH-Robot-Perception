@@ -9,7 +9,7 @@ namespace uzh {
 //! The returned arma::Mat<V> is not transposed to accomodate the row-major
 //! convection of OpenCV.
 template <class V>
-arma::Mat<V> cv2arma(cv::Mat &C, bool copy = true) {
+arma::Mat<V> cv2arma(const cv::Mat &C, bool copy = true) {
   /*
    OpenCV (cv::Mat) is Row-major order and Armadillo is Column-major order.
    If copy=true, arma::inplace_trans(A) should be used to keep
