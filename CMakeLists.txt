@@ -83,14 +83,17 @@ else()
 endif()
 
 # pcl
-find_package(PCL REQUIRED)
-if (PCL_FOUND)
-    message("Found PCL")
-else() 
-    message("Not Found PCL")
-endif()
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
+# find_package(PCL REQUIRED)
+# if (PCL_FOUND)
+#     message("Found PCL")
+# else() 
+#     message("Not Found PCL")
+# endif()
+# link_directories(${PCL_LIBRARY_DIRS})
+# add_definitions(${PCL_DEFINITIONS})
+
+# armadillo 
+find_package(Armadillo REQUIRED)
 
 # Add additional include path for header files
 include_directories(BEFORE
@@ -106,7 +109,8 @@ include_directories(BEFORE
     ${EIGEN3_INCLUDE_DIRS}
     # "/usr/include/eigen3/unsupported"
     ${manif_INCLUDE_DIRS}
-    ${PCL_INCLUDE_DIRS}
+    ${ARMADILLO_INCLUDE_DIRS}
+    # ${PCL_INCLUDE_DIRS}
     # ${Sophus_INCLUDE_DIRS}
     # "/Users/bayes/slam_lib/Sophus"
     # ${Pangolin_INCLUDE_DIRS}

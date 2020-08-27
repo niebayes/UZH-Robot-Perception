@@ -1,0 +1,5 @@
+/home/bayes/uzh_robot_perception_codes/CMakeFiles/rebuild_cache.dir
+/home/bayes/uzh_robot_perception_codes/CMakeFiles/edit_cache.dir
+/home/bayes/uzh_robot_perception_codes/src/ex4/CMakeFiles/rebuild_cache.dir
+/home/bayes/uzh_robot_perception_codes/src/ex4/CMakeFiles/sift.dir
+/home/bayes/uzh_robot_perception_codes/src/ex4/CMakeFiles/edit_cache.dir

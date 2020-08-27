@@ -11,10 +11,10 @@
 #include "armadillo"
 #include "transfer.h"
 // #include "common.h"
-// #include "feature.h"
 #include "google_suite.h"
 // #include "interpolation.h"
 // #include "io.h"
+#include "feature/matching.h"
 #include "matlab_port.h"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
@@ -234,8 +234,7 @@ arma::field<arma::umat> ExtractKeypoints(const arma::field<arma::cube>& DoGs,
 // will be assigned to each descriptor.
 void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
                         const arma::field<arma::umat>& keypoints,
-                        arma::mat& descriptors,
-                        arma::field<arma::umat>& final_keypoints,
+                        arma::mat& descriptors, arma::umat& final_keypoints,
                         const bool rotation_invariant = false) {
   if (blurred_images.size() != keypoints.size())
     LOG(ERROR) << "The number of octaves are not consistent.";
@@ -244,6 +243,10 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
   // The magic number 1.5 is taken from Lowe's paper.
   const arma::mat gaussian_kernel =
       uzh::cv2arma<double>(uzh::fspecial(uzh::GAUSSIAN, 16, 16.0 * 1.5)).t();
+
+  // Construct fields of descriptors and keypoints to be populated.
+  arma::field<arma::mat> descs;
+  arma::field<arma::umat> kpts;
 
   // Iterate over each octave
   for (int o = 0; o < kNumOctaves; ++o) {
@@ -266,7 +269,7 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
       // Filter out irrelevant keypoints based on the image index
       const arma::uvec is_kept_in_image = (oct_keypoints.row(2) == img_idx);
       const arma::umat kept_keypoints = oct_keypoints(is_kept_in_image);
-      const arma::umat kept_keypoints_xy = kept_keypoints.head_rows(2);
+      arma::umat kept_keypoints_xy = kept_keypoints.head_rows(2);
 
       // Compute image gradient for use of Histogram of Oriented Gradients.
       const arma::mat image = oct_blurred_images.slice(img_idx);
@@ -335,15 +338,41 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
               // Compute histogram for the current (i, j)-th quadrant.
               // Before creating the histogram, the orientations of gradients
               // are weighted according to the gradients magnitude.
-              // const arma::vec hist = uzh::weightedhist(
+              const arma::vec hist =
+                  uzh::weightedhist(arma::vectorise(derotated_patch_grad_dir(
+                                        4 * j, 4 * i, arma::size(4, 4))),
+                                    arma::vectorise(derotated_patch_grad_mag_w(
+                                        4 * j, 4 * i, arma::size(4, 4))),
+                                    arma::linspace<arma::vec>(180, 180, 9));
 
-              // );
+              // Populate the subvector of the descriptor vector.
+              img_descriptor.col(corner_idx).subvec(start_idx, start_idx + 7) =
+                  hist.head(8);
+              std::cout << start_idx << '\n';
             }
           }
         }
       }
+      // Adapt keypoint coordinates such that they correspond to the original
+      // image resolutions. This adaption is for presentation of superimposed
+      // keypoints on original image.
+
+      // Upper one octave, the image is domwsampled by a factor of 2. To inverse
+      // this, multiply each coordinates with the octave_idx-th power
+      // of 2, where octave_idx starts from 0.
+      kept_keypoints_xy *= std::pow(2, o);
+
+      // Only store valid keypoints and the corresponding descriptors.
+      descs << img_descriptor.cols(is_valid);
+      kpts << kept_keypoints_xy.cols(is_valid);
     }
   }
+
+  // Normalize each descriptor vector such that they have unit Euclidean norm.
+  // This will make them invariant to linear illumination changes.
+  // FIXME Linking error!
+  descriptors = arma::normalise(uzh::cell2mat<double>(descs));
+  final_keypoints = uzh::cell2mat<arma::uword>(kpts);
 }
 
 int main(int /*argc*/, char** argv) {
@@ -385,8 +414,8 @@ int main(int /*argc*/, char** argv) {
   images(1) = right_image;
 
   // Construct fields of keypoints and descriptors to be populated.
-  arma::field<cv::Mat> keypoints(2);
-  arma::field<cv::Mat> descriptors(2);
+  arma::field<arma::umat> keypoints(2);
+  arma::field<arma::mat> descriptors(2);
 
   for (int i = 0; i < images.size(); ++i) {
     // Compute the image pyramid.
@@ -409,32 +438,26 @@ int main(int /*argc*/, char** argv) {
         ExtractKeypoints(DoGs, kKeypointsThreshold);
     std::cout << "keypoints_tmp:\n";
     for (auto& k : keypoints_tmp) std::cout << arma::size(k) << '\n';
-    arma::mat descriptors;
-    arma::field<arma::umat> keypoints;
-    ComputeDescriptors(blurred_images, keypoints_tmp, descriptors, keypoints,
-                       false);
-
+    ComputeDescriptors(blurred_images, keypoints_tmp, descriptors(i),
+                       keypoints(i), false);
     std::cout << "descriptors:\n";
     std::cout << "final keypoints:\n";
   }
 
-  arma::mat a{1, 2, 3, 4, 5, 6, 7, 8, 9, 11, 12};
-  arma::mat b(3, 4, arma::fill::ones);
-  a = arma::reshape(a, 3, 4);
+  // Match descriptors
+  // cv::Mat query_descriptor, database_descriptor;
+  // database_descriptor = uzh::arma2cv<double>(descriptors(0));
+  // query_descriptor = uzh::arma2cv<double>(descriptors(1));
+  // std::cout << "query.size" << '\n';
+  // std::cout << query_descriptor.size << '\n';
+  // cv::Mat matches;
+  // MatchDescriptors(query_descriptor, database_descriptor, matches, 4.0);
 
-  arma::umat comp = a == b;
-  std::cout << comp << '\n';
-  arma::umat is_valid = arma::ind2sub(arma::size(a), arma::find(comp));
-  std::cout << is_valid << '\n';
-
-  std::cout << arma::size(arma::find(a)) << '\n';
-  std::cout << arma::size(arma::find(b)) << '\n';
+  // cv::Mat query_keypoints, database_keypoints;
+  // cv::drawMatches();
 
   arma::mat m(10, 10, arma::fill::ones);
   arma::field<arma::mat> g = uzh::imgradient(m);
-  std::cout << g(0) << '\n';
-  std::cout << "Gmag, Gdir" << '\n';
-  std::cout << g(1) << '\n';
 
   return EXIT_SUCCESS;
 }

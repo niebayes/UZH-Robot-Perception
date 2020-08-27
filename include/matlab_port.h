@@ -1,6 +1,7 @@
 #ifndef UZH_MATLAB_PORT_H_
 #define UZH_MATLAB_PORT_H_
 
+#include "matlab_port/cell2mat.h"
 #include "matlab_port/find.h"
 #include "matlab_port/fspecial.h"
 #include "matlab_port/im2double.h"
@@ -9,6 +10,7 @@
 #include "matlab_port/imgradient.h"
 #include "matlab_port/imresize.h"
 #include "matlab_port/imrotate.h"
+#include "matlab_port/matchFeatures.h"
 #include "matlab_port/meshgrid.h"
 #include "matlab_port/padarray.h"
 #include "matlab_port/pdist2.h"
