@@ -1,11 +1,13 @@
 #include <algorithm>
 #include <cmath>
 #include <numeric>
+#include <random>
 #include <string>
 #include <tuple>
 #include <vector>
 
 #include "Eigen/Dense"
+#include "algorithm.h"
 #include "armadillo"
 #include "transfer.h"
 // #include "common.h"
@@ -240,23 +242,27 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
   const int kNumOctaves = blurred_images.size();
 
   // The magic number 1.5 is taken from Lowe's paper.
-  const arma::mat kGaussianWindow =
+  const arma::mat gaussian_kernel =
       uzh::cv2arma<double>(uzh::fspecial(uzh::GAUSSIAN, 16, 16.0 * 1.5)).t();
 
+  // Iterate over each octave
   for (int o = 0; o < kNumOctaves; ++o) {
-    // Get the blurred images and keypoints in o-th octave.
+    // Get the blurred images and keypoints in current octave
+    // oct_blurred_images [w x h x num_images_per_octave]
+    // oct_keypoints [3 x n] where the last row is the scale.
     const arma::cube oct_blurred_images = blurred_images(o);
     const arma::umat oct_keypoints = keypoints(o);
 
     // Only consider relevant images involved in the extraction of the
-    // keypoints we detected.
-
+    // keypoints.
     // Extract the scale indices of the coordinates of the keypoints and
     // unique them. These indices are indicators from which we can tell which
     // images in the blurred images of the current octave have contributed to
     // the extraction of keypoints.
     const arma::urowvec kImageIndices = arma::unique(oct_keypoints.row(2));
-    for (arma::uword img_idx : kImageIndices) {
+
+    // Iterate over each involved image
+    for (int img_idx : kImageIndices) {
       // Filter out irrelevant keypoints based on the image index
       const arma::uvec is_kept_in_image = (oct_keypoints.row(2) == img_idx);
       const arma::umat kept_keypoints = oct_keypoints(is_kept_in_image);
@@ -264,31 +270,76 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
 
       // Compute image gradient for use of Histogram of Oriented Gradients.
       const arma::mat image = oct_blurred_images.slice(img_idx);
-      const arma::cube gradient = uzh::imgradient(image);
-      const arma::mat grad_magnitude = gradient.slice(0);
-      const arma::mat grad_direction = gradient.slice(1);
+      const arma::field<arma::mat> gradient = uzh::imgradient(image);
+      const arma::mat grad_magnitude = gradient(0);
+      const arma::mat grad_direction = gradient(1);
 
-      // Construct descriptor matrix to be populated.
-      arma::mat descs;
+      // Construct descriptor matrix for the current image.
       const int kNumKeypoints = kept_keypoints_xy.n_cols;
-      // Mask to mask out all invalid keypoints that are out of the boundary.
-      arma::uvec is_valid(kNumKeypoints, arma::fill::zeros);
-      for (int corner_idx = 0; corner_idx < kNumKeypoints; ++corner_idx) {
-        const int x = kept_keypoints_xy(0, corner_idx);
-        const int y = kept_keypoints_xy(0, corner_idx);
-        // Ensure all the pixels inside the patch are within the image boundary.
-        // The patch is 16 x 16 with the radius not being odd. And we take the
-        // point 8 pixels away from the upper left and 7 pixels aways from the
-        // lower right as the anchor point.
-        if (x >= 8 && x < image.n_cols - 7 && y >= 8 && y < image.n_rows - 7) {
-          is_valid(corner_idx) = 1;
-          // Convolve the patch with Gaussian window.
-          // Gmag_loc = Gmag(row - 8 : row + 7, col - 8 : col + 7);
-          // Gmag_loc_w = Gmag_loc.*gausswindow;
-          // Gdir_loc = Gdir(row - 8 : row + 7, col - 8 : col + 7);
+      // For each keypoints in this image, there's a 128-length descriptor
+      // vector computed from Histogram of Oriented Gradients.
+      arma::mat img_descriptor(128, kNumKeypoints, arma::fill::zeros);
 
-          // Gmag_loc_derotated_w = Gmag_loc_w;
-          // Gdir_loc_derotated = Gdir_loc;
+      // Mask to mask out all keypoints around which the patches are out of the
+      // image boundary.
+      arma::uvec is_valid(kNumKeypoints, arma::fill::zeros);
+
+      // Iterate over each kept keypoints
+      for (int corner_idx = 0; corner_idx < kNumKeypoints; ++corner_idx) {
+        // Get the row and col indices. Note y -> row, x -> col.
+        const int row = kept_keypoints_xy(1, corner_idx);
+        const int col = kept_keypoints_xy(0, corner_idx);
+
+        // Ensure all the pixels inside the patch are within the image boundary.
+        // The patch is 16 x 16, so we take the point 8 pixels away from the
+        // upper left and 7 pixels aways from the lower right as the anchor
+        // point.
+        if (row >= 8 && col >= 8 && row < image.n_rows - 7 &&
+            col < image.n_cols - 7) {
+          is_valid(corner_idx) = 1;
+          // Convolve the patch with the Gaussian window.
+          const arma::mat patch_grad_mag =
+              grad_magnitude(row, col, arma::size(16, 16));
+          // Note the gaussian_kernel is symmetric, hence no need to flip it
+          // around. The % operator is element-wise multiplication.
+          const arma::mat patch_grad_mag_w = patch_grad_mag % gaussian_kernel;
+          // Gradient direction is unchanged after convolution.
+          const arma::mat patch_grad_dir =
+              grad_direction(row, col, arma::size(16, 16));
+
+          // If rotation_invariant is true, derotate the patch based on the
+          // dominant orientation to achieve rotation invariance.
+          // Clone the patch to be derotated.
+          arma::mat derotated_patch_grad_mag_w = patch_grad_mag_w;
+          arma::mat derotated_patch_grad_dir = patch_grad_dir;
+          if (rotation_invariant) {
+            // TODO(bayes)
+          }
+
+          // Compute the descriptor for this patch using Histogram of Oriented
+          // Gradients.
+          // The current 16 x 16 patch is divided into 4 subpatches, and each
+          // [8 x 8] subpatches is then divided into 4 quadrants, i.e.
+          // 4 * [4 x 4] subsubpatches. For each quadrant, an 8-bit histogram of
+          // the orientations of the gradients is computed. The 8 values of the
+          // histogram is then populated into the corresponding subvector of the
+          // current descriptor vector. Hence the length of the descriptor
+          // vector is 4 * 4 * 8 = 128.
+
+          // Starting index of the current subvector in the descriptor vector.
+          int start_idx = 0;
+          // Iterate over each quadrant in the current patch. There's in total
+          // 4 * 4 = 16 quadrants.
+          for (int j = 0; j < 4; ++j) {
+            for (int i = 0; i < 4; ++i) {
+              // Compute histogram for the current (i, j)-th quadrant.
+              // Before creating the histogram, the orientations of gradients
+              // are weighted according to the gradients magnitude.
+              // const arma::vec hist = uzh::weightedhist(
+
+              // );
+            }
+          }
         }
       }
     }
@@ -379,8 +430,11 @@ int main(int /*argc*/, char** argv) {
   std::cout << arma::size(arma::find(a)) << '\n';
   std::cout << arma::size(arma::find(b)) << '\n';
 
-  arma::mat m(907, 1210, arma::fill::randn);
-  arma::cube g = uzh::imgradient(m);
+  arma::mat m(10, 10, arma::fill::ones);
+  arma::field<arma::mat> g = uzh::imgradient(m);
+  std::cout << g(0) << '\n';
+  std::cout << "Gmag, Gdir" << '\n';
+  std::cout << g(1) << '\n';
 
   return EXIT_SUCCESS;
 }
