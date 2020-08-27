@@ -19,7 +19,7 @@ enum MatchingMetric : int {
 };
 
 //@brief Find matching features based on matching the two sets of descriptors.
-std::tuple<arma::umat /*index_pairs*/, arma::mat /*match_metric*/>
+std::tuple<arma::umat /*index_pairs*/, arma::mat /*distance*/>
 matchFeatures(const arma::mat& query_descriptor,
               const arma::mat& database_descriptor,
               const double max_threshold = 10.0, const double max_ratio = 0.6,
@@ -27,6 +27,10 @@ matchFeatures(const arma::mat& query_descriptor,
               const int matching_metric = uzh::SSD,
               const bool unique_matches = true) {
   //
+  arma::umat index_pairs; 
+  arma::mat distance;
+
+  return {index_pairs, distance};
 }
 
 }  // namespace uzh

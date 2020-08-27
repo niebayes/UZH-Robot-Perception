@@ -28,7 +28,7 @@ arma::field<arma::cube> ComputeDoGs(
       // arma::abs to ensure every element is not negative.
       DoG.slice(d) = arma::abs(blurred_images(o).slice(d + 1) -
                                blurred_images(o).slice(d));
-      DoG.slice(d)(0, 0, arma::size(8, 8)).print("DoG(d)");
+      // DoG.slice(d)(0, 0, arma::size(8, 8)).print("DoG(d)");
     }
 
     DoGs(o) = DoG;

@@ -6,11 +6,11 @@
 
 #include "algorithm/weightedhist.h"
 #include "armadillo"
+#include "glog/logging.h"
 #include "matlab_port/cell2mat.h"
 #include "matlab_port/fspecial.h"
 #include "matlab_port/imgradient.h"
 #include "sift/derotate.h"
-#include "glog/logging.h"
 
 //@brief Compute descriptors from the patches around the putative keypoints.
 //@param blurred_images Blurred images computed from the ComputeBlurredImages
@@ -59,9 +59,14 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
     // Iterate over each involved image
     for (int img_idx : kImageIndices) {
       // Filter out irrelevant keypoints based on the image index
-      const arma::uvec is_kept_in_image = (oct_keypoints.row(2) == img_idx);
-      const arma::umat kept_keypoints = oct_keypoints(is_kept_in_image);
+      // oct_keypoints.row(2).print("oct 2");
+      const arma::uvec is_kept_in_image =
+          arma::find(oct_keypoints.row(2) == img_idx);
+      // is_kept_in_image.print("is_kept 2");
+      const arma::umat kept_keypoints = oct_keypoints.cols(is_kept_in_image);
+      // kept_keypoints.print("keypoints");
       arma::umat kept_keypoints_xy = kept_keypoints.head_rows(2);
+      // kept_keypoints_xy.print("keypoints xy");
 
       // Compute image gradient for use of Histogram of Oriented Gradients.
       const arma::mat image = oct_blurred_images.slice(img_idx);
@@ -94,13 +99,13 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
           is_valid(corner_idx) = 1;
           // Convolve the patch with the Gaussian window.
           const arma::mat patch_grad_mag =
-              grad_magnitude(row, col, arma::size(16, 16));
+              grad_magnitude(row - 8, col - 8, arma::size(16, 16));
           // Note the gaussian_kernel is symmetric, hence no need to flip it
           // around. The % operator is element-wise multiplication.
           const arma::mat patch_grad_mag_w = patch_grad_mag % gaussian_kernel;
           // Gradient direction is unchanged after convolution.
           const arma::mat patch_grad_dir =
-              grad_direction(row, col, arma::size(16, 16));
+              grad_direction(row - 8, col - 8, arma::size(16, 16));
 
           // If rotation_invariant is true, derotate the patch based on the
           // dominant orientation to achieve rotation invariance.
@@ -130,17 +135,22 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
               // Compute histogram for the current (i, j)-th quadrant.
               // Before creating the histogram, the orientations of gradients
               // are weighted according to the gradients magnitude.
+              derotated_patch_grad_dir(4 * j, 4 * i, arma::size(4, 4))
+                  .print("patch dir\n");
+              derotated_patch_grad_mag_w(4 * j, 4 * i, arma::size(4, 4))
+                  .print("patch mag\n");
               const arma::vec hist =
                   uzh::weightedhist(arma::vectorise(derotated_patch_grad_dir(
                                         4 * j, 4 * i, arma::size(4, 4))),
                                     arma::vectorise(derotated_patch_grad_mag_w(
                                         4 * j, 4 * i, arma::size(4, 4))),
-                                    arma::linspace<arma::vec>(180, 180, 9));
+                                    arma::linspace<arma::vec>(-180, 180, 9));
 
               // Populate the subvector of the descriptor vector.
               img_descriptor.col(corner_idx).subvec(start_idx, start_idx + 7) =
                   hist.head(8);
-              std::cout << start_idx << '\n';
+              hist.print("hist\n");
+              start_idx += 8;
             }
           }
         }
@@ -155,8 +165,9 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
       kept_keypoints_xy *= std::pow(2, o);
 
       // Only store valid keypoints and the corresponding descriptors.
-      descs << img_descriptor.cols(is_valid);
-      kpts << kept_keypoints_xy.cols(is_valid);
+      // arma::find(is_valid).t().print("is_valid to indices");
+      descs << img_descriptor.cols(arma::find(is_valid));
+      kpts << kept_keypoints_xy.cols(arma::find(is_valid));
     }
   }
 

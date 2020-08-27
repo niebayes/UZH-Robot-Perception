@@ -35,7 +35,7 @@ int main(int /*argc*/, char** argv) {
 
   const std::string kFilePath{"data/ex4/"};
   cv::Mat img_1_show = cv::imread(kFilePath + "img_1.jpg", cv::IMREAD_COLOR);
-  cv::Mat img_2_show = cv::imread(kFilePath + "img_1.jpg", cv::IMREAD_COLOR);
+  cv::Mat img_2_show = cv::imread(kFilePath + "img_2.jpg", cv::IMREAD_COLOR);
   // cv::Mat img_1, img_2;
   // cv::cvtColor(img_1_show, img_1, cv::COLOR_BGR2GRAY, 1);
   // cv::cvtColor(img_2_show, img_2, cv::COLOR_BGR2GRAY, 1);
@@ -57,9 +57,6 @@ int main(int /*argc*/, char** argv) {
   arma::field<cv::Mat> images(2);
   images(0) = left_image;
   images(1) = right_image;
-  std::cout << left_image.rowRange(0, 8).colRange(0, 8) << '\n';
-  std::cout << "two images\n";
-  std::cout << right_image.rowRange(0, 8).colRange(0, 8) << '\n';
 
   // Construct fields of keypoints and descriptors to be populated.
   arma::field<arma::umat> keypoints(2);
@@ -89,8 +86,29 @@ int main(int /*argc*/, char** argv) {
     ComputeDescriptors(blurred_images, keypoints_tmp, descriptors(i),
                        keypoints(i), false);
     std::cout << "descriptors:\n";
+    for (auto& d : descriptors) std::cout << arma::size(d) << '\n';
     std::cout << "final keypoints:\n";
+    for (auto& k : keypoints) std::cout << arma::size(k) << '\n';
+    std::cout << i << "-th image\n";
   }
+
+  // for (arma::umat kpts : keypoints) {
+  //   arma::urowvec kpts_x = kpts.row(0);
+  //   arma::urowvec kpts_y = kpts.row(1);
+  //   const int num_kpts = kpts_x.size();
+  //   Eigen::VectorXi x(num_kpts), y(num_kpts);
+  //   for (int i = 0; i < num_kpts; ++i) {
+  //     x(i) = kpts_x(i);
+  //     y(i) = kpts_y(i);
+  //   }
+  //   uzh::scatter(img_1_show, x, y, 10, {0, 0, 255}, cv::FILLED);
+  //   cv::imshow("", img_1_show);
+  //   cv::waitKey(0);
+
+  //   uzh::scatter(img_2_show, x, y, 10, {0, 255, 0}, cv::FILLED);
+  //   cv::imshow("", img_2_show);
+  //   cv::waitKey(0);
+  // }
 
   // Match descriptors
   // cv::Mat query_descriptor, database_descriptor;
@@ -103,9 +121,6 @@ int main(int /*argc*/, char** argv) {
 
   // cv::Mat query_keypoints, database_keypoints;
   // cv::drawMatches();
-
-  arma::mat m(10, 10, arma::fill::ones);
-  arma::field<arma::mat> g = uzh::imgradient(m);
 
   return EXIT_SUCCESS;
 }
