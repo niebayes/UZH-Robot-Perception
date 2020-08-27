@@ -1,6 +1,8 @@
 #ifndef UZH_MATLAB_PORT_IMRESIZE_H_
 #define UZH_MATLAB_PORT_IMRESIZE_H_
 
+#include <cmath>
+
 #include "glog/logging.h"
 #include "opencv2/core.hpp"
 #include "opencv2/imgproc.hpp"
@@ -18,7 +20,12 @@ namespace uzh {
 //@param The resized image.
 cv::Mat imresize(const cv::Mat& image, const double resize_factor) {
   if (image.empty()) LOG(ERROR) << "Empty input image.";
-  cv::Mat resized_image;
+
+  //! Note, to accomodate matlab's result, we ceil the rows and cols.
+  int rows = std::ceil(image.rows * resize_factor);
+  int cols = std::ceil(image.cols * resize_factor);
+  cv::Mat resized_image = cv::Mat::zeros(rows, cols, CV_64F);
+
   int interpolation_method;
   if (resize_factor == 1)
     return image;
@@ -28,7 +35,11 @@ cv::Mat imresize(const cv::Mat& image, const double resize_factor) {
     interpolation_method = cv::INTER_AREA;
   else
     LOG(ERROR) << "Invalid resize factor";
-  cv::resize(image, resized_image, {}, resize_factor, resize_factor,
+
+  //! This will get the result slightly different to that of matlab.
+  // cv::resize(image, resized_image, {}, resize_factor, resize_factor,
+  //            interpolation_method);
+  cv::resize(image, resized_image, resized_image.size(), 0, 0,
              interpolation_method);
   return resized_image;
 }
