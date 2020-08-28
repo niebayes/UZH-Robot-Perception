@@ -13,6 +13,7 @@
 #include "matlab_port/pdist2.h"
 #include "matlab_port/scatter.h"
 #include "matlab_port/unique.h"
+#include "opencv2/core/eigen.hpp"
 
 //@brief Match descriptors based on the Sum of Squared Distance (SSD) measure.
 //@param query_descriptors [m x q] matrix where each column corresponds to a

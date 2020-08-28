@@ -8,8 +8,8 @@
 //@param keypoints_threshold Below which the points are suppressed before
 // selection of keypoitns to attenuate effect of noise.
 //@return Coordinate matrices for all octaves where keypoints are stored column
-// by columns. The coordinates are 3D vectors where the first two dimension
-// correspond to space and the last one corresponds to scale.
+// by columns. The coordinates are 3D vectors where the first two dimensions
+// are row and col coordinates and the last dimension corresponds to scale.
 arma::field<arma::umat> ExtractKeypoints(const arma::field<arma::cube>& DoGs,
                                          const double keypoints_threshold) {
   const int kNumOctaves = DoGs.size();

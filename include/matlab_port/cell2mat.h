@@ -7,7 +7,14 @@ namespace uzh {
 
 template <typename T>
 arma::Mat<T> cell2mat(const arma::field<arma::Mat<T>>& cell) {
-  if (cell.empty()) LOG(ERROR) << "Empty input cell.";
+  if (cell.empty()) LOG(FATAL) << "Empty input cell.";
+  //! arma::field can contain "undefined" object, that is matrix with only rows
+  //! or columns specified.
+  for (arma::Mat<T> mat : cell) {
+    if (mat.n_rows == 0 || mat.n_cols == 0)
+      LOG(FATAL)
+          << "Please check the items in the cell, some of them are undefined.";
+  }
 
   const int kNumMats = cell.n_elem;
   if (kNumMats == 1) return cell(0);
@@ -47,7 +54,7 @@ arma::Mat<T> cell2mat(const arma::field<arma::Mat<T>>& cell) {
     mat = concated_mat;
 
   } else {
-    LOG(ERROR) << "At least one dimension has to be consistent.";
+    LOG(FATAL) << "At least one dimension has to be consistent.";
   }
 
   return mat;

@@ -62,7 +62,8 @@ cv::Mat imresize(const cv::Mat& image, const int rows, const int cols) {
     interpolation_method = cv::INTER_CUBIC;
   else if (rows < image.rows || cols < image.cols)
     interpolation_method = cv::INTER_AREA;
-  cv::resize(image, resized_image, {rows, cols}, 0.0, 0.0,
+  // In OpenCV, cv::Size is specified with width x height.
+  cv::resize(image, resized_image, {cols, rows}, 0.0, 0.0,
              interpolation_method);
   return resized_image;
 }

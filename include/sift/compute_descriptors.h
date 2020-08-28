@@ -2,7 +2,8 @@
 #define UZH_SIFT_COMPUTE_DESCRIPTORS_H_
 
 #include <cmath>
-#include <iostream>
+#include <tuple>
+#include <vector>
 
 #include "algorithm/weightedhist.h"
 #include "armadillo"
@@ -18,16 +19,17 @@
 // keypoints.
 //@param keypoints Putative keypoints computed from the ExtractKeypoints
 // function. These keypoints are then refined to find the final keypoints.
-//@param descriptors containing the returned descriptors where each column is a
-// descriptor vector.
-//@param final_keypoints TODO
+//@param descriptors Matrix containing the returned descriptors where each
+// column is a 128 dimensional descriptor vector.
+//@param final_keypoints Matrix where each column contains the 2D coordinates
+// vector corresponding to the original-size image.
 //@param rotation_invariant Boolean value used to denote whether the computed
 // descriptors are invariant to rotation or not. If true, a dominant orientation
 // will be assigned to each descriptor.
-void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
-                        const arma::field<arma::umat>& keypoints,
-                        arma::mat& descriptors, arma::umat& final_keypoints,
-                        const bool rotation_invariant = false) {
+std::tuple<arma::mat /*descriptors*/, arma::umat /*final_keypoints*/>
+ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
+                   const arma::field<arma::umat>& keypoints,
+                   const bool rotation_invariant = false) {
   if (blurred_images.size() != keypoints.size())
     LOG(ERROR) << "The number of octaves are not consistent.";
   const int kNumOctaves = blurred_images.size();
@@ -37,8 +39,10 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
       uzh::cv2arma<double>(uzh::fspecial(uzh::GAUSSIAN, 16, 16.0 * 1.5)).t();
 
   // Construct fields of descriptors and keypoints to be populated.
-  arma::field<arma::mat> descs;
-  arma::field<arma::umat> kpts;
+  std::vector<arma::mat> descs_container;
+  std::vector<arma::umat> final_kpts_container;
+  // arma::field<arma::mat> descriptors;
+  // arma::field<arma::umat> final_keypoints;
 
   // Iterate over each octave
   for (int o = 0; o < kNumOctaves; ++o) {
@@ -59,14 +63,10 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
     // Iterate over each involved image
     for (int img_idx : kImageIndices) {
       // Filter out irrelevant keypoints based on the image index
-      // oct_keypoints.row(2).print("oct 2");
       const arma::uvec is_kept_in_image =
           arma::find(oct_keypoints.row(2) == img_idx);
-      // is_kept_in_image.print("is_kept 2");
-      const arma::umat kept_keypoints = oct_keypoints.cols(is_kept_in_image);
-      // kept_keypoints.print("keypoints");
-      arma::umat kept_keypoints_xy = kept_keypoints.head_rows(2);
-      // kept_keypoints_xy.print("keypoints xy");
+      const arma::umat kept_keypoints_3d = oct_keypoints.cols(is_kept_in_image);
+      arma::umat kept_keypoints_2d = kept_keypoints_3d.head_rows(2);
 
       // Compute image gradient for use of Histogram of Oriented Gradients.
       const arma::mat image = oct_blurred_images.slice(img_idx);
@@ -75,7 +75,7 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
       const arma::mat grad_direction = gradient(1);
 
       // Construct descriptor matrix for the current image.
-      const int kNumKeypoints = kept_keypoints_xy.n_cols;
+      const int kNumKeypoints = kept_keypoints_2d.n_cols;
       // For each keypoints in this image, there's a 128-length descriptor
       // vector computed from Histogram of Oriented Gradients.
       arma::mat img_descriptor(128, kNumKeypoints, arma::fill::zeros);
@@ -86,32 +86,36 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
 
       // Iterate over each kept keypoints
       for (int corner_idx = 0; corner_idx < kNumKeypoints; ++corner_idx) {
-        // Get the row and col indices. Note y -> row, x -> col.
-        const int row = kept_keypoints_xy(1, corner_idx);
-        const int col = kept_keypoints_xy(0, corner_idx);
+        // Get the row and col indices.
+        //! Note, the keypoints computed from ExtractKeypoints are stored as 3D
+        //! vectors where the first two dimensions are row index and col index
+        //! respectively.
+        const int start_row = kept_keypoints_2d(0, corner_idx);
+        const int start_col = kept_keypoints_2d(1, corner_idx);
 
         // Ensure all the pixels inside the patch are within the image boundary.
         // The patch is 16 x 16, so we take the point 8 pixels away from the
         // upper left and 7 pixels aways from the lower right as the anchor
         // point.
-        if (row >= 8 && col >= 8 && row < image.n_rows - 7 &&
-            col < image.n_cols - 7) {
+        if (start_row >= 8 && start_col >= 8 && start_row < image.n_rows - 15 &&
+            start_col < image.n_cols - 15) {
           is_valid(corner_idx) = 1;
           // Convolve the patch with the Gaussian window.
           const arma::mat patch_grad_mag =
-              grad_magnitude(row - 8, col - 8, arma::size(16, 16));
+              grad_magnitude(start_row - 8, start_col - 8, arma::size(16, 16));
           // Note the gaussian_kernel is symmetric, hence no need to flip it
           // around. The % operator is element-wise multiplication.
           const arma::mat patch_grad_mag_w = patch_grad_mag % gaussian_kernel;
           // Gradient direction is unchanged after convolution.
           const arma::mat patch_grad_dir =
-              grad_direction(row - 8, col - 8, arma::size(16, 16));
+              grad_direction(start_row - 8, start_col - 8, arma::size(16, 16));
 
           // If rotation_invariant is true, derotate the patch based on the
           // dominant orientation to achieve rotation invariance.
           // Clone the patch to be derotated.
           arma::mat derotated_patch_grad_mag_w = patch_grad_mag_w;
           arma::mat derotated_patch_grad_dir = patch_grad_dir;
+
           if (rotation_invariant) {
             // TODO(bayes)
           }
@@ -162,18 +166,33 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
       // Upper one octave, the image is domwsampled by a factor of 2. To inverse
       // this, multiply each coordinates with the octave_idx-th power
       // of 2, where octave_idx starts from 0.
-      kept_keypoints_xy *= std::pow(2, o);
+      kept_keypoints_2d *= std::pow(2, o);
 
       // Only store valid keypoints and the corresponding descriptors.
-      // arma::find(is_valid).t().print("is_valid to indices");
-      descs << img_descriptor.cols(arma::find(is_valid));
-      kpts << kept_keypoints_xy.cols(arma::find(is_valid));
+      const arma::uvec valid_indices = arma::find(is_valid);
+      if (!valid_indices.empty()) {
+        descs_container.push_back(img_descriptor.cols(valid_indices));
+        final_kpts_container.push_back(kept_keypoints_2d.cols(valid_indices));
+      }
     }
   }
 
+  // Convert to field for use of uzh::cell2mat
+  // TODO(bayes) Avoid this intermediate process.
+  const int kNumMats = descs_container.size();
+  arma::field<arma::mat> descriptors(kNumMats);
+  arma::field<arma::umat> final_kpts(kNumMats);
+  for (int i = 0; i < kNumMats; ++i) {
+    descriptors(i) = descs_container[i];
+    final_kpts(i) = final_kpts_container[i];
+  }
+
   // Normalize each descriptor vector such that they have unit Euclidean norm.
-  descriptors = arma::normalise(uzh::cell2mat<double>(descs));
-  final_keypoints = uzh::cell2mat<arma::uword>(kpts);
+  const arma::mat normalized_descriptors =
+      arma::normalise(uzh::cell2mat<double>(descriptors));
+  const arma::umat final_keypoints = uzh::cell2mat<arma::uword>(final_kpts);
+
+  return {normalized_descriptors, final_keypoints};
 }
 
 #endif  // UZH_SIFT_COMPUTE_DESCRIPTORS_H_

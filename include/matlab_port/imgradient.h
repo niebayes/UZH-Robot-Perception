@@ -18,9 +18,6 @@ arma::field<arma::mat> imgradient(const arma::mat& image,
 
   arma::field<arma::mat> mag_dir(2);
 
-  // std::cout << "image" << '\n';
-  // std::cout << image << '\n';
-
   // Compute the first derivatives and the magnitude.
   // Use padarray to escape from the weird behavior.
   cv::Mat img = uzh::arma2cv<double>(image);
@@ -36,7 +33,7 @@ arma::field<arma::mat> imgradient(const arma::mat& image,
   Gx = uzh::cv2arma<double>(sobel_x).t();
   Gy = uzh::cv2arma<double>(sobel_y).t();
   Gmag = uzh::cv2arma<double>(sobel_mag).t();
-  Gdir = arma::atan2(Gx, Gy) * 180 / arma::datum::pi;
+  Gdir = arma::atan2(Gy, Gx) * 180 / arma::datum::pi;
 
   mag_dir(0) = Gmag;
   mag_dir(1) = Gdir;
