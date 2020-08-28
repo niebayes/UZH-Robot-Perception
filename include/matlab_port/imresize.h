@@ -22,8 +22,8 @@ cv::Mat imresize(const cv::Mat& image, const double resize_factor) {
   if (image.empty()) LOG(ERROR) << "Empty input image.";
 
   //! Note, to accomodate matlab's result, we ceil the rows and cols.
-  int rows = std::ceil(image.rows * resize_factor);
-  int cols = std::ceil(image.cols * resize_factor);
+  const int rows = std::ceil(image.rows * resize_factor);
+  const int cols = std::ceil(image.cols * resize_factor);
   cv::Mat resized_image = cv::Mat::zeros(rows, cols, CV_64F);
 
   int interpolation_method;

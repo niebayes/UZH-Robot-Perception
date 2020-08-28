@@ -135,10 +135,10 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
               // Compute histogram for the current (i, j)-th quadrant.
               // Before creating the histogram, the orientations of gradients
               // are weighted according to the gradients magnitude.
-              derotated_patch_grad_dir(4 * j, 4 * i, arma::size(4, 4))
-                  .print("patch dir\n");
-              derotated_patch_grad_mag_w(4 * j, 4 * i, arma::size(4, 4))
-                  .print("patch mag\n");
+              // derotated_patch_grad_dir(4 * j, 4 * i, arma::size(4, 4))
+              //     .print("patch dir\n");
+              // derotated_patch_grad_mag_w(4 * j, 4 * i, arma::size(4, 4))
+              //     .print("patch mag\n");
               const arma::vec hist =
                   uzh::weightedhist(arma::vectorise(derotated_patch_grad_dir(
                                         4 * j, 4 * i, arma::size(4, 4))),
@@ -149,7 +149,7 @@ void ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
               // Populate the subvector of the descriptor vector.
               img_descriptor.col(corner_idx).subvec(start_idx, start_idx + 7) =
                   hist.head(8);
-              hist.print("hist\n");
+              // hist.print("hist\n");
               start_idx += 8;
             }
           }

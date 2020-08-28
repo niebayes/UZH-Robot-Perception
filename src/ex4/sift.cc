@@ -70,26 +70,17 @@ int main(int /*argc*/, char** argv) {
     // blurred with different sigma values.
     arma::field<cv::Mat> image_pyramid =
         ComputeImagePyramid(images(i), kNumOctaves);
-    std::cout << "image_pyramid:\n";
-    for (auto& img : image_pyramid) std::cout << img.size << '\n';
     arma::field<arma::cube> blurred_images =
         ComputeBlurredImages(image_pyramid, kNumScales, kBaseSigma);
-    std::cout << "blurred_images:\n";
-    for (auto& imgs : blurred_images) std::cout << arma::size(imgs) << '\n';
     arma::field<arma::cube> DoGs = ComputeDoGs(blurred_images);
-    std::cout << "DoGs:\n";
-    for (auto& d : DoGs) std::cout << arma::size(d) << '\n';
     arma::field<arma::umat> keypoints_tmp =
         ExtractKeypoints(DoGs, kKeypointsThreshold);
-    std::cout << "keypoints_tmp:\n";
-    for (auto& k : keypoints_tmp) std::cout << arma::size(k) << '\n';
     ComputeDescriptors(blurred_images, keypoints_tmp, descriptors(i),
                        keypoints(i), false);
     std::cout << "descriptors:\n";
     for (auto& d : descriptors) std::cout << arma::size(d) << '\n';
     std::cout << "final keypoints:\n";
     for (auto& k : keypoints) std::cout << arma::size(k) << '\n';
-    std::cout << i << "-th image\n";
   }
 
   // for (arma::umat kpts : keypoints) {
@@ -121,6 +112,10 @@ int main(int /*argc*/, char** argv) {
 
   // cv::Mat query_keypoints, database_keypoints;
   // cv::drawMatches();
+
+  // arma::mat x(5, 5, arma::fill::randn);
+  // x.print("x");
+  // arma::abs(x).print("abs");
 
   return EXIT_SUCCESS;
 }
