@@ -21,10 +21,11 @@ namespace uzh {
 cv::Mat imresize(const cv::Mat& image, const double resize_factor) {
   if (image.empty()) LOG(ERROR) << "Empty input image.";
 
-  //! Note, to accomodate matlab's result, we ceil the rows and cols.
+  //! Note, to accomodate matlab's result, we ceil the rows and cols while
+  //! OpenCV round them.
   const int rows = std::ceil(image.rows * resize_factor);
   const int cols = std::ceil(image.cols * resize_factor);
-  cv::Mat resized_image = cv::Mat::zeros(rows, cols, CV_64F);
+  cv::Mat resized_image = cv::Mat::zeros(rows, cols, image.depth());
 
   int interpolation_method;
   if (resize_factor == 1)
@@ -41,6 +42,7 @@ cv::Mat imresize(const cv::Mat& image, const double resize_factor) {
   //            interpolation_method);
   cv::resize(image, resized_image, resized_image.size(), 0, 0,
              interpolation_method);
+  // std::cout << resized_image << '\n';
   return resized_image;
 }
 

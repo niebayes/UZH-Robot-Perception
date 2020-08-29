@@ -29,10 +29,13 @@ int main(int /*argc*/, char** argv) {
 
   // Downsample images to speed up computation, as well as K which is expressed
   // in pixels.
-  const arma::mat left_img =
-      uzh::cv2arma<double>(uzh::imresize(left_image, 0.5)).t();
-  const arma::mat right_img =
-      uzh::cv2arma<double>(uzh::imresize(right_image, 0.5)).t();
+  // TODO(bayes) Modularize the codes below into a function img_cv2arma
+  left_image.convertTo(left_image, CV_64F);
+  right_image.convertTo(right_image, CV_64F);
+  const arma::umat left_img = arma::conv_to<arma::umat>::from(
+      uzh::cv2arma<double>(uzh::imresize(left_image, 0.5)).t());
+  const arma::umat right_img = arma::conv_to<arma::umat>::from(
+      uzh::cv2arma<double>(uzh::imresize(right_image, 0.5)).t());
   K.head_rows(2) /= 2.0;
 
   // Given settings
