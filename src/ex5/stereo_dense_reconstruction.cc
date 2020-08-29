@@ -44,5 +44,9 @@ int main(int /*argc*/, char** argv) {
   const arma::vec2 kYLimits{-6, 10};
   const arma::vec2 kZLimits{-5, 5};
 
+  // Part I: calculate pixel disparity
+  const arma::mat disparity_map = GetDisparity(
+      left_img, right_img, kPatchRadius, kMinDisparity, kMaxDisparity);
+
   return EXIT_SUCCESS;
 }
