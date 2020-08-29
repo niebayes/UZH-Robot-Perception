@@ -2,6 +2,7 @@
 #define UZH_MATLAB_PORT_CELL2MAT_H_
 
 #include "armadillo"
+#include "glog/logging.h"
 
 namespace uzh {
 

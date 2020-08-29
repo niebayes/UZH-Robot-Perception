@@ -21,14 +21,14 @@ int main(int /*argc*/, char** argv) {
   // Load data files
   const std::string kFilePath{"data/ex2/"};
 
-  const Eigen::Matrix3d K = armaLoad<Eigen::Matrix3d>(kFilePath + "K.txt");
+  const Eigen::Matrix3d K = uzh::armaLoad<Eigen::Matrix3d>(kFilePath + "K.txt");
   const Eigen::MatrixXd observations =
-      armaLoad<Eigen::MatrixXd>(kFilePath + "detected_corners.txt");
+      uzh::armaLoad<Eigen::MatrixXd>(kFilePath + "detected_corners.txt");
   // The p_W_corners.txt contains coordinates of 3D reference points expressed
   // in centimeters which is better to be transformed to canonical unit meter.
   const Eigen::Matrix3Xd p_W_corners =
       0.01 *
-      armaLoad<Eigen::MatrixX3d>(kFilePath + "p_W_corners.txt").transpose();
+      uzh::armaLoad<Eigen::MatrixX3d>(kFilePath + "p_W_corners.txt").transpose();
 
   // Draw the cube frame by frame to create a video
   cv::Mat sample_image = cv::imread(

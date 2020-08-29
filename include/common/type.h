@@ -3,7 +3,7 @@
 
 #include "Eigen/Core"
 
-namespace {
+namespace uzh {
 //@brief Rigid body transformation represented with non-full rank 3 x 4 matrix
 using Matrix34d = Eigen::Matrix<double, 3, 4>;
 
@@ -21,11 +21,11 @@ enum DistorionCoefficientIndices : int { INDEX_RADIAL_K1, INDEX_RADIAL_K2 };
 enum InterpolationMethods : int { NEAREST_NEIGHBOR, BILINEAR };
 
 //@brief General distance metrics.
-enum Distance : int { EUCLIDEAN, SQUARED_EUCLIDEAN, MAHALANOBIS, HAMMING };
+enum Distance : int { EUCLIDEAN, SQUARED_EUCLIDEAN };
 
 //@brief Return order used in pdist2 function.
 //@see pdist2
 enum ReturnOrder : int { SMALLEST_FIRST, LARGEST_FIRST };
-}  // namespace
+}  // namespace uzh
 
 #endif  // UZH_COMMON_TYPE_H
