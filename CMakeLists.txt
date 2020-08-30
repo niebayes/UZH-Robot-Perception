@@ -82,23 +82,27 @@ else()
     message("Not Found gflags")
 endif()
 
+# armadillo 
+find_package(Armadillo REQUIRED)
+
 # pcl
-# set(CMAKE_PREFIX_PATH "/home/bayes/Qt5")
-# set(CMAKE_PREFIX_PATH "/home/bayes/Qt5/5.15.0/Src/qtbase/include/QtWidgets")
-set(CMAKE_PREFIX_PATH "/usr/include/x86_64-linux-gnu/qt5")
-set(CMAKE_PREFIX_PATH "/usr/include/x86_64-linux-gnu/qt5/QtWidgets")
-find_package(PCL 1.8 REQUIRED)
+find_package(PCL 1.11 REQUIRED COMPONENTS common console io visualization)
 if (PCL_FOUND)
     message("Found PCL")
 else() 
     message("Not Found PCL")
 endif()
-list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
 link_directories(${PCL_LIBRARY_DIRS})
 add_definitions(${PCL_DEFINITIONS})
 
-# armadillo 
-find_package(Armadillo REQUIRED)
+# boost 
+# cf. https://cmake.org/cmake/help/latest/module/FindBoost.html
+find_package(Boost REQUIRED) 
+if (Boost_FOUND)
+    message("Found Boost")
+else() 
+    message("Not Found Boost")
+endif()
 
 # Add additional include path for header files
 include_directories(BEFORE
@@ -108,6 +112,8 @@ include_directories(BEFORE
     ${PROJECT_SOURCE_DIR}/src
     ${OpenCV_INCLUDE_DIRS}
     ${CERES_INCLUDE_DIRS}
+    ${PCL_INCLUDE_DIRS}
+    ${Boost_INCLUDE_DIRS}
     "/usr/local/include/eigen3"
     "/usr/local/include/eigen3/unsupported"
     "/usr/include"
@@ -116,7 +122,6 @@ include_directories(BEFORE
     # "/usr/include/eigen3/unsupported"
     ${manif_INCLUDE_DIRS}
     ${ARMADILLO_INCLUDE_DIRS}
-    # ${PCL_INCLUDE_DIRS}
     # ${Sophus_INCLUDE_DIRS}
     # "/Users/bayes/slam_lib/Sophus"
     # ${Pangolin_INCLUDE_DIRS}
@@ -164,8 +169,9 @@ include_directories(BEFORE
 ##################################################################
 # Add subdirectory in which put the source files
 # TODO(bayes) Use cmake generator to rewrite the logic.
+add_subdirectory(utils)
 # add_subdirectory(src/ex1)
 # add_subdirectory(src/ex2)
 # add_subdirectory(src/ex3)
 # add_subdirectory(src/ex4)
-add_subdirectory(src/ex5)
+# add_subdirectory(src/ex5)

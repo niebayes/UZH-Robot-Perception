@@ -1,17 +1,15 @@
-#include <iostream>
 #include <string>
 #include <tuple>
 
-#include "Eigen/Dense"
 #include "armadillo"
 #include "google_suite.h"
 #include "io.h"
 #include "matlab_port.h"
-#include "opencv2/core.hpp"
-#include "opencv2/imgcodecs.hpp"
+#include "opencv2/opencv.hpp"
+#include "pcl/io/pcd_io.h"
+#include "pcl/visualization/pcl_visualizer.h"
 #include "stereo.h"
 #include "transfer.h"
-// #include "pcl-1.8/pcl"
 
 int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
@@ -43,30 +41,31 @@ int main(int /*argc*/, char** argv) {
   // Part I: calculate pixel disparity
   // Part II: simple outlier removal, through setting reject_outliers to true.
   // Part III: sub-pixel refinement, through setting refine_subpixel to true.
-  // arma::wall_clock timer;  // Timer
-  // timer.tic();
-  // const arma::mat disparity_map =
-  //     stereo::GetDisparity(left_img, right_img, kPatchRadius, kMinDisparity,
-  //                          kMaxDisparity, true, true);
-  // std::cout << "Elapsed time(s): " << timer.toc() << '\n';
-  // // uzh::imagesc(arma::conv_to<arma::umat>::from(disparity_map), true,
-  // //              "Disparity map produced by the first pair of images");
+  const arma::mat disparity_map =
+      stereo::GetDisparity(left_img, right_img, kPatchRadius, kMinDisparity,
+                           kMaxDisparity, true, true);
+  uzh::imagesc(arma::conv_to<arma::umat>::from(disparity_map), true,
+               "Disparity map produced by the first pair of images");
 
-  // // Part IV: Point cloud triangulation.
-  // arma::mat point_cloud;
-  // arma::urowvec intensities;
-  // std::tie(point_cloud, intensities) =
-  //     stereo::DisparityToPointCloud(disparity_map, left_img, K, kBaseLine);
-  // // TODO(bayes) PCL visualization
+  // Part IV: Point cloud triangulation.
+  arma::mat point_cloud;
+  arma::urowvec intensities;
+  std::tie(point_cloud, intensities) =
+      stereo::DisparityToPointCloud(disparity_map, left_img, K, kBaseLine);
+  arma::mat33 R_C_frame{{0, -1, 0}, {0, 0, -1}, {1, 0, 0}};
+  arma::mat point_cloud_W = R_C_frame.i() * point_cloud;
+  // Visualize the point cloud.
+  // FIXME Visualization faulties.
+  stereo::VisualizePointCloud(point_cloud_W);
 
   // Part V: accumulate point clouds over sequence of pairs of images and write
-  // them into a .ply file to be visualized.
-  const bool accumulate_seq = false;
+  // them into a .pcd file to be visualized.
+  const bool accumulate_seq = true;
+  const int kAccumulatedPairs = 5;  // Max: 100 image pairs.
   if (accumulate_seq) {
-    const int kNumImagePairs = 100;
-    arma::field<arma::mat> all_point_clouds(kNumImagePairs);
-    arma::field<arma::urowvec> all_intensities(kNumImagePairs);
-    for (int i = 0; i < kNumImagePairs; ++i) {
+    arma::field<arma::mat> all_point_clouds(kAccumulatedPairs);
+    arma::field<arma::urowvec> all_intensities(kAccumulatedPairs);
+    for (int i = 0; i < kAccumulatedPairs; ++i) {
       const arma::umat l_img =
           stereo::GetImage(cv::format(kLeftImageName.c_str(), i));
       const arma::umat r_img =
@@ -84,7 +83,7 @@ int main(int /*argc*/, char** argv) {
           stereo::DisparityToPointCloud(disp_map, l_img, K, kBaseLine);
       // FIXME What is the derivation of the convertion?
       // Convert the coordinates from camera coordinates to world coordinates.
-      arma::mat33 R_C_frame{{0, -1, 0}, {0, 0, -1}, {1, 0, 0}};
+      // arma::mat33 R_C_frame{{0, -1, 0}, {0, 0, -1}, {1, 0, 0}};
       arma::mat p_F_points = R_C_frame.i() * p_C_points;
 
       // Filter out points out of the given limits, as well as the intensities.
@@ -110,10 +109,12 @@ int main(int /*argc*/, char** argv) {
           T_W_F(0, 0, arma::size(3, 3)) * p_F_points +
           arma::repmat(T_W_F.head_rows(3).col(3), 1, p_F_points.n_cols);
       all_intensities(i) = intens;
-      std::cout << "image pair " << i << " contributes\n";
-      std::cout << "Number of new points: " << all_point_clouds(i).n_cols
-                << '\n';
+      LOG(INFO) << "Image pair " << i << " contributes "
+                << all_point_clouds(i).n_cols << " points.";
     }
+    // Gather all point clouds altogether and save it to a .pcd file.
+    stereo::WritePointCloud(kFilePath + "cloud.pcd",
+                            uzh::cell2mat<double>(all_point_clouds));
   }
 
   return EXIT_SUCCESS;
