@@ -176,7 +176,7 @@ std::tuple<arma::mat /*distances*/, arma::umat /*indices*/> pdist2(
       if (distance_metric == EUCLIDEAN) {
         D(i, j) = Euclidean(X.col(i), Y.col(j));
       } else if (distance_metric == SQUARED_EUCLIDEAN) {
-        D(i, j) = SquaredEuclidean(X.col(i), Y.col(i));
+        D(i, j) = SquaredEuclidean(X.col(i), Y.col(j));
       }
     }
   }

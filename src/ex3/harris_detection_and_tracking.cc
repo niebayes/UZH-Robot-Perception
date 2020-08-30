@@ -79,7 +79,7 @@ int main(int /*argv*/, char** argv) {
   if (show_descriptors) {
     // FIXME The images composited by MakeCanvas are not keeping the original
     // orientation.
-    top_sixteen_patches = MakeCanvas(Mat_vec, image.rows, 4);
+    top_sixteen_patches = uzh::MakeCanvas(Mat_vec, image.rows, 4);
     cv::namedWindow("Top 16 descriptors", cv::WINDOW_NORMAL);
     cv::imshow("Top 16 descriptors", top_sixteen_patches);
     cv::waitKey(0);

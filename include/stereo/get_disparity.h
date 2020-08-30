@@ -1,7 +1,7 @@
 #ifndef UZH_STEREO_GET_DISPARITY
 #define UZH_STEREO_GET_DISPARITY
 
-#include <tuple>
+#include <tuple>  // std::tie
 
 #include "armadillo"
 #include "glog/logging.h"
@@ -31,7 +31,9 @@
 // https://en.wikipedia.org/wiki/Binocular_disparity#Computing_disparity_using_digital_stereo_images
 arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
                        const int patch_radius, const double min_disparity,
-                       const double max_disparity) {
+                       const double max_disparity,
+                       const bool reject_outliers = true,
+                       const bool refine_subpixel = true) {
   // Assure the sizes of the left_img and the right_img are consistent and not
   // empty.
   if (left_img.empty() || right_img.empty() ||
@@ -54,7 +56,10 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
                          arma::fill::none);
 
   // Construct disparity map to be assigned.
-  arma::mat disp_map(img_rows, img_cols, arma::fill::zeros);
+  arma::mat disparity_map(img_rows, img_cols, arma::fill::zeros);
+
+  // Debug switch.
+  bool debug_ssds = false;
 
   // For each defined pixel in the left image, match the strip of pixels in the
   // right image. The undefined pixels are those on borders which involve pixels
@@ -88,15 +93,67 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
 
       // Compute patch-wise SSD.
       arma::mat ssds;
-      std::cout << arma::conv_to<arma::mat>::from(left_patch_vec) << '\n';
-      // std::tie(ssds, std::ignore) =
-      //     uzh::pdist2(arma::conv_to<arma::mat>::from(left_patch_vec),
-      //                 arma::conv_to<arma::mat>::from(right_strip_stack),
-      //                 uzh::SQUARED_EUCLIDEAN);
-    }
-  }
+      std::tie(ssds, std::ignore) =
+          uzh::pdist2(arma::conv_to<arma::mat>::from(left_patch_vec),
+                      arma::conv_to<arma::mat>::from(right_strip_stack),
+                      uzh::SQUARED_EUCLIDEAN);
 
-  return disp_map;
+      // Optional, debug ssds by ploting
+      if (debug_ssds) {
+        std::vector<cv::Mat> plots(2);
+        plots[0] = uzh::imagesc(left_patch, false);
+        plots[1] = uzh::imagesc(right_strip, false);
+        cv::imshow("Left patch and right strip (Hold any key to move)",
+                   uzh::MakeCanvas(plots, left_img.n_rows, 1));
+        char key = cv::waitKey(0);
+        if (key == 27) {  // 'ESC' key -> exit.
+          cv::destroyAllWindows();
+          debug_ssds = false;
+        }
+      }
+
+      // Find the disparity.
+      const arma::uword negative_disparity = arma::index_min(ssds.as_row());
+      double disparity =
+          max_disparity - static_cast<double>(negative_disparity);
+
+      // Optional, reject outliers to disambiguous matching.
+      if (reject_outliers) {
+        // Potential disparity will be rejected if there're more than 2
+        // disparity candidates have the SSD values smaller than 1.5 * min_ssd,
+        // or if it's the max_disparity or min_disparity where the true
+        // disparity may outside the search range.
+        if (arma::size(arma::find(ssds <= 1.5 * ssds.min())).n_rows > 2 ||
+            negative_disparity == 0 || negative_disparity == ssds.n_cols - 1) {
+          // If outlier, the disparity is left to zero.
+          continue;
+        }
+
+        // Optional, refine to discretized disparity to subpixel accuracy.
+        // This refinement is only applied to inliers.
+        if (refine_subpixel) {
+          // A simple refinement trick is applied: a second-degree polynomial
+          // fit is applied on the neighbors of the original disparity, and the
+          // disparity at which the SSD is the smallest along the quadratic
+          // curve is selected as the final disparity.
+          const double neg_disp = static_cast<double>(negative_disparity);
+          const arma::vec x{neg_disp - 1, neg_disp, neg_disp + 1};
+          const arma::vec p =
+              arma::polyfit(x, ssds(arma::conv_to<arma::uvec>::from(x)), 2);
+          // - p(1) / (2 * p(0)) denotes the axis of symmetry at which the
+          // smallest SSD is obtained.
+          disparity_map(row + patch_radius, col + patch_radius) =
+              max_disparity + p(1) / (2 * p(0));
+        } else {
+          // The shift by patch_radius is to move the upper left corner to the
+          // anchor point.
+          disparity_map(row + patch_radius, col + patch_radius) = disparity;
+        }
+      }
+    }  // col
+  }    // row
+
+  return disparity_map;
 }
 
 #endif  // UZH_STEREO_GET_DISPARITY

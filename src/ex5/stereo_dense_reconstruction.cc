@@ -1,5 +1,6 @@
 #include <string>
 #include <tuple>
+#include <iostream>
 
 #include "Eigen/Dense"
 #include "armadillo"
@@ -28,7 +29,7 @@ int main(int /*argc*/, char** argv) {
   const arma::mat poses = uzh::LoadArma<double>(kFilePath + "poses.txt");
 
   // Downsample images to speed up computation, as well as K which is expressed
-  // in pixels.
+  // in pixels. Reduce the resize factor to speed up more.
   // TODO(bayes) Modularize the codes below into a function img_cv2arma
   left_image.convertTo(left_image, CV_64F);
   right_image.convertTo(right_image, CV_64F);
@@ -47,9 +48,21 @@ int main(int /*argc*/, char** argv) {
   const arma::vec2 kYLimits{-6, 10};
   const arma::vec2 kZLimits{-5, 5};
 
+  // Timer
+  arma::wall_clock timer;
+
   // Part I: calculate pixel disparity
-  const arma::mat disparity_map = GetDisparity(
-      left_img, right_img, kPatchRadius, kMinDisparity, kMaxDisparity);
+  // Part II: simple outlier removal, through setting reject_outliers to true.
+  // Part IV: sub-pixel refinement, through setting refine_subpixel to true.
+  timer.tic();
+  const arma::mat disparity_map =
+      GetDisparity(left_img, right_img, kPatchRadius, kMinDisparity,
+                   kMaxDisparity, true, true);
+  std::cout << "Elapsed time(s): " << timer.toc() << '\n';
+  uzh::imagesc(arma::conv_to<arma::umat>::from(disparity_map), true,
+               "Disparity map between the first two images.");
+
+  // Part III: Point cloud triangulation.
 
   return EXIT_SUCCESS;
 }

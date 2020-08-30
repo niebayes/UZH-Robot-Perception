@@ -9,6 +9,8 @@
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
 
+namespace uzh {
+
 //! Recommended one!
 //@ref https://stackoverflow.com/a/22858549/14007680
 /**
@@ -75,5 +77,7 @@ cv::Mat MakeCanvas(std::vector<cv::Mat>& Mat_vec, int window_height,
   }
   return canvasImage;
 }
+
+}  // namespace uzh
 
 #endif  // UZH_FEATURE_SUBPLOT_H_
