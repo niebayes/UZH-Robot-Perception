@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0 FATAL_ERROR)
-project(SFM)
+project(UZH_ROBOT_PERCEPTION)
 
 # Configure compile mode: Debug, Release, etc.
 # set(CMAKE_BUILD_TYPE Release)
@@ -83,14 +83,19 @@ else()
 endif()
 
 # pcl
-# find_package(PCL REQUIRED)
-# if (PCL_FOUND)
-#     message("Found PCL")
-# else() 
-#     message("Not Found PCL")
-# endif()
-# link_directories(${PCL_LIBRARY_DIRS})
-# add_definitions(${PCL_DEFINITIONS})
+# set(CMAKE_PREFIX_PATH "/home/bayes/Qt5")
+# set(CMAKE_PREFIX_PATH "/home/bayes/Qt5/5.15.0/Src/qtbase/include/QtWidgets")
+set(CMAKE_PREFIX_PATH "/usr/include/x86_64-linux-gnu/qt5")
+set(CMAKE_PREFIX_PATH "/usr/include/x86_64-linux-gnu/qt5/QtWidgets")
+find_package(PCL 1.8 REQUIRED)
+if (PCL_FOUND)
+    message("Found PCL")
+else() 
+    message("Not Found PCL")
+endif()
+list(REMOVE_ITEM PCL_LIBRARIES "vtkproj4")
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 # armadillo 
 find_package(Armadillo REQUIRED)
@@ -106,6 +111,7 @@ include_directories(BEFORE
     "/usr/local/include/eigen3"
     "/usr/local/include/eigen3/unsupported"
     "/usr/include"
+    "/usr/include/pcl-1.8"
     ${EIGEN3_INCLUDE_DIRS}
     # "/usr/include/eigen3/unsupported"
     ${manif_INCLUDE_DIRS}

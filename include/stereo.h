@@ -3,5 +3,6 @@
 
 #include "stereo/disparity_to_point_cloud.h"
 #include "stereo/get_disparity.h"
+#include "stereo/get_image.h"
 
 #endif  // UZH_STEREO_H_

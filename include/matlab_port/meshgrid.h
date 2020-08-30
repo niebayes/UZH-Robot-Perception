@@ -1,9 +1,11 @@
 #ifndef UZH_MATLAB_PORT_MESHGRID_H_
 #define UZH_MATLAB_PORT_MESHGRID_H_
 
+#include <tuple>
 #include <vector>
 
 #include "Eigen/Core"
+#include "armadillo"
 #include "opencv2/core.hpp"
 
 namespace uzh {
@@ -18,6 +20,17 @@ void meshgrid(const int width, const int height, Eigen::MatrixBase<Derived>* X,
                         y = Eigen::VectorXi::LinSpaced(height, 0, height - 1);
   *X = x.transpose().replicate(height, 1);
   *Y = y.replicate(1, width);
+}
+
+//@brief Overloaded for arma::mat
+template <typename T>
+std::tuple<arma::Mat<T> /*X*/, arma::Mat<T> /*Y*/> meshgrid(const int width,
+                                                            const int height) {
+  const arma::Col<T> x = arma::linspace<arma::Col<T>>(0, width - 1, width),
+                     y = arma::linspace<arma::Col<T>>(0, height - 1, height);
+  const arma::Mat<T> X = arma::repmat(x.t(), height, 1),
+                     Y = arma::repmat(y, 1, width);
+  return {X, Y};
 }
 
 //@brief Imitate matlab's meshgrid operating on 3D grid though.

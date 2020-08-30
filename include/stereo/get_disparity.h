@@ -7,6 +7,15 @@
 #include "glog/logging.h"
 #include "matlab_port/pdist2.h"
 
+namespace stereo {
+
+// TODO(bayes) Parallelise the function.
+//@ref https://stackoverflow.com/a/45773308/14007680
+//@ref
+// https://software.intel.com/content/www/us/en/develop/tools/compilers/c-compilers.html
+//@ref
+// https://devblogs.microsoft.com/cppblog/using-c17-parallel-algorithms-for-better-performance/
+
 //@brief Find the disparity for pixels in left image based on measuring the
 // patch-wise similarity between the patches in either images.
 //@param left_img Left image in which all defined pixels are goint to be
@@ -39,7 +48,7 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
   if (left_img.empty() || right_img.empty() ||
       left_img.n_rows != right_img.n_rows ||
       left_img.n_cols != right_img.n_cols) {
-    LOG(FATAL) << "Empty input image or inconsistent image size.";
+    LOG(FATAL) << "Empty input image or inconsistent image sizes.";
   }
 
   // Determine the search space.
@@ -49,7 +58,7 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
   // Only the patch_size matters.
   const arma::umat patch(patch_size, patch_size, arma::fill::none);
   // Double type to account for non discretized disparity range.
-  const double search_range = max_disparity - min_disparity + 1;
+  const int search_range = max_disparity - min_disparity + 1;
   // The (patch_size - 1) accounts for the first search region from right to
   // left.
   const arma::umat strip(patch_size, search_range + patch_size - 1,
@@ -86,7 +95,7 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
                                    arma::fill::zeros);
       //! Note stacked in this way, the index i denotes the so-called "negative
       //! disparity" such that disparity = max_disparity - i.
-      for (int i = 0; i < static_cast<int>(search_range); ++i) {
+      for (int i = 0; i < search_range; ++i) {
         right_strip_stack.col(i) =
             arma::vectorise(right_strip(0, i, arma::size(patch)));
       }
@@ -129,13 +138,13 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
           continue;
         }
 
-        // Optional, refine to discretized disparity to subpixel accuracy.
+        // Optional, refine discretized disparity to subpixel accuracy.
         // This refinement is only applied to inliers.
         if (refine_subpixel) {
-          // A simple refinement trick is applied: a second-degree polynomial
-          // fit is applied on the neighbors of the original disparity, and the
-          // disparity at which the SSD is the smallest along the quadratic
-          // curve is selected as the final disparity.
+          // A simple refinement technique is applied: a second-degree
+          // polynomial fit is applied on the neighbors of the original
+          // disparity, and the disparity at which the SSD is the smallest along
+          // the quadratic curve is selected as the final disparity.
           const double neg_disp = static_cast<double>(negative_disparity);
           const arma::vec x{neg_disp - 1, neg_disp, neg_disp + 1};
           const arma::vec p =
@@ -149,11 +158,14 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
           // anchor point.
           disparity_map(row + patch_radius, col + patch_radius) = disparity;
         }
-      }
+      } else
+        disparity_map(row + patch_radius, col + patch_radius) = disparity;
     }  // col
   }    // row
 
   return disparity_map;
 }
+
+}  // namespace stereo
 
 #endif  // UZH_STEREO_GET_DISPARITY
