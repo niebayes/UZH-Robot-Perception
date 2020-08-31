@@ -44,27 +44,27 @@ int main(int /*argc*/, char** argv) {
   const arma::mat disparity_map =
       stereo::GetDisparity(left_img, right_img, kPatchRadius, kMinDisparity,
                            kMaxDisparity, true, true);
-  uzh::imagesc(arma::conv_to<arma::umat>::from(disparity_map), true,
-               "Disparity map produced by the first pair of images");
+//   uzh::imagesc(arma::conv_to<arma::umat>::from(disparity_map), true,
+//                "Disparity map produced by the first pair of images");
 
   // Part IV: Point cloud triangulation.
   arma::mat point_cloud;
-  arma::urowvec intensities;
+  arma::umat intensities;
   std::tie(point_cloud, intensities) =
       stereo::DisparityToPointCloud(disparity_map, left_img, K, kBaseLine);
   arma::mat33 R_C_frame{{0, -1, 0}, {0, 0, -1}, {1, 0, 0}};
   arma::mat point_cloud_W = R_C_frame.i() * point_cloud;
   // Visualize the point cloud.
   // FIXME Visualization faulties.
-  stereo::VisualizePointCloud(point_cloud_W);
+//   stereo::VisualizePointCloud(point_cloud_W);
 
   // Part V: accumulate point clouds over sequence of pairs of images and write
   // them into a .pcd file to be visualized.
   const bool accumulate_seq = true;
-  const int kAccumulatedPairs = 5;  // Max: 100 image pairs.
+  const int kAccumulatedPairs = 100;  // Max: 100 image pairs.
   if (accumulate_seq) {
     arma::field<arma::mat> all_point_clouds(kAccumulatedPairs);
-    arma::field<arma::urowvec> all_intensities(kAccumulatedPairs);
+    arma::field<arma::umat> all_intensities(kAccumulatedPairs);
     for (int i = 0; i < kAccumulatedPairs; ++i) {
       const arma::umat l_img =
           stereo::GetImage(cv::format(kLeftImageName.c_str(), i));
@@ -73,9 +73,9 @@ int main(int /*argc*/, char** argv) {
       const arma::mat disp_map = stereo::GetDisparity(
           l_img, r_img, kPatchRadius, kMinDisparity, kMaxDisparity, true, true);
       // Write disparity map to a image file.
-      cv::imwrite(
-          cv::format((kFilePath + "disp_map/disp_map_%d.png").c_str(), i),
-          uzh::imagesc(arma::conv_to<arma::umat>::from(disp_map), false));
+    //   cv::imwrite(
+    //       cv::format((kFilePath + "disp_map/disp_map_%d.png").c_str(), i),
+    //       uzh::imagesc(arma::conv_to<arma::umat>::from(disp_map), false));
 
       arma::mat p_C_points;
       arma::urowvec intens;
@@ -113,8 +113,8 @@ int main(int /*argc*/, char** argv) {
                 << all_point_clouds(i).n_cols << " points.";
     }
     // Gather all point clouds altogether and save it to a .pcd file.
-    stereo::WritePointCloud(kFilePath + "cloud.pcd",
-                            uzh::cell2mat<double>(all_point_clouds));
+    stereo::WritePointCloud(kFilePath + "my_cloud.pcd",
+                            uzh::cell2mat<double>(all_point_clouds), uzh::cell2mat<arma::uword>(all_intensities));
   }
 
   return EXIT_SUCCESS;

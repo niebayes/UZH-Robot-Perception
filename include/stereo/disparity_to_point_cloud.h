@@ -23,7 +23,7 @@ namespace stereo {
 //@return A point cloud represented as a [3 x n] matrix where n is the number of
 // points with valid disparity assigned to its projections. The intensities of
 // these points are also returned as a [1 x n] row vector.
-std::tuple<arma::mat /*point_cloud*/, arma::urowvec /*intensities*/>
+std::tuple<arma::mat /*point_cloud*/, arma::umat /*intensities*/>
 DisparityToPointCloud(const arma::mat& disparity_map,
                       const arma::umat& left_img, const arma::mat& K,
                       const double baseline) {
@@ -64,7 +64,7 @@ DisparityToPointCloud(const arma::mat& disparity_map,
 
   // Construct point cloud and intentensity matrices to be populated.
   arma::mat point_cloud(3, is_valid.n_elem, arma::fill::zeros);
-  arma::urowvec intensities(is_valid.n_elem, arma::fill::zeros);
+  arma::umat intensities(1, is_valid.n_elem, arma::fill::zeros);
 
   // Triangulate 3D scene points by finding the points closest to the left and
   // right rays in least square sense.
