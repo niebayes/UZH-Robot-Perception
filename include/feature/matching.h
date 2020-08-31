@@ -40,8 +40,8 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   // corresponding distance is stored in the distances matrix.
   Eigen::MatrixXd distances;
   Eigen::MatrixXi matches;
-  uzh::pdist2(database, query, &distances, EUCLIDEAN, &matches, SMALLEST_FIRST,
-              1);
+  uzh::pdist2(database, query, &distances, uzh::EUCLIDEAN, &matches,
+              uzh::SMALLEST_FIRST, 1);
 
   // Find the overall minimal non-zero distance.
   //@note This could also be accomplished with std::sort / std::statble in

@@ -12,6 +12,7 @@ int main(int /*argv*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
+  const std::string result_path{"results/ex3/"};
   const std::string kFilePath = "data/ex3/";
   // Image to show the rendered objects.
   cv::Mat image_show =
@@ -29,8 +30,10 @@ int main(int /*argv*/, char** argv) {
   HarrisResponse(image, harris_response, kPatchSize, kHarrisKappa);
   ShiTomasiResponse(image, shi_tomasi_response, kPatchSize);
   // Compare the colormaps to see the detail of differences.
-  uzh::imagesc(harris_response, true, "Harris response");
-  uzh::imagesc(shi_tomasi_response, true, "Shi-Tomasi response");
+  cv::imwrite(result_path + "harris_response.png",
+              uzh::imagesc(harris_response, true, "Harris response"));
+  cv::imwrite(result_path + "shi_tomasi_response.png",
+              uzh::imagesc(shi_tomasi_response, true, "Shi-Tomasi response"));
 
   // Part II: select keypoints
   const int kNumKeypoints = 200;
@@ -43,6 +46,7 @@ int main(int /*argv*/, char** argv) {
   const Eigen::VectorXi x = k.row(0).cast<int>(), y = k.row(1).cast<int>();
   uzh::scatter(image_show, x, y, 4, {0, 0, 255}, cv::FILLED);
   cv::imshow("Harris keypoints", image_show);
+  cv::imwrite(result_path + "harris_pts.png", image_show);
   cv::waitKey(0);
 
   // Show the Shi-Tomasi keypoints for comparison.
@@ -55,6 +59,7 @@ int main(int /*argv*/, char** argv) {
                         shi_y = shi_k.row(1).cast<int>();
   uzh::scatter(image_show_shi, shi_x, shi_y, 4, {0, 255, 0}, cv::FILLED);
   cv::imshow("Shi-Tomasi keypoints", image_show_shi);
+  cv::imwrite(result_path + "shi_tomasi_kpts.png", image_show_shi);
   cv::waitKey(0);
 
   // Part III: describe keypoints
@@ -82,6 +87,7 @@ int main(int /*argv*/, char** argv) {
     top_sixteen_patches = uzh::MakeCanvas(Mat_vec, image.rows, 4);
     cv::namedWindow("Top 16 descriptors", cv::WINDOW_NORMAL);
     cv::imshow("Top 16 descriptors", top_sixteen_patches);
+    cv::imwrite(result_path + "top_16_descs.png", top_sixteen_patches);
     cv::waitKey(0);
   }
 
@@ -106,6 +112,7 @@ int main(int /*argv*/, char** argv) {
   PlotMatches(matches, query_keypoints, keypoints, match_show);
   cv::namedWindow("Matches between the first two frames", cv::WINDOW_AUTOSIZE);
   cv::imshow("Matches between the first two frames", match_show);
+  cv::imwrite(result_path + "match_show.png", match_show);
   cv::waitKey(0);
 
   // Part V: match descriptors for all 200 images in the reduced KITTI
@@ -141,6 +148,8 @@ int main(int /*argv*/, char** argv) {
                                cv::countNonZero(matches_qd) + 1, kNumKeypoints),
                     {50, 30}, cv::FONT_HERSHEY_PLAIN, 2, {0, 0, 255}, 2);
         cv::imshow("Matches", img_show);
+        cv::imwrite(cv::format(result_path + "match_imgs/img_%d.png", i),
+                    img_show);
         char key = cv::waitKey(10);  // Pause 10 ms.
         if (key == 27)
           break;  // 'ESC' key -> exit.

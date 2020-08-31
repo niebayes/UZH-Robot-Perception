@@ -19,6 +19,9 @@ data
 # ethz exercises
 exercises
 
+# media files
+results
+
 # googletest source files 
 googletest-master
 
