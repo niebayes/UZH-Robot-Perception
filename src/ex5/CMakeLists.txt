@@ -6,5 +6,6 @@ target_link_libraries(stereo_dense_reconstruction
   ${OpenCV_LIBRARIES}
   ${GLOG_LIBRARY}
   ${ARMADILLO_LIBRARIES}
-  ${PCL_LIBRARIES}
+  ${GFLAGS_LIBRARIES}
+  # ${PCL_LIBRARIES}
 )

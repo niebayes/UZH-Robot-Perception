@@ -4,7 +4,7 @@ project(UZH_ROBOT_PERCEPTION)
 # Configure compile mode: Debug, Release, etc.
 # set(CMAKE_BUILD_TYPE Release)
 if (NOT CMAKE_BUILD_TYPE)
-    set(CMAKE_BUILD_TYPE Debu)
+    set(CMAKE_BUILD_TYPE Debug)
 endif()
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
@@ -86,14 +86,14 @@ endif()
 find_package(Armadillo REQUIRED)
 
 # pcl
-find_package(PCL 1.11 REQUIRED COMPONENTS common console io visualization)
-if (PCL_FOUND)
-    message("Found PCL")
-else() 
-    message("Not Found PCL")
-endif()
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
+# find_package(PCL 1.11 REQUIRED COMPONENTS common console io visualization)
+# if (PCL_FOUND)
+#     message("Found PCL")
+# else() 
+#     message("Not Found PCL")
+# endif()
+# link_directories(${PCL_LIBRARY_DIRS})
+# add_definitions(${PCL_DEFINITIONS})
 
 # boost 
 # cf. https://cmake.org/cmake/help/latest/module/FindBoost.html
@@ -174,5 +174,5 @@ include_directories(BEFORE
 # add_subdirectory(src/ex2)
 # add_subdirectory(src/ex3)
 # add_subdirectory(src/ex4)
-add_subdirectory(src/ex5)
-# add_subdirectory(src/ex6)
+# add_subdirectory(src/ex5)
+add_subdirectory(src/ex6)

@@ -68,7 +68,7 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
   arma::mat disparity_map(img_rows, img_cols, arma::fill::zeros);
 
   // Debug switch.
-  bool debug_ssds = false;
+  bool debug_ssds = true;
 
   // For each defined pixel in the left image, match the strip of pixels in the
   // right image. The undefined pixels are those on borders which involve pixels

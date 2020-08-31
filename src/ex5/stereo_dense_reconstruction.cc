@@ -6,12 +6,15 @@
 #include "io.h"
 #include "matlab_port.h"
 #include "opencv2/opencv.hpp"
-#include "pcl/io/pcd_io.h"
-#include "pcl/visualization/pcl_visualizer.h"
 #include "stereo.h"
 #include "transfer.h"
 
-int main(int /*argc*/, char** argv) {
+DEFINE_int32(num_image_pairs, 10,
+             "Number of image pairs to be accumulated during the computation "
+             "of point clouds. Maximum pairs: 100");
+
+int main(int argc, char** argv) {
+  GFLAGS_NAMESPACE::ParseCommandLineFlags(&argc, &argv, true);
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
@@ -44,8 +47,8 @@ int main(int /*argc*/, char** argv) {
   const arma::mat disparity_map =
       stereo::GetDisparity(left_img, right_img, kPatchRadius, kMinDisparity,
                            kMaxDisparity, true, true);
-//   uzh::imagesc(arma::conv_to<arma::umat>::from(disparity_map), true,
-//                "Disparity map produced by the first pair of images");
+  uzh::imagesc(arma::conv_to<arma::umat>::from(disparity_map), true,
+               "Disparity map produced by the first pair of images");
 
   // Part IV: Point cloud triangulation.
   arma::mat point_cloud;
@@ -56,12 +59,14 @@ int main(int /*argc*/, char** argv) {
   arma::mat point_cloud_W = R_C_frame.i() * point_cloud;
   // Visualize the point cloud.
   // FIXME Visualization faulties.
-//   stereo::VisualizePointCloud(point_cloud_W);
+  stereo::VisualizePointCloud(point_cloud_W);
 
   // Part V: accumulate point clouds over sequence of pairs of images and write
   // them into a .pcd file to be visualized.
   const bool accumulate_seq = true;
-  const int kAccumulatedPairs = 100;  // Max: 100 image pairs.
+  const int kAccumulatedPairs = FLAGS_num_image_pairs > 0
+                                    ? FLAGS_num_image_pairs
+                                    : 100;  // Max: 100 image pairs.
   if (accumulate_seq) {
     arma::field<arma::mat> all_point_clouds(kAccumulatedPairs);
     arma::field<arma::umat> all_intensities(kAccumulatedPairs);
@@ -73,12 +78,12 @@ int main(int /*argc*/, char** argv) {
       const arma::mat disp_map = stereo::GetDisparity(
           l_img, r_img, kPatchRadius, kMinDisparity, kMaxDisparity, true, true);
       // Write disparity map to a image file.
-    //   cv::imwrite(
-    //       cv::format((kFilePath + "disp_map/disp_map_%d.png").c_str(), i),
-    //       uzh::imagesc(arma::conv_to<arma::umat>::from(disp_map), false));
+      cv::imwrite(
+          cv::format((kFilePath + "disp_map/disp_map_%d.png").c_str(), i),
+          uzh::imagesc(arma::conv_to<arma::umat>::from(disp_map), false));
 
       arma::mat p_C_points;
-      arma::urowvec intens;
+      arma::umat intens;
       std::tie(p_C_points, intens) =
           stereo::DisparityToPointCloud(disp_map, l_img, K, kBaseLine);
       // FIXME What is the derivation of the convertion?
@@ -113,8 +118,9 @@ int main(int /*argc*/, char** argv) {
                 << all_point_clouds(i).n_cols << " points.";
     }
     // Gather all point clouds altogether and save it to a .pcd file.
-    stereo::WritePointCloud(kFilePath + "my_cloud.pcd",
-                            uzh::cell2mat<double>(all_point_clouds), uzh::cell2mat<arma::uword>(all_intensities));
+    stereo::WritePointCloud(kFilePath + "cloud.pcd",
+                            uzh::cell2mat<double>(all_point_clouds),
+                            uzh::cell2mat<arma::uword>(all_intensities));
   }
 
   return EXIT_SUCCESS;

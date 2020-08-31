@@ -1,0 +1,4 @@
+#ifndef UZH_TWO_VIEW_GEOMETRY_H_
+#define UZH_TWO_VIEW_GEOMETRY_H_
+ 
+#endif  // UZH_TWO_VIEW_GEOMETRY_H_
