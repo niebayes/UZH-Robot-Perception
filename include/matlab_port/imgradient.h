@@ -12,6 +12,9 @@ namespace uzh {
 
 enum GradientMethod : int { SOBEL };
 
+//@brief Compute image gradient along the x and y directions.
+//! At this moment, this function has no way but applying the sobel operators to
+//! compute the gradients.
 arma::field<arma::mat> imgradient(const arma::mat& image,
                                   const int method = uzh::SOBEL) {
   if (image.empty()) LOG(ERROR) << "Empty input image.";
