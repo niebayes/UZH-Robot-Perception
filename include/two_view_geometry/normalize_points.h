@@ -21,7 +21,7 @@ namespace uzh {
 std::tuple<arma::mat /* normalized_p */, arma::mat /* T */> NormalizePoints(
     const arma::mat& p) {
   if (p.empty()) LOG(ERROR) << "Empty input points.";
-  if (p.n_rows != 3 || p.n_rows != 4)
+  if (p.n_rows != 3 && p.n_rows != 4)
     LOG(ERROR) << "The points must be homogeneous 2D or 3D points.";
 
   const int kDim = p.n_rows - 1;

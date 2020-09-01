@@ -23,8 +23,8 @@ namespace uzh {
 // assumed the calibration matrices K1 = K2 = K for the left and right camera
 // respectively.
 //@return P -- [4 x n] matrix where each column contains the homogeneous
-// coordinates
-// for a 3D scene point P.
+// coordinates for a 3D scene point P.
+//! The triangulated 3D scene points are in the left camera frame.
 arma::mat /* P */
 LinearTriangulation(const arma::mat& p1, const arma::mat& p2,
                     const arma::mat& M1, const arma::mat& M2) {
