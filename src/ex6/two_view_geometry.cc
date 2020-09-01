@@ -3,7 +3,6 @@
 #include <string>
 #include <tuple>
 
-#include "Eigen/Dense"
 #include "arma_traits.h"
 #include "armadillo"
 #include "google_suite.h"
