@@ -14,7 +14,7 @@ pcl::visualization::PCLVisualizer::Ptr simpleVis(
     pcl::PointCloud<pcl::PointXYZ>::ConstPtr cloud) {
   pcl::visualization::PCLVisualizer::Ptr viewer(
       new pcl::visualization::PCLVisualizer("Point cloud viewer"));
-  viewer->setBackgroundColor(0, 0, 0);
+  viewer->setBackgroundColor(255, 255, 255);
   viewer->addPointCloud<pcl::PointXYZ>(cloud, "cloud");
   viewer->setPointCloudRenderingProperties(
       pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 1, "cloud");
@@ -27,18 +27,20 @@ pcl::visualization::PCLVisualizer::Ptr rgbVis(
     pcl::PointCloud<pcl::PointXYZRGB>::ConstPtr cloud) {
   pcl::visualization::PCLVisualizer::Ptr viewer(
       new pcl::visualization::PCLVisualizer("Point cloud RGB Viewer"));
-  viewer->setBackgroundColor(0, 0, 0);
+  viewer->setBackgroundColor(255, 255, 255);
   pcl::visualization::PointCloudColorHandlerRGBField<pcl::PointXYZRGB> rgb(
       cloud);
   viewer->addPointCloud<pcl::PointXYZRGB>(cloud, rgb, "cloud");
   viewer->setPointCloudRenderingProperties(
-      pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 3, "cloud");
+      pcl::visualization::PCL_VISUALIZER_POINT_SIZE, 10, "cloud");
   viewer->addCoordinateSystem(1.0);
   viewer->initCameraParameters();
   return (viewer);
 }
 
-void VisualizePointCloud(const arma::mat& point_cloud) {
+void VisualizePointCloud(const arma::mat& point_cloud,
+                         const arma::umat& intensities,
+                         const bool show_color = true) {
   // Construct a pcl point cloud object.
   pcl::PointCloud<pcl::PointXYZRGB>::Ptr cloud(
       new pcl::PointCloud<pcl::PointXYZRGB>);
@@ -50,11 +52,9 @@ void VisualizePointCloud(const arma::mat& point_cloud) {
     point.x = point_cloud.col(i)(0);
     point.y = point_cloud.col(i)(1);
     point.z = point_cloud.col(i)(2);
-    std::uint8_t r(255), g(255), b(255);
-    std::uint32_t rgb =
-        (static_cast<std::uint32_t>(r) | static_cast<std::uint32_t>(g) |
-         static_cast<std::uint32_t>(b));
-    point.rgb = *reinterpret_cast<float*>(&rgb);
+    point.r = intensities.col(i)(0);
+    point.b = intensities.col(i)(0);
+    point.g = intensities.col(i)(0);
     cloud->points.push_back(point);
   }
   cloud->width = cloud->size();

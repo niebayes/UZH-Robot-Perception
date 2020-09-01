@@ -1,7 +1,6 @@
 #ifndef UZH_TWO_VIEW_GEOMETRY_H_
 #define UZH_TWO_VIEW_GEOMETRY_H_
 
-#include "two_view_geometry/basic_sfm.h"
 #include "two_view_geometry/decompose_essential_matrix.h"
 #include "two_view_geometry/disambiguate_relative_poses.h"
 #include "two_view_geometry/estimate_essential_matrix.h"

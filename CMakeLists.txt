@@ -59,7 +59,7 @@ else()
 endif()
 
 # ceres
-find_package(Ceres REQUIRED)
+find_package(Ceres QUIET)
 if (CERES_FOUND)
     message("Found Ceres" " Path ${CERES_INCLUDE_DIRS}")
 else()
@@ -86,14 +86,14 @@ endif()
 find_package(Armadillo REQUIRED)
 
 # pcl
-# find_package(PCL 1.11 REQUIRED COMPONENTS common console io visualization)
-# if (PCL_FOUND)
-#     message("Found PCL")
-# else() 
-#     message("Not Found PCL")
-# endif()
-# link_directories(${PCL_LIBRARY_DIRS})
-# add_definitions(${PCL_DEFINITIONS})
+find_package(PCL 1.11 REQUIRED COMPONENTS common console io visualization)
+if (PCL_FOUND)
+    message("Found PCL")
+else() 
+    message("Not Found PCL")
+endif()
+link_directories(${PCL_LIBRARY_DIRS})
+add_definitions(${PCL_DEFINITIONS})
 
 # boost 
 # cf. https://cmake.org/cmake/help/latest/module/FindBoost.html

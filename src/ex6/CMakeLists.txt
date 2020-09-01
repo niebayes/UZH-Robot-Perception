@@ -7,5 +7,6 @@ target_link_libraries(two_view_geometry
   ${GLOG_LIBRARY}
   ${ARMADILLO_LIBRARIES}
   ${GFLAGS_LIBRARIES}
-  ${CERES_LIBRARIES}
+  ${PCL_LIBRARIES}
+  # ${CERES_LIBRARIES}
 )

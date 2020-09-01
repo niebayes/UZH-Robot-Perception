@@ -25,7 +25,7 @@ void cameraPoseFromHomography(const Mat& H, Mat& pose) {
   p1 = pose.col(0);
   p2 = pose.col(1);
 
-  Mat p3 = p1.cross(p2);  // Computes the cross-product of p1 and p2
+  Mat p3 = p1.(p2);  // Computes the -product of p1 and p2
   Mat c2 = pose.col(2);   // Pointer to third column of pose
   p3.copyTo(c2);  // Third column is the crossproduct of columns one and two
 

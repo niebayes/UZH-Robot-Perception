@@ -19,7 +19,10 @@ namespace uzh {
 double /* rms_distance */
 PointsToEpipolarLineDistance(const arma::mat& p1, const arma::mat& p2,
                              const arma::mat& F) {
+  // TODO(bayes)
   // assert size.
+
+  return 0;
 }
 
 }  // namespace uzh

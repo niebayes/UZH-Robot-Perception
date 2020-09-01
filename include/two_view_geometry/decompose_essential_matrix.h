@@ -16,8 +16,11 @@ namespace uzh {
 // possible translations where one of them is +u and another is -u.
 std::tuple<arma::field<arma::mat> /* Rs */, arma::vec /* u */>
 DecomposeEssentialMatrix(const arma::mat& E) {
-  if (E.n_rows != 3 || E.n_cols != 3 || arma::det(E) != 0)
-    LOG(ERROR) << "Invalid essential matrix.";
+  if (E.n_rows != 3 || E.n_cols != 3) LOG(ERROR) << "Invalid essential matrix.";
+  if (arma::det(E) != 0) {
+    LOG(WARNING)
+        << "det(E) != 0. This singularity test is for developers only.";
+  }
 
   // The four possible decompositions are encoded in the SVD of E.
   arma::vec s;
@@ -32,8 +35,8 @@ DecomposeEssentialMatrix(const arma::mat& E) {
 
   // Check if the decomposed R is a valid rotation matrix, i.e. det(R)
   // If not, simply invert the sign of R.
-  Rs(0) = arma::det(Rs(0)) == +1 ? Rs(0) : -Rs(0);
-  Rs(1) = arma::det(Rs(1)) == +1 ? Rs(1) : -Rs(1);
+  Rs(0) = arma::det(Rs(0)) == 1 ? Rs(0) : -Rs(0);
+  Rs(1) = arma::det(Rs(1)) == 1 ? Rs(1) : -Rs(1);
 
   // Translation is encoded in the last column of U.
   // The two possible translations are +u and -u.

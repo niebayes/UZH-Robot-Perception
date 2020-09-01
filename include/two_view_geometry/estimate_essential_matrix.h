@@ -33,7 +33,10 @@ EstimateEssentialMatrix(const arma::mat& p1, const arma::mat& p2,
   const arma::mat F = FundamentalNormalized8Point(p1, p2);
 
   // Incorporate calibration matrices K's and F to obtain E.
-  return K2.t().i() * F * K1.i();
+  // TODO(bayes) Shall I enforce the constraints of det(E) = 0 and
+  // singular_value(0) == singular_value(1), despite the already enforced
+  // singularity constraint on F?
+  return K2.t() * F * K1;
 }
 
 }  // namespace uzh

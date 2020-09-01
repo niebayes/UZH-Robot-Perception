@@ -59,7 +59,7 @@ int main(int argc, char** argv) {
   arma::mat point_cloud_W = R_C_frame.i() * point_cloud;
   // Visualize the point cloud.
   // FIXME Visualization faulties.
-  stereo::VisualizePointCloud(point_cloud_W);
+  stereo::VisualizePointCloud(point_cloud_W, intensities);
 
   // Part V: accumulate point clouds over sequence of pairs of images and write
   // them into a .pcd file to be visualized.
