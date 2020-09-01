@@ -42,7 +42,7 @@ hnormalized(const arma::Mat<T>& m, const int dim = 0) {
     hn_m = hn_m.head_cols(m.n_cols - 1);
 
   } else
-    LOG(FATAL) << "Invalid dim value.";
+    LOG(ERROR) << "Invalid dim value.";
 
   return hn_m;
 }

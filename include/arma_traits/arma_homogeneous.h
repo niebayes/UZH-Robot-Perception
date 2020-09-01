@@ -24,7 +24,7 @@ homogeneous(const arma::Mat<T>& m, const int dim = 0) {
     ones = arma::ones<arma::Mat<T>>(m.n_rows, 1);
     h_m = arma::join_horiz(m, ones);
   } else
-    LOG(FATAL) << "Invalid dim value.";
+    LOG(ERROR) << "Invalid dim value.";
 
   return h_m;
 }
