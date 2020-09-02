@@ -86,14 +86,14 @@ endif()
 find_package(Armadillo REQUIRED)
 
 # pcl
-find_package(PCL 1.11 REQUIRED COMPONENTS common console io visualization)
-if (PCL_FOUND)
-    message("Found PCL")
-else() 
-    message("Not Found PCL")
-endif()
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
+# find_package(PCL 1.11 REQUIRED COMPONENTS common io visualization)
+# if (PCL_FOUND)
+#     message("Found PCL")
+# else() 
+#     message("Not Found PCL")
+# endif()
+# link_directories(${PCL_LIBRARY_DIRS})
+# add_definitions(${PCL_DEFINITIONS})
 
 # boost 
 # cf. https://cmake.org/cmake/help/latest/module/FindBoost.html
@@ -119,7 +119,6 @@ include_directories(BEFORE
     "/usr/include"
     "/usr/include/pcl-1.8"
     ${EIGEN3_INCLUDE_DIRS}
-    # "/usr/include/eigen3/unsupported"
     ${manif_INCLUDE_DIRS}
     ${ARMADILLO_INCLUDE_DIRS}
     # ${Sophus_INCLUDE_DIRS}
@@ -175,4 +174,5 @@ include_directories(BEFORE
 # add_subdirectory(src/ex3)
 # add_subdirectory(src/ex4)
 # add_subdirectory(src/ex5)
-add_subdirectory(src/ex6)
+# add_subdirectory(src/ex6)
+add_subdirectory(src/ex7)
