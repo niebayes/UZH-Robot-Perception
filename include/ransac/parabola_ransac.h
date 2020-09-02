@@ -42,10 +42,8 @@ ParabolaRANSAC(const arma::mat& data, const double max_noise,
   for (int i = 0; i < num_iterations; ++i) {
     // Randomly draw 3 samples without replacement.
     const arma::mat samples = uzh::datasample<double>(data, 3, 1, false);
-    samples.print("samples");
     // Fit a model with these samples and get the coefficients of the model.
     arma::vec poly_coeffs = arma::polyfit(samples.row(0), samples.row(1), 2);
-    poly_coeffs.print("poly");
     // Compute the residuals.
     const arma::rowvec residuals =
         arma::abs(arma::polyval(poly_coeffs, data.row(0)) - data.row(1));

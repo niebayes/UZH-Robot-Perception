@@ -47,7 +47,7 @@ int main(int argc, char *argv[]) {
   plotter->addPlotData(ax, asin, numPoints, "sin");
 
   // display for 2 seconds
-  plotter->spinOnce(3000);
+  plotter->spinOnce(2000);
   plotter->clearPlots();
 
   //...................plotting implicit functions and custom
