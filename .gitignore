@@ -28,6 +28,7 @@ googletest-master
 # externals 
 eigen-dev
 manif-devel
+lambdatwist-p3p
 
 # Prerequisites
 *.d

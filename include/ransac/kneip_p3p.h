@@ -1,0 +1,4 @@
+#ifndef UZH_RANSAC_KNEIP_P3P_H_
+#define UZH_RANSAC_KNEIP_P3P_H_
+ 
+#endif  // UZH_RANSAC_KNEIP_P3P_H_

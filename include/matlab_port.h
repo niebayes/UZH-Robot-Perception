@@ -2,6 +2,7 @@
 #define UZH_MATLAB_PORT_H_
 
 #include "matlab_port/cell2mat.h"
+#include "matlab_port/datasample.h"
 #include "matlab_port/find.h"
 #include "matlab_port/fspecial.h"
 #include "matlab_port/im2double.h"
