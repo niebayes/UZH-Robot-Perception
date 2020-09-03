@@ -6,6 +6,8 @@
 #include "opencv2/core.hpp"
 #include "opencv2/core/eigen.hpp"
 
+namespace uzh {
+
 //@brief Select keypoints according to the response matrix.
 //@param response Input matrix containing the responses for each pixel computed
 // from a certian response function.
@@ -31,7 +33,7 @@ void SelectKeypoints(const cv::Mat& response, cv::Mat& keypoints,
 
   // Use eigen to speed up the computation
   Eigen::MatrixXd R;
-  Eigen::Matrix2Xi k(2, num_keypoints);
+  Eigen::Matrix2Xi kpts(2, num_keypoints);
   cv::cv2eigen(response_tmp, R);
 
   // Select the top num_keypoints based on their responses and store the
@@ -41,8 +43,8 @@ void SelectKeypoints(const cv::Mat& response, cv::Mat& keypoints,
   for (int i = 0; i < num_keypoints; ++i) {
     R.maxCoeff(&y, &x);
     //! Minus the non_maximum_radius to compensate for the pre-padding.
-    k.col(i) = Eigen::Vector2i((int)x - non_maximum_radius,
-                               (int)y - non_maximum_radius);
+    kpts.col(i) = Eigen::Vector2i((int)x - non_maximum_radius,
+                                  (int)y - non_maximum_radius);
 
     // Perform non-maximum suppresion: set the pixels within the circle of
     // non_maximum_radius radius to 0 including the keypoints we previously
@@ -57,7 +59,9 @@ void SelectKeypoints(const cv::Mat& response, cv::Mat& keypoints,
   }
 
   // Convert back to cv::Mat
-  cv::eigen2cv(k, keypoints);
+  cv::eigen2cv(kpts, keypoints);
 }
+
+}  // namespace uzh
 
 #endif  // UZH_FEATURE_KEYPOINTS_H_

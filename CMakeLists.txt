@@ -86,7 +86,7 @@ endif()
 find_package(Armadillo REQUIRED)
 
 # pcl
-find_package(PCL 1.11 QUIET COMPONENTS common io visualization)
+# find_package(PCL 1.11 QUIET COMPONENTS common io visualization)
 if (PCL_FOUND)
     message("Found PCL")
 else() 

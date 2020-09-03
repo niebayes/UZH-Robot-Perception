@@ -27,8 +27,8 @@ int main(int /*argv*/, char** argv) {
   const int kPatchSize = 9;
   const double kHarrisKappa = 0.08;
   cv::Mat harris_response, shi_tomasi_response;
-  HarrisResponse(image, harris_response, kPatchSize, kHarrisKappa);
-  ShiTomasiResponse(image, shi_tomasi_response, kPatchSize);
+  uzh::HarrisResponse(image, harris_response, kPatchSize, kHarrisKappa);
+  uzh::ShiTomasiResponse(image, shi_tomasi_response, kPatchSize);
   // Compare the colormaps to see the detail of differences.
   cv::imwrite(result_path + "harris_response.png",
               uzh::imagesc(harris_response, true, "Harris response"));
@@ -39,7 +39,8 @@ int main(int /*argv*/, char** argv) {
   const int kNumKeypoints = 200;
   const int kNonMaximumRadius = 8;
   cv::Mat keypoints;
-  SelectKeypoints(harris_response, keypoints, kNumKeypoints, kNonMaximumRadius);
+  uzh::SelectKeypoints(harris_response, keypoints, kNumKeypoints,
+                       kNonMaximumRadius);
   // Superimpose the selected keypoins to the original image.
   Eigen::MatrixXd k;
   cv::cv2eigen(keypoints, k);
@@ -51,8 +52,8 @@ int main(int /*argv*/, char** argv) {
 
   // Show the Shi-Tomasi keypoints for comparison.
   cv::Mat shi_keypoints;
-  SelectKeypoints(shi_tomasi_response, shi_keypoints, kNumKeypoints,
-                  kNonMaximumRadius);
+  uzh::SelectKeypoints(shi_tomasi_response, shi_keypoints, kNumKeypoints,
+                       kNonMaximumRadius);
   Eigen::MatrixXd shi_k;
   cv::cv2eigen(shi_keypoints, shi_k);
   const Eigen::VectorXi shi_x = shi_k.row(0).cast<int>(),
@@ -65,7 +66,7 @@ int main(int /*argv*/, char** argv) {
   // Part III: describe keypoints
   const int kPatchRadius = 9;
   cv::Mat descriptors;
-  DescribeKeypoints(image, keypoints, descriptors, kPatchRadius);
+  uzh::DescribeKeypoints(image, keypoints, descriptors, kPatchRadius);
 
   // Show the top 16 descriptors ranked by strengh of response.
   std::vector<cv::Mat> Mat_vec;
@@ -99,17 +100,19 @@ int main(int /*argv*/, char** argv) {
   cv::cvtColor(match_show, query_image, cv::COLOR_BGR2GRAY, 1);
 
   cv::Mat query_harris_response;
-  HarrisResponse(query_image, query_harris_response, kPatchSize, kHarrisKappa);
+  uzh::HarrisResponse(query_image, query_harris_response, kPatchSize,
+                      kHarrisKappa);
   cv::Mat query_keypoints;
-  SelectKeypoints(query_harris_response, query_keypoints, kNumKeypoints,
-                  kNonMaximumRadius);
+  uzh::SelectKeypoints(query_harris_response, query_keypoints, kNumKeypoints,
+                       kNonMaximumRadius);
   cv::Mat query_descriptors;
-  DescribeKeypoints(query_image, query_keypoints, query_descriptors,
-                    kPatchRadius);
+  uzh::DescribeKeypoints(query_image, query_keypoints, query_descriptors,
+                         kPatchRadius);
 
   cv::Mat matches;
-  MatchDescriptors(query_descriptors, descriptors, matches, kDistanceRatio);
-  PlotMatches(matches, query_keypoints, keypoints, match_show);
+  uzh::MatchDescriptors(query_descriptors, descriptors, matches,
+                        kDistanceRatio);
+  uzh::PlotMatches(matches, query_keypoints, keypoints, match_show);
   cv::namedWindow("Matches between the first two frames", cv::WINDOW_AUTOSIZE);
   cv::imshow("Matches between the first two frames", match_show);
   cv::imwrite(result_path + "match_show.png", match_show);
@@ -133,23 +136,24 @@ int main(int /*argv*/, char** argv) {
       cv::Mat query_harris, query_kps, query_descs;
       cv::Mat matches_qd;
 
-      HarrisResponse(query_img, query_harris, kPatchSize, kHarrisKappa);
-      SelectKeypoints(query_harris, query_kps, kNumKeypoints,
-                      kNonMaximumRadius);
-      DescribeKeypoints(query_img, query_kps, query_descs, kPatchRadius);
+      uzh::HarrisResponse(query_img, query_harris, kPatchSize, kHarrisKappa);
+      uzh::SelectKeypoints(query_harris, query_kps, kNumKeypoints,
+                           kNonMaximumRadius);
+      uzh::DescribeKeypoints(query_img, query_kps, query_descs, kPatchRadius);
 
       // Match query and database after the first iteration.
       if (i >= 1) {
-        MatchDescriptors(query_descs, database_descs, matches_qd,
-                         kDistanceRatio);
-        PlotMatches(matches_qd, query_kps, database_kps, img_show);
+        uzh::MatchDescriptors(query_descs, database_descs, matches_qd,
+                              kDistanceRatio);
+        uzh::PlotMatches(matches_qd, query_kps, database_kps, img_show);
         cv::putText(img_show,
-                    cv::format("Matches / Totabl: %d / %d",
+                    cv::format("Matches / Total: %d / %d",
                                cv::countNonZero(matches_qd) + 1, kNumKeypoints),
                     {50, 30}, cv::FONT_HERSHEY_PLAIN, 2, {0, 0, 255}, 2);
         cv::imshow("Matches", img_show);
-        cv::imwrite(cv::format(result_path + "match_imgs/img_%d.png", i),
-                    img_show);
+        cv::imwrite(
+            cv::format((result_path + "match_imgs/img_%d.png").c_str(), i),
+            img_show);
         char key = cv::waitKey(10);  // Pause 10 ms.
         if (key == 27)
           break;  // 'ESC' key -> exit.

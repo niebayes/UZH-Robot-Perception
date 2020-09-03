@@ -1,6 +1,8 @@
 #ifndef UZH_MATLAB_PORT_DATASAMPLE_H_
 #define UZH_MATLAB_PORT_DATASAMPLE_H_
 
+#include <tuple>
+
 #include "armadillo"
 #include "glog/logging.h"
 
@@ -14,8 +16,12 @@ namespace uzh {
 //@param dim Along which direction the observations are stored and the samples
 // are drawned. 0 for row-wise and 1 for column wise.
 //@param replace If true, the returned samples are guaranteed unique.
+//@returns
+//- samples -- Drawned samples. The layout is dependent on the parameter dim.
+//- sample_indices -- [num_samples x 1] column vector containing the the indices
+// of the drawned samples wrt. the data.
 template <typename T>
-arma::Mat<T> /* samples */
+std::tuple<arma::Mat<T> /* samples */, arma::uvec /* sample_indices */>
 datasample(const arma::Mat<T>& data, const int num_samples, const int dim = 0,
            const bool replace = true) {
   if (data.empty()) LOG(ERROR) << "Empty data.";
@@ -52,7 +58,7 @@ datasample(const arma::Mat<T>& data, const int num_samples, const int dim = 0,
     samples = data.cols(sample_indices);
   }
 
-  return samples;
+  return {samples, sample_indices};
 }
 
 }  // namespace uzh

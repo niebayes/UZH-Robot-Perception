@@ -15,6 +15,8 @@
 #include "matlab_port/unique.h"
 #include "opencv2/core/eigen.hpp"
 
+namespace uzh {
+
 //@brief Match descriptors based on the Sum of Squared Distance (SSD) measure.
 //@param query_descriptors [m x q] matrix where each column corresponds to a
 // m-dimensional descriptor vector formed by stacking the intensities inside a
@@ -120,5 +122,7 @@ void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
     cv::line(image, {from_x, from_y}, {to_x, to_y}, {0, 255, 0}, 2);
   }
 }
+
+}  // namespace uzh
 
 #endif  // UZH_FEATURE_MATCHING_H_

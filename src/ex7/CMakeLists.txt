@@ -8,5 +8,5 @@ target_link_libraries(localizing_with_ransac
   ${ARMADILLO_LIBRARIES}
   ${GFLAGS_LIBRARIES}
   ${CERES_LIBRARIES}
-  ${PCL_LIBRARIES}
+  # ${PCL_LIBRARIES}
 )

@@ -7,6 +7,8 @@
 #include "opencv2/core.hpp"
 #include "opencv2/core/eigen.hpp"
 
+namespace uzh {
+
 //@brief Compute the Harris cornerness, i.e. Harris response for the image given
 // patch_size and kappa.
 //@param image Source image
@@ -164,5 +166,7 @@ void HarrisResponse(const cv::Mat& image_, cv::Mat& harris_response,
   assert((harris_response.rows == image.rows) &&
          (harris_response.cols == image.cols));
 }
+
+}  // namespace uzh
 
 #endif  // UZH_FEATURE_HARRIS_H_

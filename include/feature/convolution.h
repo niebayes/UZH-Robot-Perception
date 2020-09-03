@@ -46,56 +46,57 @@ void PadArray(cv::Mat& image, const cv::Scalar_<int> pad_size,
 // TODO(bayes) Overload this function taking as input Eigen::Matrix. The padding
 // behavior can be accomplised by using block operation.
 template <typename Derived>
-void PadArray(Eigen::DenseBase<Derived>& image, const cv::Scalar_<int> pad_size, const double pad_value = 0) {
-  // 
+void PadArray(Eigen::DenseBase<Derived>& image, const cv::Scalar_<int> pad_size,
+              const double pad_value = 0) {
+  //
 }
 
-    // enum ConvolutionType {
-    //   /* Return the full convolution, including border */
-    //   CONVOLUTION_FULL,
+// enum ConvolutionType {
+//   /* Return the full convolution, including border */
+//   CONVOLUTION_FULL,
 
-    //   /* Return only the part that corresponds to the original image */
-    //   CONVOLUTION_SAME,
+//   /* Return only the part that corresponds to the original image */
+//   CONVOLUTION_SAME,
 
-    //   /* Return only the submatrix containing elements that were not
-    //   influenced by
-    //    * the border
-    //    */
-    //   CONVOLUTION_VALID
-    // };
+//   /* Return only the submatrix containing elements that were not
+//   influenced by
+//    * the border
+//    */
+//   CONVOLUTION_VALID
+// };
 
-    // void conv2(const Mat& img, const Mat& kernel, ConvolutionType type, Mat&
-    // dest) {
-    //   Mat source = img;
-    //   if (CONVOLUTION_FULL == type) {
-    //     source = Mat();
-    //     const int additionalRows = kernel.rows - 1,
-    //               additionalCols = kernel.cols - 1;
-    //     copyMakeBorder(img, source, (additionalRows + 1) / 2, additionalRows
-    //     / 2,
-    //                    (additionalCols + 1) / 2, additionalCols / 2,
-    //                    BORDER_CONSTANT, Scalar(0));
-    //   }
+// void conv2(const Mat& img, const Mat& kernel, ConvolutionType type, Mat&
+// dest) {
+//   Mat source = img;
+//   if (CONVOLUTION_FULL == type) {
+//     source = Mat();
+//     const int additionalRows = kernel.rows - 1,
+//               additionalCols = kernel.cols - 1;
+//     copyMakeBorder(img, source, (additionalRows + 1) / 2, additionalRows
+//     / 2,
+//                    (additionalCols + 1) / 2, additionalCols / 2,
+//                    BORDER_CONSTANT, Scalar(0));
+//   }
 
-    //   Point anchor(kernel.cols - kernel.cols / 2 - 1,
-    //                kernel.rows - kernel.rows / 2 - 1);
-    //   int borderMode = BORDER_CONSTANT;
-    //   // filter2D(source, dest, img.depth(), /*flip(kernel)*/, anchor, 0,
-    //   // borderMode);
+//   Point anchor(kernel.cols - kernel.cols / 2 - 1,
+//                kernel.rows - kernel.rows / 2 - 1);
+//   int borderMode = BORDER_CONSTANT;
+//   // filter2D(source, dest, img.depth(), /*flip(kernel)*/, anchor, 0,
+//   // borderMode);
 
-    //   if (CONVOLUTION_VALID == type) {
-    //     dest = dest.colRange((kernel.cols - 1) / 2, dest.cols - kernel.cols /
-    //     2)
-    //                .rowRange((kernel.rows - 1) / 2, dest.rows - kernel.rows /
-    //                2);
-    //   }
-    // }
+//   if (CONVOLUTION_VALID == type) {
+//     dest = dest.colRange((kernel.cols - 1) / 2, dest.cols - kernel.cols /
+//     2)
+//                .rowRange((kernel.rows - 1) / 2, dest.rows - kernel.rows /
+//                2);
+//   }
+// }
 
-    //@brief Imitate matlab's conv2. Convolve the image with the given kernel.
-    // TODO(bayes) Remove OpenCV dependency.
-    void Conv2D(cv::InputArray src, cv::OutputArray dst, int ddepth,
-                cv::InputArray kernel, cv::Point anchor = cv::Point(-1, -1),
-                double delta = 0.0, int border_type = 4) {
+//@brief Imitate matlab's conv2. Convolve the image with the given kernel.
+// TODO(bayes) Remove OpenCV dependency.
+void Conv2D(cv::InputArray src, cv::OutputArray dst, int ddepth,
+            cv::InputArray kernel, cv::Point anchor = cv::Point(-1, -1),
+            double delta = 0.0, int border_type = 4) {
   cv::filter2D(src, dst, ddepth, kernel, anchor, delta, border_type);
 }
 

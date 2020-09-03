@@ -3,6 +3,8 @@
 
 #include "opencv2/core.hpp"
 
+namespace uzh {
+
 //@brief Compute the Shi-Tomasi cornerness, i.e. the Shi-Tomasi response for the
 // image given patch_size.
 //@param image Source image.
@@ -159,5 +161,7 @@ void ShiTomasiResponse(const cv::Mat& image_, cv::Mat& shi_tomasi_response,
   assert((shi_tomasi_response.rows == image.rows) &&
          (shi_tomasi_response.cols == image.cols));
 }
+
+}  // namespace uzh
 
 #endif  // UZH_FEATURE_SHI_TOMASI_H_

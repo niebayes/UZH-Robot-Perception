@@ -27,8 +27,8 @@ int main(int /*argc*/, char** argv) {
   // The p_W_corners.txt contains coordinates of 3D reference points expressed
   // in centimeters which is better to be transformed to canonical unit meter.
   const Eigen::Matrix3Xd p_W_corners =
-      0.01 *
-      uzh::armaLoad<Eigen::MatrixX3d>(kFilePath + "p_W_corners.txt").transpose();
+      0.01 * uzh::armaLoad<Eigen::MatrixX3d>(kFilePath + "p_W_corners.txt")
+                 .transpose();
 
   // Draw the cube frame by frame to create a video
   cv::Mat sample_image = cv::imread(
@@ -52,7 +52,8 @@ int main(int /*argc*/, char** argv) {
       Eigen::RowVectorXd row_vec = observations.row(image_index - 1);
       const Eigen::Matrix2Xd image_points =
           Eigen::Map<Eigen::Matrix<double, 2, 12>>(row_vec.data());
-      CameraMatrixDLT M_dlt = EstimatePoseDLT(image_points, p_W_corners, K);
+      uzh::CameraMatrixDLT M_dlt =
+          uzh::EstimatePoseDLT(image_points, p_W_corners, K);
       M_dlt.DecomposeDLT();
 
       // Compare reprojected points and the obvervations.

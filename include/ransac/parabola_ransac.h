@@ -41,7 +41,8 @@ ParabolaRANSAC(const arma::mat& data, const double max_noise,
   int max_inlier_cnt = 0;
   for (int i = 0; i < num_iterations; ++i) {
     // Randomly draw 3 samples without replacement.
-    const arma::mat samples = uzh::datasample<double>(data, 3, 1, false);
+    arma::mat samples;
+    std::tie(samples, std::ignore) = uzh::datasample<double>(data, 3, 1, false);
     // Fit a model with these samples and get the coefficients of the model.
     arma::vec poly_coeffs = arma::polyfit(samples.row(0), samples.row(1), 2);
     // Compute the residuals.

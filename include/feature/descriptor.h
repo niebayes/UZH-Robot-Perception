@@ -6,6 +6,8 @@
 #include "opencv2/core.hpp"
 #include "opencv2/core/eigen.hpp"
 
+namespace uzh {
+
 //@brief Describe keypoints using the intensities around the keypoints.
 //@param image Input image to be filtered by a patch.
 //@param keypoints Input [2 x n] matrix where each column contains the x and y
@@ -16,6 +18,10 @@
 //@param patch_radius Radius of the filter.
 void DescribeKeypoints(const cv::Mat& image, const cv::Mat& keypoints,
                        cv::Mat& descriptors, const int patch_radius) {
+  if (keypoints.rows != 2) LOG(ERROR) << "keypoints is a [2 x n] matrix.";
+  if (patch_radius <= 0 || patch_radius % 2 == 0)
+    LOG(ERROR) << "patch_radius must be a positive odd number integer.";
+
   // Pre-padding to avoid boundary issues.
   const cv::Scalar_<int> pad_size{patch_radius, patch_radius, patch_radius,
                                   patch_radius};
@@ -63,5 +69,7 @@ void DescribeKeypoints(const cv::Mat& image, const cv::Mat& keypoints,
   descriptors.convertTo(normalized_descriptors, CV_8U);
   descriptors = normalized_descriptors;
 }
+
+}  // namespace uzh
 
 #endif  // UZH_FEATURE_DESCRIPTOR_H_

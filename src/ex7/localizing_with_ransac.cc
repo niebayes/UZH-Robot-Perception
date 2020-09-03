@@ -10,7 +10,8 @@
 #include "io.h"
 #include "matlab_port.h"
 #include "opencv2/opencv.hpp"
-#include "pcl/visualization/pcl_plotter.h"
+// #include "pcl/visualization/pcl_plotter.h"
+#include "feature.h"
 #include "ransac.h"
 #include "transfer.h"
 
@@ -59,77 +60,138 @@ int main(int argc, char** argv) {
   std::tie(best_poly_coeffs, max_inlier_counts) =
       uzh::ParabolaRANSAC(data, max_noise);
 
-  // Compare various fits with RANSAC.
-  pcl::visualization::PCLPlotter::Ptr plotter(
-      new pcl::visualization::PCLPlotter);
-  plotter->setTitle("Fitted parabolas");
-  plotter->setShowLegend(true);
-  plotter->setXRange(x_start, x_start + x_span);
-  plotter->setYRange(y_lowest - max_noise, y_highest + max_noise);
+  //   // Compare various fits with RANSAC.
+  //   pcl::visualization::PCLPlotter::Ptr plotter(
+  //       new pcl::visualization::PCLPlotter);
+  //   plotter->setTitle("Fitted parabolas");
+  //   plotter->setShowLegend(true);
+  //   plotter->setXRange(x_start, x_start + x_span);
+  //   plotter->setYRange(y_lowest - max_noise, y_highest + max_noise);
 
-  // Plot scattered data points.
-  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(data.row(0)),
-                       arma::conv_to<std::vector<double>>::from(data.row(1)),
-                       "data points", vtkChart::POINTS);
-  // Plot ground truth.
-  const arma::vec x_plot =
-      arma::linspace<arma::vec>(x_start, x_start + x_span, 100);
-  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(x_plot),
-                       arma::conv_to<std::vector<double>>::from(
-                           arma::polyval(poly_coeffs, x_plot)),
-                       "ground truth");
-  // Plot full fit with all the data.
-  const arma::vec full_fit = arma::polyfit(data.row(0), data.row(1), 2);
-  plotter->addPlotData(
-      arma::conv_to<std::vector<double>>::from(x_plot),
-      arma::conv_to<std::vector<double>>::from(arma::polyval(full_fit, x_plot)),
-      "full data fit");
-  // Plot RANSAC fitted at each iteration except the last one.
-  for (int i = 0; i < best_poly_coeffs.n_cols - 1; ++i) {
-    const arma::vec coeffs = best_poly_coeffs.col(i);
-    plotter->addPlotData(
-        arma::conv_to<std::vector<double>>::from(x_plot),
-        arma::conv_to<std::vector<double>>::from(arma::polyval(coeffs, x_plot)),
-        "");
-  }
-  // Plot RANSAC fitted result.
-  const arma::vec best_coeffs = best_poly_coeffs.tail_cols(1);
-  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(x_plot),
-                       arma::conv_to<std::vector<double>>::from(
-                           arma::polyval(best_coeffs, x_plot)),
-                       "RANSAC result");
-  plotter->plot();
+  //   // Plot scattered data points.
+  //   plotter->addPlotData(arma::conv_to<std::vector<double>>::from(data.row(0)),
+  //                        arma::conv_to<std::vector<double>>::from(data.row(1)),
+  //                        "data points", vtkChart::POINTS);
+  //   // Plot ground truth.
+  //   const arma::vec x_plot =
+  //       arma::linspace<arma::vec>(x_start, x_start + x_span, 100);
+  //   plotter->addPlotData(arma::conv_to<std::vector<double>>::from(x_plot),
+  //                        arma::conv_to<std::vector<double>>::from(
+  //                            arma::polyval(poly_coeffs, x_plot)),
+  //                        "ground truth");
+  //   // Plot full fit with all the data.
+  //   const arma::vec full_fit = arma::polyfit(data.row(0), data.row(1), 2);
+  //   plotter->addPlotData(
+  //       arma::conv_to<std::vector<double>>::from(x_plot),
+  //       arma::conv_to<std::vector<double>>::from(arma::polyval(full_fit,
+  //       x_plot)), "full data fit");
+  //   // Plot RANSAC fitted at each iteration except the last one.
+  //   for (int i = 0; i < best_poly_coeffs.n_cols - 1; ++i) {
+  //     const arma::vec coeffs = best_poly_coeffs.col(i);
+  //     plotter->addPlotData(
+  //         arma::conv_to<std::vector<double>>::from(x_plot),
+  //         arma::conv_to<std::vector<double>>::from(arma::polyval(coeffs,
+  //         x_plot)),
+  //         "");
+  //   }
+  //   // Plot RANSAC fitted result.
+  //   const arma::vec best_coeffs = best_poly_coeffs.tail_cols(1);
+  //   plotter->addPlotData(arma::conv_to<std::vector<double>>::from(x_plot),
+  //                        arma::conv_to<std::vector<double>>::from(
+  //                            arma::polyval(best_coeffs, x_plot)),
+  //                        "RANSAC result");
+  //   plotter->plot();
 
-  // Plot the maximum inlier counts at eack iteration.
-  pcl::visualization::PCLPlotter::Ptr inlier_cnt_plotter(
-      new pcl::visualization::PCLPlotter);
-  inlier_cnt_plotter->setTitle("Maximum inliers count");
-  inlier_cnt_plotter->setXTitle("iteration");
-  inlier_cnt_plotter->setYTitle("Number of inliers");
-  const arma::vec iterations = arma::linspace<arma::vec>(
-      1, max_inlier_counts.size(), max_inlier_counts.size());
-  inlier_cnt_plotter->addPlotData(
-      arma::conv_to<std::vector<double>>::from(iterations),
-      arma::conv_to<std::vector<double>>::from(max_inlier_counts),
-      "max inliers");
-  inlier_cnt_plotter->plot();
+  //   // Plot the maximum inlier counts at eack iteration.
+  //   pcl::visualization::PCLPlotter::Ptr inlier_cnt_plotter(
+  //       new pcl::visualization::PCLPlotter);
+  //   inlier_cnt_plotter->setTitle("Maximum inliers count");
+  //   inlier_cnt_plotter->setXTitle("iteration");
+  //   inlier_cnt_plotter->setYTitle("Number of inliers");
+  //   const arma::vec iterations = arma::linspace<arma::vec>(
+  //       1, max_inlier_counts.size(), max_inlier_counts.size());
+  //   inlier_cnt_plotter->addPlotData(
+  //       arma::conv_to<std::vector<double>>::from(iterations),
+  //       arma::conv_to<std::vector<double>>::from(max_inlier_counts),
+  //       "max inliers");
+  //   inlier_cnt_plotter->plot();
 
-  // Compare the RMS error of the full fit and that of RANSAC fit.
-  const arma::vec x_rms = arma::linspace<arma::vec>(0.0, 1.0, 100);
-  const double full_fit_rms =
-      std::sqrt(uzh::arma2eigen(arma::polyval(poly_coeffs, x_rms) -
-                                arma::polyval(full_fit, x_rms))
-                    .squaredNorm() /
-                best_poly_coeffs.n_cols);
-  const double ransac_fit_rms =
-      std::sqrt(uzh::arma2eigen(arma::polyval(poly_coeffs, x_rms) -
-                                arma::polyval(best_coeffs, x_rms))
-                    .squaredNorm() /
-                best_poly_coeffs.n_cols);
-  std::cout << "Full fit RMS: " << full_fit_rms << '\n';
-  std::cout << "RANSAC fit RMS: " << ransac_fit_rms << '\n';
+  //   // Compare the RMS error of the full fit and that of RANSAC fit.
+  //   const arma::vec x_rms = arma::linspace<arma::vec>(0.0, 1.0, 100);
+  //   const double full_fit_rms =
+  //       std::sqrt(uzh::arma2eigen(arma::polyval(poly_coeffs, x_rms) -
+  //                                 arma::polyval(full_fit, x_rms))
+  //                     .squaredNorm() /
+  //                 best_poly_coeffs.n_cols);
+  //   const double ransac_fit_rms =
+  //       std::sqrt(uzh::arma2eigen(arma::polyval(poly_coeffs, x_rms) -
+  //                                 arma::polyval(best_coeffs, x_rms))
+  //                     .squaredNorm() /
+  //                 best_poly_coeffs.n_cols);
+  //   std::cout << "Full fit RMS: " << full_fit_rms << '\n';
+  //   std::cout << "RANSAC fit RMS: " << ransac_fit_rms << '\n';
 
   // Part II: localizing with RANSAC.
+  // Load data.
+  const arma::Mat<int> database_keypoints_arma =
+      uzh::LoadArma<int>(kFilePath + "keypoints.txt").t();
+  //! Note the keypoints are stored in (row, col) layout in the file. To pass
+  //! them to the DescribeKeypoints function, the (row, col) should be filped to
+  //! (x, y).
+  // TODO(bayes) Always use (row, col) layout except drawing.
+  const cv::Mat database_keypoints =
+      uzh::arma2cv<int>(arma::flipud(database_keypoints_arma));
+  const arma::mat p_W_landmarks =
+      uzh::LoadArma<double>(kFilePath + "p_W_landmarks.txt");
+  const arma::mat K = uzh::LoadArma<double>(kFilePath + "K.txt");
+  cv::Mat img_0 = cv::imread(kFilePath + "000000.png", cv::IMREAD_COLOR);
+  cv::Mat img_1 = cv::imread(kFilePath + "000001.png", cv::IMREAD_COLOR);
+  cv::Mat database_image, query_image;
+  cv::cvtColor(img_0, database_image, cv::COLOR_BGR2GRAY);
+  cv::cvtColor(img_1, query_image, cv::COLOR_BGR2GRAY);
+
+  // Port parameters from ex3.
+  const int kPatchSize = 9;
+  const double kHarrisKappa = 0.08;
+  const int kNonMaximumRadius = 8;
+  const int kDescriptorPatchRadius = 9;
+  const double kDistanceRatio = 5;
+
+  const int kNumKeypoints = 1000;
+
+  // Detect Harris keypoints in the query image.
+  cv::Mat harris_response;
+  uzh::HarrisResponse(query_image, harris_response, kPatchSize, kHarrisKappa);
+  cv::Mat query_keypoints;
+  uzh::SelectKeypoints(harris_response, query_keypoints, kNumKeypoints,
+                       kNonMaximumRadius);
+  // Describe keypoints.
+  cv::Mat database_descriptors, query_descriptors;
+  uzh::DescribeKeypoints(database_image, database_keypoints,
+                         database_descriptors, kDescriptorPatchRadius);
+  uzh::DescribeKeypoints(query_image, query_keypoints, query_descriptors,
+                         kDescriptorPatchRadius);
+  // Match descriptors.
+  cv::Mat matches_tmp;
+  uzh::MatchDescriptors(query_descriptors, database_descriptors, matches_tmp,
+                        kDistanceRatio);
+  // Obtain matched query keypoints and corresponding landmarks.
+  // Convert from cv::Mat to arma::Mat
+  const arma::umat query_keypoints_tmp =
+      arma::conv_to<arma::umat>::from(uzh::cv2arma<int>(query_keypoints).t());
+  const arma::urowvec matches =
+      arma::conv_to<arma::urowvec>::from(uzh::cv2arma<int>(matches_tmp).t());
+  const arma::umat matched_query_keypoints =
+      query_keypoints_tmp.cols(arma::find(matches > 0));
+  //! The result of linear indexing is always a column vector in Armadillo.
+  const arma::urowvec corresponding_matches =
+      matches(arma::find(matches > 0)).t();
+  const arma::mat corresponding_landmarks =
+      p_W_landmarks.rows(corresponding_matches).t();
+  corresponding_landmarks.print("ld");
+
+  // Use these matched 3D-2D correspondences to find best Pose and inliers using
+  // RANSAC.
 
   return EXIT_SUCCESS;
 }

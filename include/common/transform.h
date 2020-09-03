@@ -33,7 +33,7 @@ static void Rodrigues(const Eigen::Ref<const Eigen::Vector3d>& rotation_vector,
 
 //@brief Construct a rigid transformation matrix from the pose vector
 static void PoseVectorToTransformationMatrix(const std::vector<double>& pose,
-                                             Matrix34d* T) {
+                                             Eigen::Matrix<double, 3, 4>* T) {
   const Eigen::Vector3d rotation_vector{pose[0], pose[1], pose[2]},
       translation{pose[3], pose[4], pose[5]};
   Eigen::Matrix3d rotation_matrix;
