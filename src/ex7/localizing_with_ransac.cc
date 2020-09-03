@@ -6,12 +6,12 @@
 #include "Eigen/Dense"
 #include "armadillo"
 #include "ceres/ceres.h"
+#include "feature.h"
 #include "google_suite.h"
 #include "io.h"
 #include "matlab_port.h"
 #include "opencv2/opencv.hpp"
-// #include "pcl/visualization/pcl_plotter.h"
-#include "feature.h"
+#include "pcl/visualization/pcl_plotter.h"
 #include "ransac.h"
 #include "transfer.h"
 
@@ -23,7 +23,7 @@ int main(int argc, char** argv) {
   const std::string kFilePath{"data/ex7/"};
 
   // Random seed.
-  // arma::arma_rng::set_seed(42);
+  // arma::arma_rng::set_seed(1);
   arma::arma_rng::set_seed_random();
 
   // Part I: fit a parabola with RANSAC.
@@ -179,19 +179,73 @@ int main(int argc, char** argv) {
   // Convert from cv::Mat to arma::Mat
   const arma::umat query_keypoints_tmp =
       arma::conv_to<arma::umat>::from(uzh::cv2arma<int>(query_keypoints).t());
-  const arma::urowvec matches =
+  const arma::urowvec all_matches =
       arma::conv_to<arma::urowvec>::from(uzh::cv2arma<int>(matches_tmp).t());
   const arma::umat matched_query_keypoints =
-      query_keypoints_tmp.cols(arma::find(matches > 0));
+      query_keypoints_tmp.cols(arma::find(all_matches > 0));
   //! The result of linear indexing is always a column vector in Armadillo.
   const arma::urowvec corresponding_matches =
-      matches(arma::find(matches > 0)).t();
+      all_matches(arma::find(all_matches > 0)).t();
   const arma::mat corresponding_landmarks =
       p_W_landmarks.rows(corresponding_matches).t();
-  corresponding_landmarks.print("ld");
 
   // Use these matched 3D-2D correspondences to find best Pose and inliers using
   // RANSAC.
+  arma::mat33 R_C_W;
+  arma::vec3 t_C_W;
+  arma::urowvec inlier_mask, max_num_inliers_history;
+  arma::rowvec num_iterations_history;
+  std::tie(R_C_W, t_C_W, inlier_mask, max_num_inliers_history,
+           num_iterations_history) =
+      uzh::RANSACLocalization(matched_query_keypoints, corresponding_landmarks,
+                              K);
+  // Show the result.
+  arma::mat44 T_C_W(arma::fill::eye);
+  T_C_W(0, 0, arma::size(3, 3)) = R_C_W;
+  T_C_W(0, 3, arma::size(3, 1)) = t_C_W;
+  T_C_W.print("Found T_C_W:");
+  std::cout << "Estimated inlier ratio is: "
+            << arma::size(arma::nonzeros(inlier_mask)).n_rows /
+                   double(inlier_mask.size())
+            << '\n';
+
+  // Show all keypoints and all matches.
+  cv::Mat query_image_show_1 = img_1.clone();
+  uzh::scatter(query_image_show_1, query_keypoints_tmp.row(0).as_col(),
+               query_keypoints_tmp.row(1).as_col(), 3, {0, 0, 255}, cv::FILLED);
+  uzh::PlotMatches(
+      uzh::arma2cv<int>(arma::conv_to<arma::Mat<int>>::from(all_matches)).t(),
+      query_keypoints, database_keypoints, query_image_show_1);
+  cv::imshow("All keypoints and matches", query_image_show_1);
+  cv::waitKey(0);
+
+  // Show inlier and outlier matches along with the corresponding keypoints.
+  cv::Mat query_image_show_2 = img_1.clone();
+  // Outliers
+  uzh::scatter(
+      query_image_show_2,
+      matched_query_keypoints(arma::uvec{0}, arma::find(1 - inlier_mask > 0))
+          .as_col(),
+      matched_query_keypoints(arma::uvec{1}, arma::find(1 - inlier_mask > 0))
+          .as_col(),
+      3, {0, 0, 255}, cv::FILLED);
+  // Inliers
+  uzh::scatter(
+      query_image_show_2,
+      matched_query_keypoints(arma::uvec{0}, arma::find(inlier_mask > 0))
+          .as_col(),
+      matched_query_keypoints(arma::uvec{1}, arma::find(inlier_mask > 0))
+          .as_col(),
+      3, {255, 0, 0}, cv::FILLED);
+  uzh::PlotMatches(
+      uzh::arma2cv<int>(arma::conv_to<arma::Mat<int>>::from(
+          corresponding_matches(arma::find(inlier_mask > 0)))),
+      uzh::arma2cv<int>(arma::conv_to<arma::Mat<int>>::from(
+          matched_query_keypoints.cols(arma::find(inlier_mask > 0)))),
+      database_keypoints, query_image_show_2);
+  cv::imshow("Inlier and outlier matches along with the keypoints",
+             query_image_show_2);
+  cv::waitKey(0);
 
   return EXIT_SUCCESS;
 }

@@ -6,6 +6,7 @@
 #include <vector>
 
 #include "Eigen/Core"
+#include "arma_traits.h"
 #include "armadillo"
 #include "glog/logging.h"
 #include "ransac/kneip_p3p.h"
@@ -58,7 +59,7 @@ RANSACLocalization(const arma::umat& keypoints, const arma::mat& landmarks,
     LOG(ERROR)
         << "Number of keypoints must be the same with that of landmarks.";
   }
-  if (method != uzh::P3P || method != uzh::DLT)
+  if (method != uzh::P3P && method != uzh::DLT)
     LOG(ERROR) << "Unsupported method.";
 
   // Construct objects to be computed.
@@ -87,7 +88,7 @@ RANSACLocalization(const arma::umat& keypoints, const arma::mat& landmarks,
   }
   if (adaptive_iterations) {
     // Number of iterations is not fixed if using adaptive iterations.
-    num_iterations = arma::datum::inf;
+    num_iterations = std::numeric_limits<int>::max();
   }
   // Error bound within which a match is selected as inlier.
   const double kPixelTolerance = 10.0;
@@ -102,11 +103,12 @@ RANSACLocalization(const arma::umat& keypoints, const arma::mat& landmarks,
     const arma::umat corresponding_kpts = keypoints.cols(sample_indices);
 
     // Compute camera pose using P3P or DLT.
-    arma::cube R_W_C_guess(3, 3, 4, arma::fill::eye);
+    arma::cube R_W_C_guess(3, 3, 4, arma::fill::zeros);
     arma::cube t_W_C_guess(3, 1, 4, arma::fill::zeros);
     if (method == uzh::P3P) {
       const arma::mat bearing_vectors =
-          K.i() * arma::conv_to<arma::mat>::from(corresponding_kpts);
+          K.i() *
+          arma::conv_to<arma::mat>::from(uzh::homogeneous(corresponding_kpts));
       // P3P require three unitary bearing vectors.
       const arma::mat unitary_bearing_vectors =
           arma::normalise(bearing_vectors);
@@ -115,14 +117,12 @@ RANSACLocalization(const arma::umat& keypoints, const arma::mat& landmarks,
                              uzh::arma2eigen(landmark_samples), poses);
       // Decode the result of P3P.
       for (int i = 0; i < poses.rows(); ++i) {
-        const Eigen::Matrix<double, 3, 4> pose_tmp = poses(0);
+        const Eigen::Matrix<double, 3, 4> pose_tmp = poses(i, 0);
         const arma::mat pose = uzh::eigen2arma(pose_tmp);
         R_W_C_guess.slice(i) = pose.head_cols(3);
         t_W_C_guess.slice(i) = pose.tail_cols(1);
       }
     } else {
-      R_W_C_guess.set_size(3, 3, 1);
-      t_W_C_guess.set_size(3, 1, 1);
       uzh::CameraMatrixDLT M_DLT = uzh::EstimatePoseDLT(
           uzh::arma2eigen(arma::conv_to<arma::mat>::from(corresponding_kpts)),
           uzh::arma2eigen(landmark_samples), uzh::arma2eigen(K));

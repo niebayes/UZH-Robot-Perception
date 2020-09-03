@@ -94,8 +94,8 @@ void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
   const Eigen::VectorXi query_y = query_kps.row(1);
   const Eigen::VectorXi database_x = database_kps.row(0);
   const Eigen::VectorXi database_y = database_kps.row(1);
-  uzh::scatter(image, query_x, query_y, 3, {0, 0, 255}, cv::FILLED);
-  uzh::scatter(image, database_x, database_y, 3, {255, 0, 0}, cv::FILLED);
+  // uzh::scatter(image, query_x, query_y, 3, {0, 0, 255}, cv::FILLED);
+  // uzh::scatter(image, database_x, database_y, 3, {255, 0, 0}, cv::FILLED);
 
   // Isolate query and match indices.
   //! These indices are used to access corresponding keypoints later on.
