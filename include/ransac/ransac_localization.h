@@ -241,9 +241,6 @@ RANSACLocalization(const arma::umat& keypoints, const arma::mat& landmarks,
   } else {
     // If RANSAC fails, simply return empty objects.
     LOG(INFO) << "No inlier found.";
-    // return {arma::mat33{}, arma::vec3{}, best_inlier_mask,
-    //         arma::conv_to<arma::urowvec>::from(max_num_inliers_history),
-    //         arma::conv_to<arma::rowvec>::from(num_iterations_history)};
     return {{}, {}, {}, {}, {}};
   }
 }
