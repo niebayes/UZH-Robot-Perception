@@ -291,7 +291,6 @@ class CameraMatrixDLT {
       LOG(ERROR) << "To be implemented soon!";
       return;
     }
-    LOG(INFO) << "Decomposed M";
   }
 
  private:

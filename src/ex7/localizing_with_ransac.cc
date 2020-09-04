@@ -250,6 +250,109 @@ int main(int argc, char** argv) {
   cv::waitKey(0);
 
   // Apply RANSAC to all frames
+  // Every subsequent frame is matched against the first frame.
+  const int kNumFrames = 8;
+  for (int i = 1; i < kNumFrames + 2; ++i) {
+    cv::Mat query_img = cv::imread(
+        cv::format((kFilePath + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
+
+    // Detect Harris keypoints in the query image.
+    cv::Mat harris_res;
+    uzh::HarrisResponse(query_img, harris_res, kPatchSize, kHarrisKappa);
+    cv::Mat query_kpts_cv;
+    uzh::SelectKeypoints(harris_res, query_kpts_cv, kNumKeypoints,
+                         kNonMaximumRadius);
+    // Describe keypoints.
+    cv::Mat query_descs;
+    uzh::DescribeKeypoints(query_img, query_kpts_cv, query_descs,
+                           kDescriptorPatchRadius);
+    // Match descriptors.
+    cv::Mat matches_cv_frame_i;
+    uzh::MatchDescriptors(query_descs, database_descriptors, matches_cv_frame_i,
+                          kDistanceRatio);
+    // Obtain matched query keypoints and corresponding landmarks.
+    // Convert from cv::Mat to arma::Mat
+    const arma::umat query_keypoints_arma_frame_i =
+        arma::conv_to<arma::umat>::from(uzh::cv2arma<int>(query_kpts_cv).t());
+    const arma::urowvec all_matches_frame_i =
+        arma::conv_to<arma::urowvec>::from(
+            uzh::cv2arma<int>(matches_cv_frame_i).t());
+    const arma::umat matched_query_kpts =
+        query_keypoints_arma_frame_i.cols(arma::find(all_matches_frame_i > 0));
+    //! The result of linear indexing is always a column vector in Armadillo.
+    const arma::urowvec corresponding_matches_frame_i =
+        all_matches_frame_i(arma::find(all_matches_frame_i > 0)).as_row();
+    const arma::mat corresponding_landmarks_frame_i =
+        p_W_landmarks.cols(corresponding_matches_frame_i);
+
+    // Use these matched 3D-2D correspondences to find pose and best inlier
+    // matches using RANSAC.
+    arma::mat33 R_C_W_frame_i;
+    arma::vec3 t_C_W_frame_i;
+    arma::urowvec inlier_mask_frame_i, max_num_inliers_history_frame_i;
+    arma::rowvec num_iterations_history_frame_i;
+    std::tie(R_C_W_frame_i, t_C_W_frame_i, inlier_mask_frame_i,
+             max_num_inliers_history_frame_i, num_iterations_history_frame_i) =
+        uzh::RANSACLocalization(matched_query_kpts,
+                                corresponding_landmarks_frame_i, K);
+    // Show the result.
+    arma::mat44 T_C_W_frame_i(arma::fill::eye);
+    T_C_W_frame_i(0, 0, arma::size(3, 3)) = R_C_W_frame_i;
+    T_C_W_frame_i(0, 3, arma::size(3, 1)) = t_C_W_frame_i;
+    T_C_W_frame_i.print(cv::format("Found T_C_W at frame %d", i));
+    std::cout << "Estimated inlier ratio at frame " << i << " is: "
+              << uzh::nnz<arma::uword>(inlier_mask_frame_i) /
+                     double(inlier_mask_frame_i.size())
+              << '\n';
+
+    // Show all keypoints and all matches.
+    cv::Mat query_image_show_all_frame_i;
+    cv::cvtColor(query_img, query_image_show_all_frame_i, cv::COLOR_GRAY2BGR,
+                 3);
+    uzh::scatter(query_image_show_all_frame_i,
+                 query_keypoints_arma_frame_i.row(1).as_col(),
+                 query_keypoints_arma_frame_i.row(0).as_col(), 4, {0, 0, 255},
+                 cv::FILLED);
+    uzh::PlotMatches(
+        uzh::arma2cv<int>(
+            arma::conv_to<arma::Mat<int>>::from(all_matches_frame_i))
+            .t(),
+        query_kpts_cv, database_keypoints_cv, query_image_show_all_frame_i);
+    cv::imshow("All keypoints and matches", query_image_show_all_frame_i);
+    cv::waitKey(0);
+
+    // Show inlier and outlier matches along with the corresponding keypoints.
+    cv::Mat query_image_show_inlier_outlier_frame_i;
+    cv::cvtColor(query_img, query_image_show_inlier_outlier_frame_i,
+                 cv::COLOR_GRAY2BGR, 3);
+    // Outliers as red circles.
+    uzh::scatter(query_image_show_inlier_outlier_frame_i,
+                 matched_query_kpts(arma::uvec{1},
+                                    arma::find(1 - inlier_mask_frame_i > 0))
+                     .as_col(),
+                 matched_query_kpts(arma::uvec{0},
+                                    arma::find(1 - inlier_mask_frame_i > 0))
+                     .as_col(),
+                 4, {0, 0, 255}, cv::FILLED);
+    // Inliers as blue circles.
+    uzh::scatter(
+        query_image_show_inlier_outlier_frame_i,
+        matched_query_kpts(arma::uvec{1}, arma::find(inlier_mask_frame_i > 0))
+            .as_col(),
+        matched_query_kpts(arma::uvec{0}, arma::find(inlier_mask_frame_i > 0))
+            .as_col(),
+        4, {255, 0, 0}, cv::FILLED);
+    uzh::PlotMatches(
+        uzh::arma2cv<int>(
+            arma::conv_to<arma::Mat<int>>::from(corresponding_matches_frame_i(
+                arma::find(inlier_mask_frame_i > 0)))),
+        uzh::arma2cv<int>(arma::conv_to<arma::Mat<int>>::from(
+            matched_query_kpts.cols(arma::find(inlier_mask_frame_i > 0)))),
+        database_keypoints_cv, query_image_show_inlier_outlier_frame_i);
+    cv::imshow("Inlier and outlier matches along with the keypoints",
+               query_image_show_inlier_outlier_frame_i);
+    cv::waitKey(0);
+  }
 
   return EXIT_SUCCESS;
 }
