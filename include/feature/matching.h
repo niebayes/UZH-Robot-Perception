@@ -50,12 +50,12 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   // juction with std::find_if
   eigen_assert(distances.rows() == 1);
   Eigen::RowVectorXd dist = distances.row(0);
-  const double kMinNonZeroDistance =
+  const double min_non_zero_distance =
       find_min_if_not<double>(dist, [](double x) { return x <= 0; });
 
   // Discard -- set to 0 -- all matches that out of the
-  // distance_ratio * kMinNonZeroDistance range.
-  matches = (distances.array() > distance_ratio * kMinNonZeroDistance)
+  // distance_ratio * min_non_zero_distance range.
+  matches = (distances.array() > distance_ratio * min_non_zero_distance)
                 .select(0, matches);
 
   // Remove duplicate matches.
@@ -80,8 +80,11 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
 //@param database_keypoints [2 x n] matrix where each column contains the x
 // and y coordinates of the detected keypoints in the database frames.
 //@param image The image on which the plot is rendered.
+//@param plot_all_keypoints If true, not only lines linking matched points
+// are drawned but also all the keypoints. By default, it's set to false.
 void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
-                 const cv::Mat& database_keypoints, cv::Mat& image) {
+                 const cv::Mat& database_keypoints, cv::Mat& image,
+                 const bool plot_all_keypoints = false) {
   // Convert to Eigen::Matrix
   Eigen::MatrixXi matches_;
   Eigen::MatrixXi query_kps, database_kps;
@@ -89,13 +92,16 @@ void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
   cv::cv2eigen(query_keypoints, query_kps);
   cv::cv2eigen(database_keypoints, database_kps);
 
-  // Plot the keypoints, query as red whilst database as blue.
-  const Eigen::VectorXi query_x = query_kps.row(0);
-  const Eigen::VectorXi query_y = query_kps.row(1);
-  const Eigen::VectorXi database_x = database_kps.row(0);
-  const Eigen::VectorXi database_y = database_kps.row(1);
-  // uzh::scatter(image, query_x, query_y, 3, {0, 0, 255}, cv::FILLED);
-  // uzh::scatter(image, database_x, database_y, 3, {255, 0, 0}, cv::FILLED);
+  // Plot all keypoints, query as red whilst database as blue.
+  if (plot_all_keypoints) {
+    //! Follow the convention, row -> y and col -> x.
+    const Eigen::VectorXi query_x = query_kps.row(1);
+    const Eigen::VectorXi query_y = query_kps.row(0);
+    const Eigen::VectorXi database_x = database_kps.row(1);
+    const Eigen::VectorXi database_y = database_kps.row(0);
+    uzh::scatter(image, query_x, query_y, 3, {0, 0, 255}, cv::FILLED);
+    uzh::scatter(image, database_x, database_y, 3, {255, 0, 0}, cv::FILLED);
+  }
 
   // Isolate query and match indices.
   //! These indices are used to access corresponding keypoints later on.
@@ -106,14 +112,14 @@ void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
 
   // Extract coordinates of keypoints.
   Eigen::RowVectorXi from_kp_x, from_kp_y, to_kp_x, to_kp_y;
-  from_kp_x = query_kps(0, query_indices);
-  from_kp_y = query_kps(1, query_indices);
-  to_kp_x = database_kps(0, match_indices);
-  to_kp_y = database_kps(1, match_indices);
+  from_kp_x = query_kps(1, query_indices);
+  from_kp_y = query_kps(0, query_indices);
+  to_kp_x = database_kps(1, match_indices);
+  to_kp_y = database_kps(0, match_indices);
 
   // Link each set of matches.
-  const int kNumMatches = match_indices.size();
-  for (int i = 0; i < kNumMatches; ++i) {
+  const int num_matches = match_indices.size();
+  for (int i = 0; i < num_matches; ++i) {
     int from_x, from_y, to_x, to_y;
     from_x = from_kp_x(i);
     from_y = from_kp_y(i);

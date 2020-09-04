@@ -26,25 +26,25 @@ void SelectKeypoints(const cv::Mat& response, cv::Mat& keypoints,
                      const int num_keypoints, const int non_maximum_radius) {
   // Pad the response matrix for use in the non-maximum suppression stage later
   // on.
-  const cv::Scalar_<int> kPadSize{non_maximum_radius, non_maximum_radius,
+  const cv::Scalar_<int> pad_size{non_maximum_radius, non_maximum_radius,
                                   non_maximum_radius, non_maximum_radius};
   cv::Mat_<double> response_tmp = response.clone();
-  PadArray(response_tmp, kPadSize);
+  PadArray(response_tmp, pad_size);
 
   // Use eigen to speed up the computation
-  Eigen::MatrixXd R;
+  Eigen::MatrixXd res;
   Eigen::Matrix2Xi kpts(2, num_keypoints);
-  cv::cv2eigen(response_tmp, R);
+  cv::cv2eigen(response_tmp, res);
 
   // Select the top num_keypoints based on their responses and store the
   // corresponding x and y coordinates(indices) to the k matrix in order.
   //! By convention, x -> col, y -> row.
-  Eigen::Index x, y;
+  Eigen::Index row, col;
   for (int i = 0; i < num_keypoints; ++i) {
-    R.maxCoeff(&y, &x);
+    res.maxCoeff(&row, &col);
     //! Minus the non_maximum_radius to compensate for the pre-padding.
-    kpts.col(i) = Eigen::Vector2i((int)x - non_maximum_radius,
-                                  (int)y - non_maximum_radius);
+    kpts.col(i) = Eigen::Vector2i((int)row - non_maximum_radius,
+                                  (int)col - non_maximum_radius);
 
     // Perform non-maximum suppresion: set the pixels within the circle of
     // non_maximum_radius radius to 0 including the keypoints we previously
@@ -52,9 +52,8 @@ void SelectKeypoints(const cv::Mat& response, cv::Mat& keypoints,
     // ones selected before.
     //! We adopt a box filter to simplify the codes.
     //! Due the pre-padding, no need to worry about boundary issues.
-    // FIXME Error occurs here!
-    R.block(y - non_maximum_radius, x - non_maximum_radius,
-            2 * non_maximum_radius + 1, 2 * non_maximum_radius + 1)
+    res.block(row - non_maximum_radius, col - non_maximum_radius,
+              2 * non_maximum_radius + 1, 2 * non_maximum_radius + 1)
         .setZero();
   }
 

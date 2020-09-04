@@ -13,6 +13,7 @@
 #include "matlab_port/imrotate.h"
 #include "matlab_port/matchFeatures.h"
 #include "matlab_port/meshgrid.h"
+#include "matlab_port/nnz.h"
 #include "matlab_port/padarray.h"
 #include "matlab_port/pdist2.h"
 #include "matlab_port/scatter.h"

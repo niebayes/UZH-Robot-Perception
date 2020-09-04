@@ -33,30 +33,30 @@ void DescribeKeypoints(const cv::Mat& image, const cv::Mat& keypoints,
   cv::cv2eigen(padded, img);
 
   // Construct descriptors matrix to be populated
-  const int kPatchSize = 2 * patch_radius + 1;
-  const int kNumKeypoints = keypoints.cols;
-  Eigen::MatrixXi d(kPatchSize * kPatchSize, kNumKeypoints);
+  const int patch_size = 2 * patch_radius + 1;
+  const int num_keypoints = keypoints.cols;
+  Eigen::MatrixXi desc(patch_size * patch_size, num_keypoints);
 
   // Collect intensities inside the patch centered around each keypoint and
   // unroll it to a column vector.
   //! As the keypoints are stored in descending order wrt. the response, the
   //! added descriptors are as well sorted based on the response.
-  Eigen::Index x, y;
+  Eigen::Index row, col;
 
-  for (int i = 0; i < kNumKeypoints; ++i) {
+  for (int i = 0; i < num_keypoints; ++i) {
     // Add patch_radius to compensate the pre-padding.
-    x = keypoints.at<int>(0, i) + patch_radius;
-    y = keypoints.at<int>(1, i) + patch_radius;
+    row = keypoints.at<int>(0, i) + patch_radius;
+    col = keypoints.at<int>(1, i) + patch_radius;
 
     // Stack the intensities
-    Eigen::MatrixXi patch =
-        img.block(y - patch_radius, x - patch_radius, kPatchSize, kPatchSize);
-    patch.resize(kPatchSize * kPatchSize, 1);
-    d.col(i) = patch;
+    Eigen::MatrixXi patch = img.block(row - patch_radius, col - patch_radius,
+                                      patch_size, patch_size);
+    patch.resize(patch_size * patch_size, 1);
+    desc.col(i) = patch;
   }
 
   // Convert back to cv::Mat
-  cv::eigen2cv(d, descriptors);
+  cv::eigen2cv(desc, descriptors);
 
   // Normalize descriptors to 8-bit range, i.e. [0, 255]
   //! The "normalization" is actually refering to the bits convertion, that is

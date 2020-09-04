@@ -11,7 +11,7 @@
 #include "io.h"
 #include "matlab_port.h"
 #include "opencv2/opencv.hpp"
-#include "pcl/visualization/pcl_plotter.h"
+// #include "pcl/visualization/pcl_plotter.h"
 #include "ransac.h"
 #include "transfer.h"
 
@@ -132,23 +132,22 @@ int main(int argc, char** argv) {
   //   std::cout << "RANSAC fit RMS: " << ransac_fit_rms << '\n';
 
   // Part II: localizing with RANSAC.
+
   // Load data.
-  const arma::Mat<int> database_keypoints_arma =
-      uzh::LoadArma<int>(kFilePath + "keypoints.txt").t();
-  //! Note the keypoints are stored in (row, col) layout in the file. To pass
-  //! them to the DescribeKeypoints function, the (row, col) should be filped to
-  //! (x, y).
-  // TODO(bayes) Always use (row, col) layout except drawing.
-  const cv::Mat database_keypoints =
-      uzh::arma2cv<int>(arma::flipud(database_keypoints_arma));
+  //! Note the keypoints are stored in (row, col) layout in the file, and the
+  //! indices start from 1 rather than 0.
+  const cv::Mat database_keypoints_cv =
+      uzh::arma2cv<int>(uzh::LoadArma<int>(kFilePath + "keypoints.txt") - 1)
+          .t();
   const arma::mat p_W_landmarks =
-      uzh::LoadArma<double>(kFilePath + "p_W_landmarks.txt");
+      uzh::LoadArma<double>(kFilePath + "p_W_landmarks.txt").t();
   const arma::mat K = uzh::LoadArma<double>(kFilePath + "K.txt");
-  cv::Mat img_0 = cv::imread(kFilePath + "000000.png", cv::IMREAD_COLOR);
-  cv::Mat img_1 = cv::imread(kFilePath + "000001.png", cv::IMREAD_COLOR);
-  cv::Mat database_image, query_image;
-  cv::cvtColor(img_0, database_image, cv::COLOR_BGR2GRAY);
-  cv::cvtColor(img_1, query_image, cv::COLOR_BGR2GRAY);
+
+  // Load images.
+  cv::Mat database_image =
+      cv::imread(kFilePath + "000000.png", cv::IMREAD_GRAYSCALE);
+  cv::Mat query_image =
+      cv::imread(kFilePath + "000001.png", cv::IMREAD_GRAYSCALE);
 
   // Port parameters from ex3.
   const int kPatchSize = 9;
@@ -162,35 +161,35 @@ int main(int argc, char** argv) {
   // Detect Harris keypoints in the query image.
   cv::Mat harris_response;
   uzh::HarrisResponse(query_image, harris_response, kPatchSize, kHarrisKappa);
-  cv::Mat query_keypoints;
-  uzh::SelectKeypoints(harris_response, query_keypoints, kNumKeypoints,
+  cv::Mat query_keypoints_cv;
+  uzh::SelectKeypoints(harris_response, query_keypoints_cv, kNumKeypoints,
                        kNonMaximumRadius);
   // Describe keypoints.
   cv::Mat database_descriptors, query_descriptors;
-  uzh::DescribeKeypoints(database_image, database_keypoints,
+  uzh::DescribeKeypoints(database_image, database_keypoints_cv,
                          database_descriptors, kDescriptorPatchRadius);
-  uzh::DescribeKeypoints(query_image, query_keypoints, query_descriptors,
+  uzh::DescribeKeypoints(query_image, query_keypoints_cv, query_descriptors,
                          kDescriptorPatchRadius);
   // Match descriptors.
-  cv::Mat matches_tmp;
-  uzh::MatchDescriptors(query_descriptors, database_descriptors, matches_tmp,
+  cv::Mat matches_cv;
+  uzh::MatchDescriptors(query_descriptors, database_descriptors, matches_cv,
                         kDistanceRatio);
   // Obtain matched query keypoints and corresponding landmarks.
   // Convert from cv::Mat to arma::Mat
-  const arma::umat query_keypoints_tmp =
-      arma::conv_to<arma::umat>::from(uzh::cv2arma<int>(query_keypoints).t());
+  const arma::umat query_keypoints_arma = arma::conv_to<arma::umat>::from(
+      uzh::cv2arma<int>(query_keypoints_cv).t());
   const arma::urowvec all_matches =
-      arma::conv_to<arma::urowvec>::from(uzh::cv2arma<int>(matches_tmp).t());
+      arma::conv_to<arma::urowvec>::from(uzh::cv2arma<int>(matches_cv).t());
   const arma::umat matched_query_keypoints =
-      query_keypoints_tmp.cols(arma::find(all_matches > 0));
+      query_keypoints_arma.cols(arma::find(all_matches > 0));
   //! The result of linear indexing is always a column vector in Armadillo.
   const arma::urowvec corresponding_matches =
-      all_matches(arma::find(all_matches > 0)).t();
+      all_matches(arma::find(all_matches > 0)).as_row();
   const arma::mat corresponding_landmarks =
-      p_W_landmarks.rows(corresponding_matches).t();
+      p_W_landmarks.cols(corresponding_matches);
 
-  // Use these matched 3D-2D correspondences to find best Pose and inliers using
-  // RANSAC.
+  // Use these matched 3D-2D correspondences to find pose and best inlier
+  // matches using RANSAC.
   arma::mat33 R_C_W;
   arma::vec3 t_C_W;
   arma::urowvec inlier_mask, max_num_inliers_history;
@@ -205,47 +204,52 @@ int main(int argc, char** argv) {
   T_C_W(0, 3, arma::size(3, 1)) = t_C_W;
   T_C_W.print("Found T_C_W:");
   std::cout << "Estimated inlier ratio is: "
-            << arma::size(arma::nonzeros(inlier_mask)).n_rows /
-                   double(inlier_mask.size())
+            << uzh::nnz<arma::uword>(inlier_mask) / double(inlier_mask.size())
             << '\n';
 
   // Show all keypoints and all matches.
-  cv::Mat query_image_show_1 = img_1.clone();
-  uzh::scatter(query_image_show_1, query_keypoints_tmp.row(0).as_col(),
-               query_keypoints_tmp.row(1).as_col(), 3, {0, 0, 255}, cv::FILLED);
+  cv::Mat query_image_show_all;
+  cv::cvtColor(query_image, query_image_show_all, cv::COLOR_GRAY2BGR, 3);
+  uzh::scatter(query_image_show_all, query_keypoints_arma.row(1).as_col(),
+               query_keypoints_arma.row(0).as_col(), 4, {0, 0, 255},
+               cv::FILLED);
   uzh::PlotMatches(
       uzh::arma2cv<int>(arma::conv_to<arma::Mat<int>>::from(all_matches)).t(),
-      query_keypoints, database_keypoints, query_image_show_1);
-  cv::imshow("All keypoints and matches", query_image_show_1);
+      query_keypoints_cv, database_keypoints_cv, query_image_show_all);
+  cv::imshow("All keypoints and matches", query_image_show_all);
   cv::waitKey(0);
 
   // Show inlier and outlier matches along with the corresponding keypoints.
-  cv::Mat query_image_show_2 = img_1.clone();
-  // Outliers
+  cv::Mat query_image_show_inlier_outlier;
+  cv::cvtColor(query_image, query_image_show_inlier_outlier, cv::COLOR_GRAY2BGR,
+               3);
+  // Outliers as red circles.
   uzh::scatter(
-      query_image_show_2,
-      matched_query_keypoints(arma::uvec{0}, arma::find(1 - inlier_mask > 0))
-          .as_col(),
+      query_image_show_inlier_outlier,
       matched_query_keypoints(arma::uvec{1}, arma::find(1 - inlier_mask > 0))
           .as_col(),
-      3, {0, 0, 255}, cv::FILLED);
-  // Inliers
-  uzh::scatter(
-      query_image_show_2,
-      matched_query_keypoints(arma::uvec{0}, arma::find(inlier_mask > 0))
+      matched_query_keypoints(arma::uvec{0}, arma::find(1 - inlier_mask > 0))
           .as_col(),
+      4, {0, 0, 255}, cv::FILLED);
+  // Inliers as blue circles.
+  uzh::scatter(
+      query_image_show_inlier_outlier,
       matched_query_keypoints(arma::uvec{1}, arma::find(inlier_mask > 0))
           .as_col(),
-      3, {255, 0, 0}, cv::FILLED);
+      matched_query_keypoints(arma::uvec{0}, arma::find(inlier_mask > 0))
+          .as_col(),
+      4, {255, 0, 0}, cv::FILLED);
   uzh::PlotMatches(
       uzh::arma2cv<int>(arma::conv_to<arma::Mat<int>>::from(
           corresponding_matches(arma::find(inlier_mask > 0)))),
       uzh::arma2cv<int>(arma::conv_to<arma::Mat<int>>::from(
           matched_query_keypoints.cols(arma::find(inlier_mask > 0)))),
-      database_keypoints, query_image_show_2);
+      database_keypoints_cv, query_image_show_inlier_outlier);
   cv::imshow("Inlier and outlier matches along with the keypoints",
-             query_image_show_2);
+             query_image_show_inlier_outlier);
   cv::waitKey(0);
+
+  // Apply RANSAC to all frames
 
   return EXIT_SUCCESS;
 }
