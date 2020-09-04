@@ -203,11 +203,40 @@ int main(int argc, char** argv) {
   T_C_W(0, 0, arma::size(3, 3)) = R_C_W;
   T_C_W(0, 3, arma::size(3, 1)) = t_C_W;
   T_C_W.print("Found T_C_W:");
-  std::cout << "Estimated inlier ratio is: "
-            << uzh::nnz<arma::uword>(inlier_mask) / double(inlier_mask.size())
-            << '\n';
+  const double inlier_ratio =
+      100 * uzh::nnz<arma::uword>(inlier_mask) / double(inlier_mask.size());
+
+  // Show the history of maximum number of inliers and number of iterations at
+  // each iteration.
+  // const int num_iterations = num_iterations_history.n_cols;
+  // pcl::visualization::PCLPlotter::Ptr max_num_inliers_plot(
+  //     new pcl::visualization::PCLPlotter);
+  // max_num_inliers_plot->setTitle("Maximum number of inliers");
+  // max_num_inliers_plot->setXTitle("iterations");
+  // max_num_inliers_plot->setShowLegend(true);
+  // max_num_inliers_plot->addPlotData(
+  //     arma::conv_to<std::vector<double>>::from(
+  //         arma::linspace<arma::urowvec>(1, num_iterations, num_iterations)),
+  //     arma::conv_to<std::vector<double>>::from(max_num_inliers_history),
+  //     "inliers", vtkChart::BAR);
+  // max_num_inliers_plot->spinOnce(2000);
+  // max_num_inliers_plot->clearPlots();
+
+  // pcl::visualization::PCLPlotter::Ptr num_iterations_plot(
+  //     new pcl::visualization::PCLPlotter);
+  // num_iterations_plot->setTitle("Number of iterations");
+  // max_num_inliers_plot->setXTitle("iterations");
+  // max_num_inliers_plot->setShowLegend(true);
+  // num_iterations_plot->addPlotData(
+  //     arma::conv_to<std::vector<double>>::from(
+  //         arma::linspace<arma::urowvec>(1, num_iterations, num_iterations)),
+  //     arma::conv_to<std::vector<double>>::from(num_iterations_history),
+  //     "iterations", vtkChart::BAR);
+  // num_iterations_plot->spinOnce(2000);
+  // num_iterations_plot->clearPlots();
 
   // Show all keypoints and all matches.
+  std::vector<cv::Mat> imgs_show;
   cv::Mat query_image_show_all;
   cv::cvtColor(query_image, query_image_show_all, cv::COLOR_GRAY2BGR, 3);
   uzh::scatter(query_image_show_all, query_keypoints_arma.row(1).as_col(),
@@ -216,8 +245,7 @@ int main(int argc, char** argv) {
   uzh::PlotMatches(
       uzh::arma2cv<int>(arma::conv_to<arma::Mat<int>>::from(all_matches)).t(),
       query_keypoints_cv, database_keypoints_cv, query_image_show_all);
-  cv::imshow("All keypoints and matches", query_image_show_all);
-  cv::waitKey(0);
+  imgs_show.push_back(query_image_show_all);
 
   // Show inlier and outlier matches along with the corresponding keypoints.
   cv::Mat query_image_show_inlier_outlier;
@@ -245,13 +273,21 @@ int main(int argc, char** argv) {
       uzh::arma2cv<int>(arma::conv_to<arma::Mat<int>>::from(
           matched_query_keypoints.cols(arma::find(inlier_mask > 0)))),
       database_keypoints_cv, query_image_show_inlier_outlier);
-  cv::imshow("Inlier and outlier matches along with the keypoints",
-             query_image_show_inlier_outlier);
+
+  // Superimpose the number of percentage of inliers.
+  cv::putText(query_image_show_inlier_outlier,
+              cv::format("Ratio of inliers: %.2f", inlier_ratio), {30, 50},
+              cv::FONT_HERSHEY_PLAIN, 3, {0, 255, 0}, 5);
+  imgs_show.push_back(query_image_show_inlier_outlier);
+  cv::imshow(
+      "All matches vs. inlier matches found with RANSAC (first two frame)",
+      uzh::MakeCanvas(imgs_show, 3 * query_image.rows, 2));
   cv::waitKey(0);
 
   // Apply RANSAC to all frames
   // Every subsequent frame is matched against the first frame.
   const int kNumFrames = 8;
+  const std::string winname{"All matches vs. inlier matches found with RANSAC"};
   for (int i = 1; i < kNumFrames + 2; ++i) {
     cv::Mat query_img = cv::imread(
         cv::format((kFilePath + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
@@ -287,25 +323,25 @@ int main(int argc, char** argv) {
 
     // Use these matched 3D-2D correspondences to find pose and best inlier
     // matches using RANSAC.
-    arma::mat33 R_C_W_frame_i;
-    arma::vec3 t_C_W_frame_i;
-    arma::urowvec inlier_mask_frame_i, max_num_inliers_history_frame_i;
-    arma::rowvec num_iterations_history_frame_i;
-    std::tie(R_C_W_frame_i, t_C_W_frame_i, inlier_mask_frame_i,
-             max_num_inliers_history_frame_i, num_iterations_history_frame_i) =
+    arma::urowvec inlier_mask_frame_i;
+    std::tie(std::ignore, std::ignore, inlier_mask_frame_i, std::ignore,
+             std::ignore) =
         uzh::RANSACLocalization(matched_query_kpts,
                                 corresponding_landmarks_frame_i, K);
-    // Show the result.
-    arma::mat44 T_C_W_frame_i(arma::fill::eye);
-    T_C_W_frame_i(0, 0, arma::size(3, 3)) = R_C_W_frame_i;
-    T_C_W_frame_i(0, 3, arma::size(3, 1)) = t_C_W_frame_i;
-    T_C_W_frame_i.print(cv::format("Found T_C_W at frame %d", i));
-    std::cout << "Estimated inlier ratio at frame " << i << " is: "
-              << uzh::nnz<arma::uword>(inlier_mask_frame_i) /
-                     double(inlier_mask_frame_i.size())
-              << '\n';
+
+    // Show the result only if RANSAC succeeds.
+    if (inlier_mask_frame_i.empty()) {
+      std::cout << "RANSAC failed at frame " << i << '\n';
+      continue;
+    }
+
+    // Obtain the percentage of inliers.
+    const double inlier_ratio_frame_i =
+        100 * uzh::nnz<arma::uword>(inlier_mask_frame_i) /
+        double(inlier_mask_frame_i.size());
 
     // Show all keypoints and all matches.
+    std::vector<cv::Mat> imgs_show_frame_i;
     cv::Mat query_image_show_all_frame_i;
     cv::cvtColor(query_img, query_image_show_all_frame_i, cv::COLOR_GRAY2BGR,
                  3);
@@ -318,8 +354,7 @@ int main(int argc, char** argv) {
             arma::conv_to<arma::Mat<int>>::from(all_matches_frame_i))
             .t(),
         query_kpts_cv, database_keypoints_cv, query_image_show_all_frame_i);
-    cv::imshow("All keypoints and matches", query_image_show_all_frame_i);
-    cv::waitKey(0);
+    imgs_show_frame_i.push_back(query_image_show_all_frame_i);
 
     // Show inlier and outlier matches along with the corresponding keypoints.
     cv::Mat query_image_show_inlier_outlier_frame_i;
@@ -342,6 +377,7 @@ int main(int argc, char** argv) {
         matched_query_kpts(arma::uvec{0}, arma::find(inlier_mask_frame_i > 0))
             .as_col(),
         4, {255, 0, 0}, cv::FILLED);
+
     uzh::PlotMatches(
         uzh::arma2cv<int>(
             arma::conv_to<arma::Mat<int>>::from(corresponding_matches_frame_i(
@@ -349,9 +385,15 @@ int main(int argc, char** argv) {
         uzh::arma2cv<int>(arma::conv_to<arma::Mat<int>>::from(
             matched_query_kpts.cols(arma::find(inlier_mask_frame_i > 0)))),
         database_keypoints_cv, query_image_show_inlier_outlier_frame_i);
-    cv::imshow("Inlier and outlier matches along with the keypoints",
-               query_image_show_inlier_outlier_frame_i);
-    cv::waitKey(0);
+
+    // Superimpose the number of percentage of inliers.
+    cv::putText(query_image_show_inlier_outlier_frame_i,
+                cv::format("Ratio of inliers: %.2f", inlier_ratio_frame_i),
+                {30, 50}, cv::FONT_HERSHEY_PLAIN, 3, {0, 255, 0}, 5);
+    imgs_show_frame_i.push_back(query_image_show_inlier_outlier_frame_i);
+    cv::imshow(winname,
+               uzh::MakeCanvas(imgs_show_frame_i, 3 * query_img.rows, 2));
+    cv::waitKey(2000);
   }
 
   return EXIT_SUCCESS;

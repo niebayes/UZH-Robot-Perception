@@ -214,20 +214,21 @@ RANSACLocalization(const arma::umat& keypoints, const arma::mat& landmarks,
     ++k;
   }
 
-  // Refine the pose using DLT with more correspondences as P3P always use 3.
-  arma::mat33 R_C_W_final;
-  arma::vec3 t_C_W_final;
-  uzh::CameraMatrixDLT M_DLT_final = uzh::EstimatePoseDLT(
-      uzh::arma2eigen(arma::conv_to<arma::mat>::from(
-          keypoints_flipped.cols(arma::find(best_inlier_mask)))),
-      uzh::arma2eigen(landmarks.cols(arma::find(best_inlier_mask))),
-      uzh::arma2eigen(K));
-  M_DLT_final.DecomposeDLT();
-  const arma::mat M_C_W_final = uzh::eigen2arma(M_DLT_final.getM());
-  R_C_W_final = M_C_W_final.head_cols(3);
-  t_C_W_final = M_C_W_final.tail_cols(1);
-
+  // If RANSAC succeeds, refine the result.
   if (max_num_inliers > 0) {
+    // Refine the pose using DLT with more correspondences as P3P always use 3.
+    arma::mat33 R_C_W_final;
+    arma::vec3 t_C_W_final;
+    uzh::CameraMatrixDLT M_DLT_final = uzh::EstimatePoseDLT(
+        uzh::arma2eigen(arma::conv_to<arma::mat>::from(
+            keypoints_flipped.cols(arma::find(best_inlier_mask)))),
+        uzh::arma2eigen(landmarks.cols(arma::find(best_inlier_mask))),
+        uzh::arma2eigen(K));
+    M_DLT_final.DecomposeDLT();
+    const arma::mat M_C_W_final = uzh::eigen2arma(M_DLT_final.getM());
+    R_C_W_final = M_C_W_final.head_cols(3);
+    t_C_W_final = M_C_W_final.tail_cols(1);
+
     if (adaptive_iterations) {
       // Display adapted number of iterations and outlier ratio.
       std::cout << "Adaptive RANSAC: converged after " << k << " iterations.\n";
@@ -238,10 +239,12 @@ RANSACLocalization(const arma::umat& keypoints, const arma::mat& landmarks,
             arma::conv_to<arma::urowvec>::from(max_num_inliers_history),
             arma::conv_to<arma::rowvec>::from(num_iterations_history)};
   } else {
+    // If RANSAC fails, simply return empty objects.
     LOG(INFO) << "No inlier found.";
-    return {R_C_W_final, t_C_W_final, best_inlier_mask,
-            arma::conv_to<arma::urowvec>::from(max_num_inliers_history),
-            arma::conv_to<arma::rowvec>::from(num_iterations_history)};
+    // return {arma::mat33{}, arma::vec3{}, best_inlier_mask,
+    //         arma::conv_to<arma::urowvec>::from(max_num_inliers_history),
+    //         arma::conv_to<arma::rowvec>::from(num_iterations_history)};
+    return {{}, {}, {}, {}, {}};
   }
 }
 
