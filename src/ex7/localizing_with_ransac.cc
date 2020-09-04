@@ -284,9 +284,9 @@ int main(int argc, char** argv) {
 
   // Apply RANSAC to all frames
   // Every subsequent frame is matched against the first frame.
-  const int kNumFrames = 8;
+  const int kNumFrames = 9;
   const std::string winname{"All matches vs. inlier matches found with RANSAC"};
-  for (int i = 1; i < kNumFrames + 2; ++i) {
+  for (int i = 1; i < kNumFrames + 1; ++i) {
     cv::Mat query_img = cv::imread(
         cv::format((kFilePath + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
 
@@ -389,8 +389,10 @@ int main(int argc, char** argv) {
                 cv::format("Ratio of inliers: %.2f", inlier_ratio_frame_i),
                 {30, 50}, cv::FONT_HERSHEY_PLAIN, 3, {0, 255, 0}, 5);
     imgs_show_frame_i.push_back(query_image_show_inlier_outlier_frame_i);
-    cv::imshow(winname,
-               uzh::MakeCanvas(imgs_show_frame_i, 3 * query_img.rows, 2));
+    const cv::Mat show =
+        uzh::MakeCanvas(imgs_show_frame_i, 3 * query_img.rows, 2);
+    cv::imshow(winname, show);
+    cv::imwrite(cv::format("results/ex7/img_%d.png", i), show);
     const char key = cv::waitKey(2000);
     if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
   }
