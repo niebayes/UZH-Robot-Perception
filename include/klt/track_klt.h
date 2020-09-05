@@ -57,11 +57,11 @@ std::tuple<arma::mat /* W */, arma::mat /* param_history */> TrackKLT(
   // replication.
   //@ref
   // https://blogs.sas.com/content/iml/2020/07/27/8-ways-kronecker-product.html
-  // A x B, where A is a row vector of ones, horizontal concatenation of
+  // A x B, where A is a row vector of ones, denotes horizontal concatenation of
   // length(A) copies of B.
-  // A x B, where B is a row vector of ones, length(B) copies of the first
-  // column of A, followed by length(B) copies of the second column of A, and so
-  // forth.
+  // A x B, where B is a row vector of ones, denotes length(B) copies of the
+  // first column of A, followed by length(B) copies of the second column of A,
+  // and so forth.
   const int patch_size = 2 * r_T + 1;
   const arma::urowvec xs = arma::linspace<arma::urowvec>(-r_T, r_T, patch_size);
   const arma::urowvec ys = xs;
@@ -73,7 +73,6 @@ std::tuple<arma::mat /* W */, arma::mat /* param_history */> TrackKLT(
   const arma::umat dwdp = arma::kron(xy1, arma::eye<arma::umat>(2, 2));
 
   for (int i = 0; i < num_iterations; ++i) {
-    
   }
 }
 
