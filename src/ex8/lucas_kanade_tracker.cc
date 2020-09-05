@@ -19,14 +19,16 @@ int main(int /*argc*/, char** argv) {
 
   // Part I: warp an image to test the functionalities of the warping functions.
   const cv::Mat img_0 =
-      cv::imread(kFilePath + "000000.png", cv::IMREAD_GRAYSCALE);
+      cv::imread(kFilePath + "000000.png", cv::IMREAD_ANYDEPTH);
   std::cout << img_0.rowRange(0, 10).colRange(0, 10) << '\n';
-  const arma::umat I_r = uzh::img2arma(img_0);
+  std::cout << arma::conv_to<arma::umat>::from(uzh::cv2arma<double>(img_0))
+            << '\n';
+  const arma::umat I_r;
   I_r(0, 0, arma::size(10, 10)).print("I_r");
-  cv::Mat t = uzh::arma2img(I_r);
-  std::cout << img_0.rowRange(0, 10).colRange(0, 10) << '\n';
-  cv::imshow("", t);
-  cv::waitKey(0);
+  // cv::Mat t = uzh::arma2img(I_r);
+  // std::cout << img_0.rowRange(0, 10).colRange(0, 10) << '\n';
+  // cv::imshow("", t);
+  // cv::waitKey(0);
 
   // Various basic warpings.
   const arma::mat W_t = uzh::GetSimpleWarp(50, -30, 0, 1);
