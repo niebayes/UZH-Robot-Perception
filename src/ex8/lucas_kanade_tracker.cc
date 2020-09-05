@@ -37,34 +37,37 @@ int main(int /*argc*/, char** argv) {
   cv::imshow("Warped images", uzh::MakeCanvas(imgs_test, 1.5 * I_r.n_rows, 2));
   cv::waitKey(0);
 
-  // Part II: track an image with pure-translational warping.
-  // Show the template patch.
+  // Part II: track an patch with pure-translational warping in a brute-force
+  // manner.
+  // Obtain template patch.
   const arma::mat W_0_inv = uzh::GetSimpleWarp(0, 0, 0, 1);
   const arma::uvec2 x_T{900, 291};
   const double r_T = 15;
   const arma::umat template_patch = uzh::GetWarpedPatch(I_r, W_0_inv, x_T, r_T);
   // Track the template in the warped image.
   // Apply translation-only warping.
-  //! W denotes inverse warping wrt. reference image I_r.
+  //! W_inv denotes inverse warping wrt. reference image I_r, such that
+  //! I_r = W_inv * I_w.
   const arma::mat W_inv = uzh::GetSimpleWarp(10, 6, 0, 1);
   const arma::umat I_w = uzh::WarpImage(I_r, W_inv);
   const double r_D = 20;
+  arma::mat W_t;
+  arma::mat ssds;
+  std::tie(W_t, ssds) = uzh::TrackBruteForce(I_r, I_w, x_T, r_T, r_D);
   std::vector<cv::Mat> imgs_track(4);
   imgs_track[0] = img_r;
   imgs_track[1] = uzh::imagesc(template_patch, false);
   imgs_track[2] = uzh::arma2img(I_w);
-  imgs_track[3] = uzh::imagesc(template_patch, false);
-
+  //* The line segment linking the upper left corner and the darkest point in
+  // the SSD colormap denotes the displacement vector.
+  imgs_track[3] = uzh::imagesc(arma::conv_to<arma::umat>::from(ssds), false);
+  std::cout << "The recovered translation-only forward warping is: \n";
+  W_t.print();
   cv::imshow("Track template with brute-force",
-             uzh::MakeCanvas(imgs_track, 1.5 * I_r.n_rows, 2));
+             uzh::MakeCanvas(imgs_track, I_r.n_rows, 2));
   cv::waitKey(0);
 
-  // [ dx, ssds ] = trackBruteForce(I_R, I, x_T, r_T, r_D);
-  // toc imagesc(ssds);
-  // axis equal;
-  // axis off;
-  // title('SSDs');
-  // disp(['Displacement best explained by (dx, dy) = (' num2str(dx) ')']);
+  // Part III: recover the warp with KLT.
 
   return EXIT_SUCCESS;
 }
