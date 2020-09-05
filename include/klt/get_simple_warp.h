@@ -17,9 +17,10 @@ namespace uzh {
 //@return W -- [2 x 3] affine warp matrix such that the warped 2D point is given
 // by p_w = W * p where p and p_w are 2D homogeneous coordinates.
 //! Note, W is used with inverse warping through out the KLT pipeline we
-//! implemented.
-arma::mat GetSimpleWarp(const double dx, const double dy, const double theta,
-                        const double s) {
+//! implemented. Hence care has to be taken when dealing with W.
+arma::mat /* W */
+GetSimpleWarp(const double dx, const double dy, const double theta,
+              const double s) {
   if (s <= 0)
     LOG(ERROR) << "Scale factor should not be less than or equal to zero.";
 
