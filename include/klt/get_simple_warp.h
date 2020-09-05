@@ -1,0 +1,4 @@
+#ifndef UZH_KLT_GET_SIMPLE_WARP_H_
+#define UZH_KLT_GET_SIMPLE_WARP_H_
+ 
+#endif  // UZH_KLT_GET_SIMPLE_WARP_H_

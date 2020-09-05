@@ -1,0 +1,4 @@
+#ifndef UZH_KLT_WARP_IMAGE_H_
+#define UZH_KLT_WARP_IMAGE_H_
+ 
+#endif  // UZH_KLT_WARP_IMAGE_H_

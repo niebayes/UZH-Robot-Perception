@@ -175,4 +175,5 @@ include_directories(BEFORE
 # add_subdirectory(src/ex4)
 # add_subdirectory(src/ex5)
 # add_subdirectory(src/ex6)
-add_subdirectory(src/ex7)
+# add_subdirectory(src/ex7)
+add_subdirectory(src/ex8)

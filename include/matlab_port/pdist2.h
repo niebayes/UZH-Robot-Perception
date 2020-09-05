@@ -10,6 +10,7 @@
 #include "armadillo"
 #include "common/type.h"
 #include "feature/distance.h"
+#include "glog/logging.h"
 #include "transfer/arma2eigen.h"
 #include "transfer/eigen2arma.h"
 
