@@ -43,14 +43,6 @@ void PadArray(cv::Mat& image, const cv::Scalar_<int> pad_size,
                      pad_size(3), cv::BORDER_CONSTANT, {pad_value});
 }
 
-// TODO(bayes) Overload this function taking as input Eigen::Matrix. The padding
-// behavior can be accomplised by using block operation.
-template <typename Derived>
-void PadArray(Eigen::DenseBase<Derived>& image, const cv::Scalar_<int> pad_size,
-              const double pad_value = 0) {
-  //
-}
-
 // enum ConvolutionType {
 //   /* Return the full convolution, including border */
 //   CONVOLUTION_FULL,
@@ -99,12 +91,5 @@ void Conv2D(cv::InputArray src, cv::OutputArray dst, int ddepth,
             double delta = 0.0, int border_type = 4) {
   cv::filter2D(src, dst, ddepth, kernel, anchor, delta, border_type);
 }
-
-//@brief Overloaded of conv2d. Convolve the image first with the kernel_x along
-// the rows and then convolve the result obtained with the kernel_y along the
-// columns.
-// TODO(bayes) Remove OpenCV dependency.
-// TODO(bayes) Implement.
-// void Conv2D() { cv::sepFilter2D(); }
 
 #endif  // UZH_FEATURE_CONV2_H_
