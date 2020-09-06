@@ -121,7 +121,7 @@ std::tuple<arma::mat /* W */, arma::mat /* param_history */> TrackKLT(
     param_history.col(k + 1) = arma::vectorise(W);
 
     // Intentionally hide this option.
-    const bool visualize = true;
+    const bool visualize = false;
     if (visualize) {
       // Plot reference patch, wraped patch and their difference.
       std::vector<cv::Mat> patches(3);
@@ -129,7 +129,7 @@ std::tuple<arma::mat /* W */, arma::mat /* param_history */> TrackKLT(
       patches[1] = uzh::arma2img(I_w_patch);
       patches[2] = uzh::arma2img(I_r_patch - I_w_patch);
       const cv::Mat patches_plot =
-          uzh::imagesc(uzh::MakeCanvas(patches, patch_size, 1), false);
+          uzh::imagesc(uzh::MakeCanvas(patches, patch_size, 1));
 
       // Plot gradients of warped patch.
       std::vector<cv::Mat> gradients(2);
@@ -138,7 +138,7 @@ std::tuple<arma::mat /* W */, arma::mat /* param_history */> TrackKLT(
       gradients[1] =
           uzh::arma2img(arma::conv_to<arma::umat>::from(I_w_patch_grad_y));
       const cv::Mat gradients_plot =
-          uzh::imagesc(uzh::MakeCanvas(gradients, patch_size, 1), false);
+          uzh::imagesc(uzh::MakeCanvas(gradients, patch_size, 1));
 
       // Plot steepest descent patches for visualizing the process of
       // Gauss-Newton method.
@@ -151,9 +151,10 @@ std::tuple<arma::mat /* W */, arma::mat /* param_history */> TrackKLT(
                 arma::reshape(didp.col(patch_idx), patch_size, patch_size)));
       }
       const cv::Mat descent_patches_plot =
-          uzh::imagesc(uzh::MakeCanvas(descent_patches, patch_size, 1), false);
+          uzh::imagesc(uzh::MakeCanvas(descent_patches, patch_size, 1));
 
       // Display all plots.
+      // FIXME Correctly display the plots.
       cv::Mat display;
       cv::Mat all_plots[3] = {patches_plot, gradients_plot,
                               descent_patches_plot};

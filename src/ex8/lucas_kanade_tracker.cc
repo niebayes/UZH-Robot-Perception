@@ -72,6 +72,92 @@ int main(int /*argc*/, char** argv) {
   arma::mat W, param_history;
   std::tie(W, param_history) =
       uzh::TrackKLT(I_r, I_w, x_T, r_T, kNumIterations);
+  std::cout << "Recovered translation-only warp is:\n";
+  W.print();
+
+  // Apply KLT on KITTI dataset.
+  // Downsample by a factor of 4 to speed up tracking.
+  const cv::Mat img_r_down = uzh::imresize(img_r, 0.25);
+  const arma::umat I_r_down = uzh::img2arma(img_r_down);
+  arma::umat keypoints =
+      uzh::LoadArma<arma::uword>(kFilePath + "keypoints.txt").t();
+  keypoints /= 4;  // Keypoints are scaled accordingly.
+  // Only track part of keypoints.
+  const int kNumKeypoints = 50;
+  keypoints = keypoints.head_cols(kNumKeypoints);
+
+  // cv::Mat img_r_down_show = img_r_down.clone();
+
+  // Track the keypoints.
+  arma::umat I_prev = I_r_down;
+  arma::umat kpts_prev = keypoints;
+  const int kNumImages = 20;
+  for (int i = 1; i < 20; ++i) {
+    const cv::Mat img_i = cv::imread(
+        cv::format((kFilePath + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
+    const cv::Mat img_i_down = uzh::imresize(img_i, 0.25);
+    const arma::umat I = uzh::img2arma(img_i_down);
+
+    // Obtain delta translations of keypoints.
+    arma::umat delta_kpts(arma::size(kpts_prev), arma::fill::zeros);
+    for (int j = 0; j < kNumKeypoints; ++j) {
+      arma::mat W_i;
+      std::tie(W_i, std::ignore) =
+          uzh::TrackKLT(I_prev, I, kpts_prev.col(j), r_T, kNumIterations);
+      delta_kpts.col(j) = arma::conv_to<arma::uvec>::from(W.tail_cols(1));
+    }
+    // New coordinates of the tracked points.
+    const arma::umat kpts = kpts_prev + delta_kpts;
+    // Plot the matches.
+    // Matches are one-to-one.
+    const cv::Mat matches = uzh::arma2img(
+        arma::linspace<arma::urowvec>(0, kNumKeypoints - 1, kNumKeypoints));
+    cv::Mat match_show;
+    uzh::PlotMatches(matches, uzh::arma2img(kpts), uzh::arma2img(kpts_prev),
+                     match_show, true);
+
+    I_prev = I;
+  }
+
+  // Part V: robustly do KLT tracking with thresholding on bidirectional error.
+  I_prev = I_r_down;
+  kpts_prev = keypoints;
+  for (int i = 0; i < kNumImages; ++i) {
+    const cv::Mat img_i = cv::imread(
+        cv::format((kFilePath + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
+    const cv::Mat img_i_down = uzh::imresize(img_i, 0.25);
+    const arma::umat I = uzh::img2arma(img_i_down);
+
+    // Obtain delta translations of keypoints.
+    arma::umat delta_kpts(arma::size(kpts_prev), arma::fill::zeros);
+    arma::urowvec is_kept(arma::size(kpts_prev), arma::fill::ones);
+    const double kBidirectionalErrorThreshold = 0.1;
+    for (int j = 0; j < kpts_prev.n_cols; ++j) {
+      arma::vec2 delta_t;
+      std::tie(delta_t, is_kept(j)) =
+          uzh::TrackKLTRobust(I_prev, I, kpts_prev.col(j), r_T, kNumIterations,
+                              kBidirectionalErrorThreshold);
+      delta_kpts.col(j) = arma::conv_to<arma::uvec>::from(delta_t);
+    }
+
+    // New coordinates of the tracked points.
+    arma::umat kpts = kpts_prev + delta_kpts;
+    // Only keep points that have passed the bidirectional test.
+    //! Number of tracked points is incrementally decreased.
+    kpts = kpts.cols(arma::find(is_kept));
+    kpts_prev = kpts_prev.cols(arma::find(is_kept));
+
+    // Plot the matches.
+    // Matches are one-to-one.
+    const int num_kept_points = kpts.n_cols;
+    const cv::Mat matches = uzh::arma2img(
+        arma::linspace<arma::urowvec>(0, num_kept_points - 1, num_kept_points));
+    cv::Mat match_show;
+    uzh::PlotMatches(matches, uzh::arma2img(kpts), uzh::arma2img(kpts_prev),
+                     match_show, true);
+
+    I_prev = I;
+  }
 
   return EXIT_SUCCESS;
 }

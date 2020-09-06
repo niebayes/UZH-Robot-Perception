@@ -35,9 +35,9 @@ std::tuple<arma::vec2 /* delta_t */, bool> TrackKLTRobust(
 
   arma::mat W, W_inv;
   std::tie(W, std::ignore) = uzh::TrackKLT(I_r, I, x_T, r_T, num_iterations);
-  const arma::vec2 delta_t = W.tail_cols(1);
+  const arma::vec delta_t = W.tail_cols(1);
   std::tie(W_inv, std::ignore) =
-      uzh::TrackKLT(I_r, I, x_T + arma::conv_to<arma::uvec2>::from(delta_t),
+      uzh::TrackKLT(I_r, I, x_T + arma::conv_to<arma::uvec>::from(delta_t),
                     r_T, num_iterations);
   const arma::vec2 delta_t_inv = W_inv.tail_cols(1);
   const bool is_kept = arma::norm(delta_t + delta_t_inv) < lambda;
