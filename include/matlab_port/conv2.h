@@ -1,6 +1,7 @@
 #ifndef UZH_MATLAB_PORT_CONV2_H_
 #define UZH_MATLAB_PORT_CONV2_H_
 
+//! This option is for developers only.
 //@ref C++ parfor https://stackoverflow.com/a/45773308/14007680
 #ifdef __APPLE__
 #define PARFOR 1

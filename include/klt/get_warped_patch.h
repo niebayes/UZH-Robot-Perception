@@ -19,7 +19,8 @@ GetWarpedPatch(const arma::umat& I, const arma::mat& W_inv,
   if (I.empty() || W_inv.empty()) LOG(ERROR) << "Empty input.";
   if (W_inv.n_rows != 2 || W_inv.n_cols != 3)
     LOG(ERROR) << "Affine warp matrix should be a [2 x 3] matrix.";
-  if (r_T <= 0 || r_T % 2 == 0) LOG(ERROR) << "Invalid patch radius.";
+  if (r_T <= 0) LOG(ERROR) << "Invalid patch radius.";
+  // if (r_T % 2 == 0) LOG(WARNING) << "Odd-size patch radius.";
 
   const int patch_size = 2 * r_T + 1;
   arma::umat warped_patch(patch_size, patch_size, arma::fill::zeros);

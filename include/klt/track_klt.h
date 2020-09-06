@@ -9,8 +9,12 @@
 #include "glog/logging.h"
 #include "klt/get_simple_warp.h"
 #include "klt/get_warped_patch.h"
+#include "matlab_port/conv2.h"
+#include "matlab_port/imagesc.h"
+#include "matlab_port/subplot.h"
 #include "opencv2/core.hpp"
 #include "opencv2/highgui.hpp"
+#include "transfer/arma2img.h"
 
 namespace uzh {
 
@@ -48,9 +52,10 @@ std::tuple<arma::mat /* W */, arma::mat /* param_history */> TrackKLT(
   // The frist slice of history is the initial estimate.
   param_history.col(0) = arma::vectorise(W);
   // Template patch.
-  const arma::umat template_patch = uzh::GetWarpedPatch(I_r, W, x_T, r_T);
+  const arma::umat I_r_patch = uzh::GetWarpedPatch(I_r, W, x_T, r_T);
   // Apply vectorization trick.
-  const arma::uvec i_r = arma::vectorise(template_patch);
+  const arma::vec i_r =
+      arma::conv_to<arma::vec>::from(arma::vectorise(I_r_patch));
 
   // Quickly get all the dw/dp items by utilizing kronecker product tricks.
   //@note Kronecker product tricks: horizontal concatenation and sequential
@@ -70,10 +75,107 @@ std::tuple<arma::mat /* W */, arma::mat /* param_history */> TrackKLT(
       arma::join_horiz(arma::kron(xs, ones).t(), arma::kron(ones, ys).t()), 1);
   // dwdp is a [2*patch_size x 6] matrix collecting all the dwdp items evaluated
   // at all pixels through out the patch.
-  const arma::umat dwdp = arma::kron(xy1, arma::eye<arma::umat>(2, 2));
+  const arma::mat dwdp = arma::conv_to<arma::mat>::from(
+      arma::kron(xy1, arma::eye<arma::umat>(2, 2)));
 
-  for (int i = 0; i < num_iterations; ++i) {
+  for (int k = 0; k < num_iterations; ++k) {
+    //! Warping is very sensitive to noise as well as small shift within few
+    //! pixels. Hence, to get the most accurate gradient, instead of padding by
+    //! replication or zero-padding, it's better to in advance extract a bigger
+    //! patch to get the best padding wrt. the computation of gradient.
+    const arma::umat I_w_patch_big = uzh::GetWarpedPatch(I, W, x_T, r_T + 1);
+    const arma::umat I_w_patch =
+        I_w_patch_big(1, 1, arma::size(patch_size, patch_size));
+    const arma::vec i =
+        arma::conv_to<arma::vec>::from(arma::vectorise(I_w_patch));
+
+    // Obtain di/dp.
+    // First, compute the x and y gradients with Sobel operators.
+    const arma::mat I_tmp = arma::conv_to<arma::mat>::from(I_w_patch_big);
+    const arma::mat I_w_patch_grad_x = uzh::conv2(
+        {1, 0, -1}, {1}, I_tmp(1, 0, arma::size(patch_size, patch_size + 2)),
+        uzh::VALID);
+    const arma::mat I_w_patch_grad_y = uzh::conv2(
+        {1}, {1, 0, -1}, I_tmp(0, 1, arma::size(patch_size + 2, patch_size)),
+        uzh::VALID);
+    // Second, get di/dw.
+    const arma::vec ix = arma::vectorise(I_w_patch_grad_x),
+                    iy = arma::vectorise(I_w_patch_grad_y);
+    const arma::mat didw = arma::join_horiz(ix, iy);
+    // Multiply didw with dwdp row-blockwisely to get didp.
+    arma::mat didp(patch_size * patch_size, 6, arma::fill::zeros);
+    for (int j = 0; j < didp.n_rows; ++j) {
+      didp.row(j) = didw.row(j) * dwdp.rows(2 * j, 2 * j + 1);
+    }
+
+    // Obtain Hessian.
+    const arma::mat H = didp.t() * didp;
+
+    // Get delta p.
+    const arma::vec delta_p = H.i() * didp.t() * (i_r - i);
+
+    // Update W.
+    W += arma::reshape(delta_p, 2, 3);
+
+    // Record W.
+    param_history.col(k + 1) = arma::vectorise(W);
+
+    // Intentionally hide this option.
+    const bool visualize = true;
+    if (visualize) {
+      // Plot reference patch, wraped patch and their difference.
+      std::vector<cv::Mat> patches(3);
+      patches[0] = uzh::arma2img(I_r_patch);
+      patches[1] = uzh::arma2img(I_w_patch);
+      patches[2] = uzh::arma2img(I_r_patch - I_w_patch);
+      const cv::Mat patches_plot =
+          uzh::imagesc(uzh::MakeCanvas(patches, patch_size, 1), false);
+
+      // Plot gradients of warped patch.
+      std::vector<cv::Mat> gradients(2);
+      gradients[0] =
+          uzh::arma2img(arma::conv_to<arma::umat>::from(I_w_patch_grad_x));
+      gradients[1] =
+          uzh::arma2img(arma::conv_to<arma::umat>::from(I_w_patch_grad_y));
+      const cv::Mat gradients_plot =
+          uzh::imagesc(uzh::MakeCanvas(gradients, patch_size, 1), false);
+
+      // Plot steepest descent patches for visualizing the process of
+      // Gauss-Newton method.
+      // Each patch corresponds to a parameter of W. In particular, the last two
+      // patches corresponds to the two translation parameters.
+      std::vector<cv::Mat> descent_patches(6);
+      for (int patch_idx = 0; patch_idx < 6; ++patch_idx) {
+        descent_patches[patch_idx] =
+            uzh::arma2img(arma::conv_to<arma::umat>::from(
+                arma::reshape(didp.col(patch_idx), patch_size, patch_size)));
+      }
+      const cv::Mat descent_patches_plot =
+          uzh::imagesc(uzh::MakeCanvas(descent_patches, patch_size, 1), false);
+
+      // Display all plots.
+      cv::Mat display;
+      cv::Mat all_plots[3] = {patches_plot, gradients_plot,
+                              descent_patches_plot};
+      cv::vconcat(all_plots, 3, display);
+      cv::imshow(
+          "Top to bottom: patches, gradient patches, steepest descent patches",
+          display);
+      const char key = cv::waitKey(1000);
+      if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
+    }
+
+    // Check if converged.
+    const double converge_threshold = 1e-3;
+    if (arma::norm(delta_p) < converge_threshold) {
+      // Only keep records till now.
+      param_history = param_history.head_cols(k + 2);
+      LOG(INFO) << "Gradient descent converged in " << k + 1 << " iterations.";
+      break;
+    }
   }
+
+  return {W, param_history};
 }
 
 }  // namespace uzh
