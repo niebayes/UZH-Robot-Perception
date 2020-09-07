@@ -20,6 +20,13 @@ cross(const arma::Col<T>& u) {
   return U;
 }
 
+//@brief
+template <typename T>
+arma::Col<T> /* u */
+cross(const arma::Mat<T>& U) {
+  //
+}
+
 //@brief Imitate matlab's cross. Return the cross product of pairs of vectors
 // stored in matrix A and B respectively.
 //@param A [3 x n] matrix.
