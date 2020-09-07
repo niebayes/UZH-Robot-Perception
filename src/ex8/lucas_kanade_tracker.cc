@@ -105,8 +105,9 @@ int main(int /*argc*/, char** argv) {
     arma::mat delta_kpts(arma::size(kpts_prev), arma::fill::zeros);
     for (int j = 0; j < kNumKeypoints; ++j) {
       arma::mat W_i;
-      std::tie(W_i, std::ignore) =
-          uzh::TrackKLT(I_prev, I, kpts_prev.col(j), r_T, kNumIterations);
+      //* Set visualize to true to see the process of KLT.
+      std::tie(W_i, std::ignore) = uzh::TrackKLT(I_prev, I, kpts_prev.col(j),
+                                                 r_T, kNumIterations, false);
       delta_kpts.col(j) = W_i.tail_cols(1);
     }
 

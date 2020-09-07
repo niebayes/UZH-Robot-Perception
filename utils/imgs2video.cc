@@ -3,7 +3,8 @@
 #include "google_suite.h"
 #include "opencv2/opencv.hpp"
 
-DEFINE_string(n, "", "Pattern of the image names. For example, ./data/imgs_%d");
+DEFINE_string(n, "",
+              "Pattern of the image names. For example, ./data/imgs_%d.png");
 DEFINE_int32(k, 0, "Number of images.");
 DEFINE_int32(i, 0,
              "Start id of images. For example, imgs_00.png. Default is 0.");
