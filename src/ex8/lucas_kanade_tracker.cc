@@ -88,7 +88,7 @@ int main(int /*argc*/, char** argv) {
   keypoints = arma::flipud(keypoints);
   keypoints /= 4.0;  // Keypoints are scaled accordingly.
   // Only track part of keypoints.
-  const int kNumKeypoints = 50;
+  const int kNumKeypoints = 100;
   keypoints = keypoints.head_cols(kNumKeypoints);
 
   // Track the keypoints.
@@ -129,6 +129,8 @@ int main(int /*argc*/, char** argv) {
     cv::imshow("KLT tracking", match_show);
     const char key = cv::waitKey(50);
     if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
+    cv::imwrite(cv::format("results/ex8/klt/track_%02d.png", i - 1),
+                match_show);
 
     I_prev = I;
     kpts_prev = kpts;
@@ -181,6 +183,8 @@ int main(int /*argc*/, char** argv) {
       cv::imshow("Robust KLT tracking", match_show);
       const char key = cv::waitKey(50);
       if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
+      cv::imwrite(cv::format("results/ex8/robust_klt/track_%02d.png", i - 1),
+                  match_show);
     }
 
     I_prev = I;

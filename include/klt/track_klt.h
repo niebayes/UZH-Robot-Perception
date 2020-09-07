@@ -173,6 +173,9 @@ std::tuple<arma::mat /* W */, arma::mat /* param_history */> TrackKLT(
       cv::imshow(
           "Top to bottom: patches, gradient patches, steepest descent patches",
           display);
+      cv::imwrite(
+          cv::format("results/ex8/gauss_newton_process/patches_%02d.png", k),
+          display);
       const char key = cv::waitKey(50);
       if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
     }
