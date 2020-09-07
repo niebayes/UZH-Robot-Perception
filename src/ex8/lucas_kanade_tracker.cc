@@ -34,8 +34,8 @@ int main(int /*argc*/, char** argv) {
   imgs_test[1] = uzh::arma2img(uzh::WarpImage(I_r, W_t_inv));
   imgs_test[2] = uzh::arma2img(uzh::WarpImage(I_r, W_R_inv));
   imgs_test[3] = uzh::arma2img(uzh::WarpImage(I_r, W_s_inv));
-  // cv::imshow("Warped images", uzh::MakeCanvas(imgs_test, 1.5 * I_r.n_rows,
-  // 2)); cv::waitKey(0);
+  cv::imshow("Warped images", uzh::MakeCanvas(imgs_test, 1.5 * I_r.n_rows, 2));
+  cv::waitKey(0);
 
   // Part II: track a patch warped with pure-translational warping in a
   // brute-force manner.
@@ -64,9 +64,9 @@ int main(int /*argc*/, char** argv) {
   std::cout
       << "Brute-forcely recovered translation-only forward warping is: \n";
   W_t.print();
-  // cv::imshow("Track template with brute-force",
-  //            uzh::MakeCanvas(imgs_track, I_r.n_rows, 2));
-  // cv::waitKey(0);
+  cv::imshow("Track template with brute-force",
+             uzh::MakeCanvas(imgs_track, I_r.n_rows, 2));
+  cv::waitKey(0);
 
   // Part III: recover the warp with KLT.
   const int kNumIterations = 50;
