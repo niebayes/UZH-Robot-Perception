@@ -27,7 +27,7 @@ namespace uzh {
 // SSD measurement between the template patch and the candidate patch extracted
 // around x_T after warping specified with W_t.
 std::tuple<arma::mat /* W_t */, arma::mat /* ssds */> TrackBruteForce(
-    const arma::umat& I_r, const arma::umat& I, const arma::uvec2& x_T,
+    const arma::umat& I_r, const arma::umat& I, const arma::vec2& x_T,
     const int r_T, const int r_D) {
   if (I_r.empty() || I.empty() || x_T.empty()) LOG(ERROR) << "Empty input.";
   if (arma::size(I_r) != arma::size(I))
