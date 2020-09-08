@@ -8,7 +8,7 @@
 #include "io.h"
 #include "matlab_port.h"
 #include "opencv2/opencv.hpp"
-// #include "pcl/visualization/pcl_plotter.h"
+#include "pcl/visualization/pcl_plotter.h"
 #include "transfer.h"
 #include "transform.h"
 
@@ -60,7 +60,7 @@ int main(int /*argc*/, char** argv) {
   }
 
   // Plot the VO trajectory and ground truth trajectory.
-  pcl::visualization::PCLPlotter::Ptr comp_plotter(
+  pcl::visualization::PCLPlotter::Ptr plotter(
       new pcl::visualization::PCLPlotter);
   plotter->setTitle("VO trajectory and ground truth trajectory");
   plotter->setShowLegend(true);
@@ -74,10 +74,10 @@ int main(int /*argc*/, char** argv) {
   //! x needs to be negated to be consistent with the x axis of the figure.
   plotter->addPlotData(arma::conv_to<std::vector<double>>::from(pp_G_C.row(2)),
                        arma::conv_to<std::vector<double>>::from(-pp_G_C.row(0)),
-                       "ground truth", vtkChart::LINES);
+                       "ground truth", vtkChart::LINE);
   plotter->addPlotData(arma::conv_to<std::vector<double>>::from(p_V_C.row(2)),
                        arma::conv_to<std::vector<double>>::from(-p_V_C.row(0)),
-                       "VO estimate", vtkChart::LINES);
+                       "VO estimate", vtkChart::LINE);
 
   // Apply non-linear least square (NLLS) method to align VO estimate to the
   // ground truth.

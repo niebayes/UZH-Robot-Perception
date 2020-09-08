@@ -59,7 +59,7 @@ else()
 endif()
 
 # ceres
-find_package(Ceres QUIET)
+find_package(Ceres REQUIRED)
 if (CERES_FOUND)
     message("Found Ceres" " Path ${CERES_INCLUDE_DIRS}")
 else()
@@ -86,7 +86,7 @@ endif()
 find_package(Armadillo REQUIRED)
 
 # pcl
-# find_package(PCL 1.11 QUIET COMPONENTS common io visualization)
+find_package(PCL 1.11 QUIET COMPONENTS common io visualization)
 if (PCL_FOUND)
     message("Found PCL")
 else() 
