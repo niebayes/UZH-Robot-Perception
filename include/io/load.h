@@ -37,6 +37,7 @@ arma::Mat<T> LoadArma(const std::string& file_name) {
 
 }
 
+//! Deprecated
 //@brief Generic load function.
 //@template param M, complete type of the returned matrix, e.g. Eigen::MatrixXd
 template <typename M>
@@ -69,8 +70,8 @@ M Load(const std::string& file_name,
       data.data(), rows, data.size() / rows);
 }
 
-// @brief Load 6dof poses from text file and store them into a 2d vector.
 //! Deprecated
+// @brief Load 6dof poses from text file and store them into a 2d vector.
 std::vector<std::vector<double>> LoadPoses(const std::string& file_name) {
   std::vector<std::vector<double>> poses;
 
@@ -92,8 +93,8 @@ std::vector<std::vector<double>> LoadPoses(const std::string& file_name) {
   return poses;
 }
 
-//@brief Load camera calibration matrix K and store it into a vector.
 //! Deprecated
+//@brief Load camera calibration matrix K and store it into a vector.
 std::vector<double> LoadK(const std::string& file_name) {
   std::vector<double> K;
 
@@ -116,9 +117,9 @@ std::vector<double> LoadK(const std::string& file_name) {
   return K;
 }
 
+//! Deprecated
 //@brief Overloaded version of LoadK.
 // Directly store the data into the eigen matrix object.
-//! Deprecated
 template <typename Derived>
 void LoadK(const std::string& file_name,
            Eigen::MatrixBase<Derived>* calibration_matrix) {
@@ -130,8 +131,8 @@ void LoadK(const std::string& file_name,
   }
 }
 
-//@brief Load lens distortion coefficients D and store them into a vector.
 //! Deprecated
+//@brief Load lens distortion coefficients D and store them into a vector.
 std::vector<double> LoadD(const std::string& file_name) {
   std::vector<double> D;
 
@@ -153,9 +154,9 @@ std::vector<double> LoadD(const std::string& file_name) {
   return D;
 }
 
+//! Deprecated
 //@brief Load 3D scene points from the file where each line stores the X, Y, Z
 // coordinates of a reference 3D scene point.
-//! Deprecated
 //@warning The coordinates are comma separated.
 // FIXME Reduce the number of generated temporary objects
 void LoadObjectPoints(const std::string& file_name,
