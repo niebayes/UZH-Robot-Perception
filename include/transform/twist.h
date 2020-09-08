@@ -44,12 +44,12 @@ twist_to_SE3(const arma::Col<T>& xi) {
   if (xi.empty()) LOG(ERROR) << "Empty input.";
   if (xi.size() != 6) LOG(ERROR) << "Invalid twist vector.";
 
-  const typename arma::Col<T>::template fixed<3> u = xi.template head(3),
-                                                 w = xi.template tail(3);
+  const typename arma::Col<T>::template fixed<3> u = xi.head(3),
+                                                 w = xi.tail(3);
   typename arma::Mat<T>::template fixed<4, 4> se3_mat;
   se3_mat(0, 0, arma::size(3, 3)) = uzh::hat<T>(w);
   se3_mat(0, 3, arma::size(3, 1)) = u;
-  se3_mat.template tail_rows(1).fill(T(0));
+  se3_mat.tail_rows(1).fill(T(0));
 
   return arma::expmat(se3_mat);
 }

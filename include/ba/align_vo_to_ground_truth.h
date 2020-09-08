@@ -2,7 +2,6 @@
 #define UZH_BA_ALIGN_VO_TO_GROUND_TRUTH_H_
 
 #include <iostream>
-#include <vector>
 
 #include "armadillo"
 #include "ba/compute_align_error.h"
@@ -38,9 +37,6 @@ AlignVOToGroundTruth(const arma::mat& p_V_C, const arma::mat& pp_G_C) {
   // Parameters to be optimized.
   double sim3[7] = {twist_init[0], twist_init[1], twist_init[2], twist_init[3],
                     twist_init[4], twist_init[5], scale_init};
-  for (int i = 0; i < 7; ++i) {
-    std::cout << sim3[i] << '\n';
-  }
 
   // Add residuals.
   ceres::Problem problem;
