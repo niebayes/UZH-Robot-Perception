@@ -6,6 +6,7 @@
 #include "arma_traits.h"
 #include "armadillo"
 #include "ba.h"
+#include "ceres/ceres.h"
 #include "google_suite.h"
 #include "io.h"
 #include "matlab_port.h"
@@ -93,6 +94,8 @@ int main(int /*argc*/, char** argv) {
   plotter->plot();
 
   // Part II: small bundle adjustment.
+  // Part III: determine jacob pattern.
+  // FIXME Seems no need to perform this using ceres?
   // Plot map before BA.
   plotter->clearPlots();
   plotter->setTitle("Cropped problem before bundle adjustment");
@@ -100,44 +103,56 @@ int main(int /*argc*/, char** argv) {
                {0, 20, -5, 5});
   plotter->plot();
   // Run BA and plot.
+  const arma::vec optimized_hidden_state =
+      uzh::RunBA(cropped_hidden_state, cropped_observations, K);
+  plotter->clearPlots();
+  plotter->setTitle("Cropped problem after bundle adjustment");
+  uzh::PlotMap(plotter, cropped_hidden_state, cropped_observations,
+               {0, 20, -5, 5});
+  plotter->plot();
+
+  // Part IV: larger bundle adjustment and evaluation.
+  // Plot full map before BA.
+  plotter->clearPlots();
+  plotter->setTitle("Full problem before bundle adjustment");
+  uzh::PlotMap(plotter, hidden_state, observations, {0, 40, -10, 10});
+  plotter->plot();
+  // Run BA and plot.
+  const arma::vec optimized_full_hidden_state =
+      uzh::RunBA(hidden_state, observations, K);
+  plotter->clearPlots();
+  plotter->setTitle("Full problem after bundle adjustment");
+  uzh::PlotMap(plotter, optimized_full_hidden_state, observations,
+               {0, 40, -10, 10});
+  plotter->plot();
+
+  // Evaluate the BA performance by plotting.
+  const arma::mat optimized_twists_V_C = arma::reshape(
+      optimized_full_hidden_state.head(6 * kNumFrames), 6, kNumFrames);
+  arma::mat optimized_p_V_C(3, kNumFrames, arma::fill::zeros);
+  for (int i = 0; i < kNumFrames; ++i) {
+    optimized_p_V_C.col(i) = uzh::twist_to_SE3<double>(
+        optimized_twists_V_C.col(i))(0, 3, arma::size(3, 1));
+  }
+  const arma::mat optimized_p_G_C =
+      uzh::AlignVOToEstimate(pp_G_C, optimized_p_V_C);
+  // Plot.
+  plotter->clearPlots();
+  plotter->setTitle("Optimized VO trajectory and ground truth trajectory");
+  plotter->setShowLegend(true);
+  plotter->setXRange(-5, 95);
+  plotter->setYRange(-30, 10);
+  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(pp_G_C.row(2)),
+                       arma::conv_to<std::vector<double>>::from(-pp_G_C.row(0)),
+                       "Ground truth", vtkChart::LINE);
+  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(p_V_C.row(2)),
+                       arma::conv_to<std::vector<double>>::from(-p_V_C.row(0)),
+                       "Original estimate", vtkChart::LINE);
+  plotter->addPlotData(
+      arma::conv_to<std::vector<double>>::from(optimized_p_V_C.row(2)),
+      arma::conv_to<std::vector<double>>::from(-optimized_p_V_C.row(0)),
+      "Optimized estimate", vtkChart::LINE);
+  plotter->plot();
 
   return EXIT_SUCCESS;
-}
-
-//@brief Run bundle adjustment to optimize the hidden states by minimizing the
-// reprojection errors.
-//@param hidden_state
-//@param observations
-//@param K
-//@return optimized_hidden_state --
-arma::vec /* optimized_hidden_state */
-RunBA(const arma::vec& hidden_state, const arma::vec& observations,
-      const arma::mat33& K) {
-  if (hidden_state.empty() || observations.empty() || K.empty())
-    LOG(ERROR) << "Empty input.";
-
-  const int num_frames = observations(0), num_landmarks = observations(1);
-  const arma::mat twist_W_C =
-      arma::reshape(hidden_state.head(6 * num_frames), 6, num_frames);
-  const arma::mat p_W_landmarks = arma::reshape(
-      hidden_state.subvec(6 * num_frames, hidden_state.n_elem - 1), 3,
-      num_landmarks);
-
-  int ob_idx = 2;
-  for (int i = 0; i < num_frames; ++i) {
-    const int num_observations_frame_i = observations(ob_idx);
-    const arma::vec observations_frame_i(2 * num_observations_frame_i,
-                                         arma::fill::none);
-    const arma::mat observed_kpts = arma::flipud(arma::reshape(
-        observations.subvec(ob_idx + 1, arma::size(observations_frame_i)), 2,
-        num_observations_frame_i));
-    const arma::vec landmarks_frame_i(num_observations_frame_i,
-                                      arma::fill::none);
-    const arma::vec landmark_indices =
-        observations.subvec(ob_idx + 1 + 2 * num_observations_frame_i,
-                            arma::size(landmarks_frame_i));
-    const arma::mat p_W_landmarks_frame_i =
-        p_W_landmarks.cols(arma::conv_to<arma::uvec>::from(landmark_indices));
-  
-  }
 }
