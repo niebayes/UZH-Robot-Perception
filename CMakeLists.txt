@@ -9,7 +9,7 @@ endif()
 message("Build type: " ${CMAKE_BUILD_TYPE})
 
 # Enable C++17 standard
-# Check if the compiler supports C++11
+# Check if the compiler supports C++17
 include(CheckCXXCompilerFlag)
 CHECK_CXX_COMPILER_FLAG("-std=c++17" COMPILER_SUPPORTS_CXX17)
 if(COMPILER_SUPPORTS_CXX17)
@@ -19,57 +19,50 @@ else()
    message(FATAL_ERROR "The compiler ${CMAKE_CXX_COMPILER} has no C++17 support. Please use a different C++ compiler.")
 endif()
 
-# Enable optimization 
-# Check if the compiler supports this intruction 
-# Pass flags using modern CMake, cf. https://stackoverflow.com/a/23995391/11240780
-# CHECK_CXX_COMPILER_FLAG("-march=native" COMPILER_SUPPORTS_MARCH_NATIVE)
-# if(COMPILER_SUPPORTS_MARCH_NATIVE) 
-#     set(CMAKE_CXX_FLAGS_RELEASE "{CMAKE_CXX_FLAGS_RELEASE} -O3 -march=native")
-# endif()
-
 # Configure compile output directory
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/bin)
 set(CMAKE_ARCHIVE_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib)
 set(CMAKE_LIBRARY_OUTPUT_DIRECTORY ${CMAKE_HOME_DIRECTORY}/lib)
 
-# Add required packages
-# Add module path 
+# Add cmake module path 
 list(APPEND CMAKE_MODULE_PATH ${PROJECT_SOURCE_DIR}/cmake_modules)
+
+# Add required packages
+# armadillo 
+find_package(Armadillo REQUIRED)
+if (ARMADILLO_FOUND)
+    message("Found armadillo")
+else()
+    message("Not Found armadillo")
+endif()
+
 # OpenCV 
 find_package(OpenCV REQUIRED)
 if (OpenCV_FOUND)
-    message("Found OpenCV" " Path ${OpenCV_INCLUDE_DIRS}")
+    message("Found OpenCV")
 else()
     message("Not Found OpenCV")
 endif()
 
 find_package(Eigen3 3.3.7 REQUIRED)
 if (Eigen3_FOUND)
-    message("Found Eigen3" " Path ${Eigen3_INCLUDE_DIRS}")
-else()
-    message("Not Found Eigen3")
-endif()
-
-# manif
-find_package(manif REQUIRED)
-if (manif_FOUND)
-    message("Found manif" " Path ${Eigen3_INCLUDE_DIRS}")
+    message("Found Eigen3")
 else()
     message("Not Found Eigen3")
 endif()
 
 # ceres
-find_package(Ceres REQUIRED)
+# find_package(Ceres REQUIRED)
 if (CERES_FOUND)
-    message("Found Ceres" " Path ${CERES_INCLUDE_DIRS}")
+    message("Found ceres")
 else()
-    message("Not Found Ceres")
+    message("Not Found ceres")
 endif()
 
 # glog
 find_package(Glog REQUIRED)
 if (Glog_FOUND)
-    message("Found glog" " Path ${glog_INCLUDE_DIRS}")
+    message("Found glog")
 else()
     message("Not Found glog")
 endif()
@@ -82,22 +75,19 @@ else()
     message("Not Found gflags")
 endif()
 
-# armadillo 
-find_package(Armadillo REQUIRED)
-
 # pcl
 find_package(PCL 1.11 QUIET COMPONENTS common io visualization)
 if (PCL_FOUND)
     message("Found PCL")
+    link_directories(${PCL_LIBRARY_DIRS})
+    add_definitions(${PCL_DEFINITIONS})
 else() 
     message("Not Found PCL")
 endif()
-link_directories(${PCL_LIBRARY_DIRS})
-add_definitions(${PCL_DEFINITIONS})
 
 # boost 
 # cf. https://cmake.org/cmake/help/latest/module/FindBoost.html
-find_package(Boost REQUIRED) 
+find_package(Boost QUIET) 
 if (Boost_FOUND)
     message("Found Boost")
 else() 
@@ -107,27 +97,19 @@ endif()
 # Add additional include path for header files
 include_directories(BEFORE
     ${PROJECT_SOURCE_DIR}/include
-    ${PROJECT_SOURCE_DIR}/include/common
     ${PROJECT_SOURCE_DIR}/utils
     ${PROJECT_SOURCE_DIR}/src
+    ${ARMADILLO_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
+    ${EIGEN3_INCLUDE_DIRS}
+    "/usr/local/include/eigen3"
+    "/usr/local/include/eigen3/unsupported"
     ${CERES_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
-    "/usr/local/include/eigen3"
-    "/usr/local/include/eigen3/unsupported"
-    "/usr/include"
-    "/usr/include/pcl-1.8"
-    ${EIGEN3_INCLUDE_DIRS}
-    ${manif_INCLUDE_DIRS}
-    ${ARMADILLO_INCLUDE_DIRS}
-    # ${Sophus_INCLUDE_DIRS}
-    # "/Users/bayes/slam_lib/Sophus"
-    # ${Pangolin_INCLUDE_DIRS}
-    # ${G2O_INCLUDE_DIRS}
 ) # path relative to this CMakeLists.txt
 
-
+# Optional googletest
 # Prepare googletest for use 
 #@ref build instruction: https://github.com/google/googletest/blob/master/googletest/README.md
 #@ref usage: https://github.com/google/googletest/blob/master/googletest/docs/primer.md
@@ -166,15 +148,17 @@ include_directories(BEFORE
 # endif()
 
 ##################################################################
-# Add subdirectory in which put the source files
-# TODO(bayes) Use cmake generator to rewrite the logic.
+
+# Add subdirectories in which put the source files
+# Uncomment to enable building.
+
 # add_subdirectory(utils)
-# add_subdirectory(src/ex1)
-# add_subdirectory(src/ex2)
-# add_subdirectory(src/ex3)
-# add_subdirectory(src/ex4)
-# add_subdirectory(src/ex5)
-# add_subdirectory(src/ex6)
-# add_subdirectory(src/ex7)
-# add_subdirectory(src/ex8)
-add_subdirectory(src/ex9)
+# add_subdirectory(src/01_ar_wireframe_cube)
+# add_subdirectory(src/02_pnp_dlt)
+# add_subdirectory(src/03_harris_detection_and_tracking)
+# add_subdirectory(src/04_sift)
+# add_subdirectory(src/05_stereo_dense_reconstruction)
+# add_subdirectory(src/06_two_view_geometry)
+# add_subdirectory(src/07_ransac_localization)
+# add_subdirectory(src/08_lucas_kanade_tracker)
+# add_subdirectory(src/09_bundle_adjustment)

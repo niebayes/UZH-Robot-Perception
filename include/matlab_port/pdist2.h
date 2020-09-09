@@ -8,13 +8,16 @@
 
 #include "Eigen/Core"
 #include "armadillo"
-#include "common/type.h"
 #include "feature/distance.h"
 #include "glog/logging.h"
 #include "transfer/arma2eigen.h"
 #include "transfer/eigen2arma.h"
 
 namespace uzh {
+
+//@brief Return order used in pdist2 function.
+//@see pdist2
+enum ReturnOrder : int { SMALLEST_FIRST, LARGEST_FIRST };
 
 //@brief Imitate matlab's pdist2. Calculate the pair-wise distance between every
 // pair of the two sets of observations X and Y.

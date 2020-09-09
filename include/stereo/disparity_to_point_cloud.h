@@ -7,7 +7,7 @@
 #include "glog/logging.h"
 #include "matlab_port/meshgrid.h"
 
-namespace stereo {
+namespace uzh {
 
 //@brief Triangulate 3D scene point cloud from disparity map and the left image
 // which produces the disparity in conjunction with the corresponding right
@@ -86,6 +86,6 @@ DisparityToPointCloud(const arma::mat& disparity_map,
   return {point_cloud, intensities};
 }
 
-}  // namespace stereo
+}  // namespace uzh
 
 #endif  // UZH_STEREO_DISPARITY_TO_POINT_CLOUD_H

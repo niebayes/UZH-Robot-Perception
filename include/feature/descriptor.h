@@ -2,7 +2,8 @@
 #define UZH_FEATURE_DESCRIPTOR_H_
 
 #include "Eigen/Core"
-#include "feature/convolution.h"
+#include "feature/pad_array.h"
+#include "glog/logging.h"
 #include "opencv2/core.hpp"
 #include "opencv2/core/eigen.hpp"
 

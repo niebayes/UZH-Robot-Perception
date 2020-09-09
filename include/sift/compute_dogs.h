@@ -3,6 +3,8 @@
 
 #include "armadillo"
 
+namespace uzh {
+
 //@brief Compute difference of Gaussians from adjacent images in each octave.
 //@param blurred_images Blurred images obtained from ComputeBlurredImages.
 //@return Difference of Gaussians of all octaves.
@@ -34,5 +36,7 @@ arma::field<arma::cube> ComputeDoGs(
   }
   return DoGs;
 }
+
+}  // namespace uzh
 
 #endif  // UZH_SIFT_COMPUTE_DOGS_H_

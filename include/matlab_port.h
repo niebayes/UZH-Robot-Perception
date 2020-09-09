@@ -14,7 +14,6 @@
 #include "matlab_port/fspecial.h"
 #include "matlab_port/im2double.h"
 #include "matlab_port/imagesc.h"
-#include "matlab_port/imdilate.h"
 #include "matlab_port/imgradient.h"
 #include "matlab_port/imresize.h"
 #include "matlab_port/imrotate.h"

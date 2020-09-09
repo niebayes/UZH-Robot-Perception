@@ -7,7 +7,7 @@
 #include "glog/logging.h"
 #include "matlab_port/pdist2.h"
 
-namespace stereo {
+namespace uzh {
 
 // TODO(bayes) Parallelise the function.
 //@ref https://stackoverflow.com/a/45773308/14007680
@@ -166,6 +166,6 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
   return disparity_map;
 }
 
-}  // namespace stereo
+}  // namespace uzh
 
 #endif  // UZH_STEREO_GET_DISPARITY

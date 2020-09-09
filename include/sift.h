@@ -8,6 +8,6 @@
 #include "sift/compute_image_pyramid.h"
 #include "sift/derotate.h"
 #include "sift/extract_keypoints.h"
-#include "sift/get_image.h"
+#include "sift/get_image_sift.h"
 
 #endif  // UZH_SIFT_H_

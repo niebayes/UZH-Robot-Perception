@@ -7,10 +7,10 @@
 #include "glog/logging.h"
 #include "pcl/io/pcd_io.h"
 
-namespace stereo {
+namespace uzh {
 
-void WritePointCloud(const std::string& file_name,
-                     const arma::mat& point_cloud, const arma::umat& intensities) {
+void WritePointCloud(const std::string& file_name, const arma::mat& point_cloud,
+                     const arma::umat& intensities) {
   // Construect pcl point cloud container.
   pcl::PointCloud<pcl::PointXYZRGB> cloud;
   const int kNumPoints = point_cloud.n_cols;
@@ -34,6 +34,6 @@ void WritePointCloud(const std::string& file_name,
             << " points to the pcd file: " << file_name;
 }
 
-}  // namespace stereo
+}  // namespace uzh
 
 #endif  // UZH_STEREO_WRITE_POINT_CLOUD_H_

@@ -2,7 +2,7 @@
 #define UZH_FEATURE_KEYPOINTS_H_
 
 #include "Eigen/Core"
-#include "feature/convolution.h"
+#include "feature/pad_array.h"
 #include "opencv2/core.hpp"
 #include "opencv2/core/eigen.hpp"
 
@@ -29,7 +29,7 @@ void SelectKeypoints(const cv::Mat& response, cv::Mat& keypoints,
   const cv::Scalar_<int> pad_size{non_maximum_radius, non_maximum_radius,
                                   non_maximum_radius, non_maximum_radius};
   cv::Mat_<double> response_tmp = response.clone();
-  PadArray(response_tmp, pad_size);
+  uzh::PadArray(response_tmp, pad_size);
 
   // Use eigen to speed up the computation
   Eigen::MatrixXd res;

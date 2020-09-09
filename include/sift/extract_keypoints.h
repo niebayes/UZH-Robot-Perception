@@ -3,6 +3,8 @@
 
 #include "armadillo"
 
+namespace uzh {
+
 //@brief Extract keypoints from the maximums both in scale and space.
 //@param DoGs Difference of Gaussians computed from ComputeDoGs.
 //@param keypoints_threshold Below which the points are suppressed before
@@ -75,5 +77,7 @@ arma::field<arma::umat> ExtractKeypoints(const arma::field<arma::cube>& DoGs,
 
   return keypoints;
 }
+
+}  // namespace uzh
 
 #endif  // UZH_SIFT_EXTRACT_KEYPOINTS_H_

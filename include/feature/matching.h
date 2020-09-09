@@ -7,8 +7,6 @@
 #include <optional>    // std::optional
 
 #include "Eigen/Core"
-#include "common/tools.h"
-#include "common/type.h"
 #include "matlab_port/find.h"
 #include "matlab_port/pdist2.h"
 #include "matlab_port/scatter.h"
@@ -16,6 +14,23 @@
 #include "opencv2/core/eigen.hpp"
 
 namespace uzh {
+
+//@brief Wrap STL's std::min_element and std::remove_if. Find the minimum
+// not satisfying the given rule.
+template <typename T, typename Derived>
+T find_min_if_not(const Eigen::DenseBase<Derived>& X,
+                  std::function<bool(typename Derived::Scalar)> pred) {
+  // FIXME template followed dot operator works well on Linux, but not on macOS
+  // Derived X_(X.size());
+  // std::copy(X.cbegin(), X.cend(), X_.template begin());
+  // return (*std::min_element(
+  //     X_.template begin(),
+  //     std::remove_if(X_.template begin(), X_.template end(), pred)));
+  Derived X_(X.size());
+  std::copy(X.cbegin(), X.cend(), X_.begin());
+  return (*std::min_element(X_.begin(),
+                            std::remove_if(X_.begin(), X_.end(), pred)));
+}
 
 //@brief Match descriptors based on the Sum of Squared Distance (SSD) measure.
 //@param query_descriptors [m x q] matrix where each column corresponds to a

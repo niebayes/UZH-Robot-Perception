@@ -3,8 +3,6 @@
 
 #include "Eigen/Core"
 #include "Eigen/Geometry"
-#include "armadillo"
-#include "glog/logging.h"
 
 namespace uzh {
 
@@ -12,8 +10,8 @@ namespace uzh {
 // corresponding rotation matrix
 //! When using const Eigen::Ref binds const object, qualify the object with a
 //! const. Otherwise, errors induced.
-static void Rodrigues(const Eigen::Ref<const Eigen::Vector3d>& rotation_vector,
-                      Eigen::Matrix3d* rotation_matrix) {
+void Rodrigues(const Eigen::Ref<const Eigen::Vector3d>& rotation_vector,
+               Eigen::Matrix3d* rotation_matrix) {
   //* Simpler way using eigen's API.
   // Eigen::MatrixXd rotation_matrix_tmp =
   //     (Eigen::AngleAxisd(rotation_vector.norm(),
