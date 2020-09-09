@@ -135,7 +135,7 @@ int main(int /*argc*/, char** argv) {
         optimized_twists_V_C.col(i))(0, 3, arma::size(3, 1));
   }
   const arma::mat optimized_p_G_C =
-      uzh::AlignVOToEstimate(pp_G_C, optimized_p_V_C);
+      uzh::AlignVOToGroundTruth(pp_G_C, optimized_p_V_C);
   // Plot.
   plotter->clearPlots();
   plotter->setTitle("Optimized VO trajectory and ground truth trajectory");

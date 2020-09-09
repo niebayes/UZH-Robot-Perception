@@ -33,13 +33,15 @@ RunBA(const arma::vec& hidden_state, const arma::vec& observations,
     LOG(ERROR) << "Empty input.";
 
   const int num_frames = observations(0), num_landmarks = observations(1);
-  arma::mat twist_W_C =
+  const arma::mat twist_W_C =
       arma::reshape(hidden_state.head(6 * num_frames), 6, num_frames);
-  arma::mat p_W_landmarks = arma::reshape(
+  const arma::mat p_W_landmarks = arma::reshape(
       hidden_state.subvec(6 * num_frames, hidden_state.n_elem - 1), 3,
       num_landmarks);
 
   ceres::Problem problem;
+  arma::mat optimized_twist_W_C = twist_W_C;
+  arma::mat optimized_p_W_landmarks = p_W_landmarks;
   int ob_idx = 2;
   for (int i = 0; i < num_frames; ++i) {
     const int num_observations_frame_i = observations(ob_idx);
@@ -50,15 +52,19 @@ RunBA(const arma::vec& hidden_state, const arma::vec& observations,
         num_observations_frame_i));
     const arma::vec landmarks_frame_i(num_observations_frame_i,
                                       arma::fill::none);
-    const arma::vec landmark_indices =
+    const arma::uvec landmark_indices = arma::conv_to<arma::uvec>::from(
         observations.subvec(ob_idx + 1 + 2 * num_observations_frame_i,
-                            arma::size(landmarks_frame_i));
-    arma::mat& p_W_landmarks_frame_i =
-        p_W_landmarks.cols(arma::conv_to<arma::uvec>::from(landmark_indices));
-    const int num_landmarks_frame_i = p_W_landmarks_frame_i.n_cols;
+                            arma::size(landmarks_frame_i)));
+    const int num_landmarks_frame_i = landmark_indices.n_elem;
     for (int j = 0; j < num_landmarks_frame_i; ++j) {
-      double* twist = (double*)(&(twist_W_C.col(i)));
-      double* landmark = (double*)(&(p_W_landmarks_frame_i.col(j)));
+      std::cout << "i: " << i << '\n';
+      std::cout << "j: " << j << '\n';
+      std::cout << "landmark(j): " << landmark_indices(j) << '\n';
+      optimized_twist_W_C.col(i).print("otwist_col i");
+      optimized_p_W_landmarks.col(landmark_indices(j)).print("oland idx j");
+      double* twist = optimized_twist_W_C.colptr(i);
+      double* landmark =
+          optimized_p_W_landmarks.colptr(landmark_indices(j) - 1);
       ceres::CostFunction* cost_function =
           uzh::ReprojectionError::Create(observed_kpts.col(j), K);
       problem.AddResidualBlock(cost_function, nullptr, twist, landmark);
@@ -76,8 +82,9 @@ RunBA(const arma::vec& hidden_state, const arma::vec& observations,
   std::cout << summary.FullReport() << '\n';
 
   // Reconstruct hidden_state.
-  const arma::vec optimized_hidden_state = arma::join_vert(
-      arma::vectorise(twist_W_C), arma::vectorise(p_W_landmarks));
+  const arma::vec optimized_hidden_state =
+      arma::join_vert(arma::vectorise(optimized_twist_W_C),
+                      arma::vectorise(optimized_p_W_landmarks));
   assert(optimized_hidden_state.n_elem == hidden_state.n_elem);
 
   return optimized_hidden_state;
