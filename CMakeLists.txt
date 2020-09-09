@@ -52,7 +52,7 @@ else()
 endif()
 
 # ceres
-find_package(Ceres REQUIRED)
+# find_package(Ceres REQUIRED)
 if (CERES_FOUND)
     message("Found ceres")
 else()
