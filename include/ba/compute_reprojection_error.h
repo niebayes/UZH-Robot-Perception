@@ -4,7 +4,6 @@
 #include "armadillo"
 #include "ba/project_point.h"
 #include "ceres/ceres.h"
-#include "ceres/rotation.h"
 #include "transform/twist.h"
 
 namespace uzh {
@@ -23,8 +22,8 @@ struct ReprojectionError {
                                     SE3(0, 3, arma::size(3, 1));
     const arma::vec2 projection = uzh::ProjectPoint(p_C_landmark, K_);
 
-    residuals[0] = observation_[0] - projection[0];
-    residuals[1] = observation_[1] - projection[1];
+    residuals[0] = observation_(0) - projection(0);
+    residuals[1] = observation_(1) - projection(1);
 
     return true;
   }
@@ -32,7 +31,7 @@ struct ReprojectionError {
   static ceres::CostFunction* Create(const arma::vec2& observation,
                                      const arma::mat33& K) {
     return (new ceres::NumericDiffCostFunction<ReprojectionError,
-                                               ceres::CENTRAL, 3, 6, 3>(
+                                               ceres::CENTRAL, 2, 6, 3>(
         new ReprojectionError(observation, K)));
   }
 

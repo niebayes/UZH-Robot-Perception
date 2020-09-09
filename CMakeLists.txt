@@ -43,7 +43,7 @@ else()
     message("Not Found OpenCV")
 endif()
 
-find_package(Eigen3 REQUIRED)
+find_package(Eigen3 3.3.7 REQUIRED)
 if (Eigen3_FOUND)
     message("Found Eigen3" " Path ${Eigen3_INCLUDE_DIRS}")
 else()
@@ -86,7 +86,7 @@ endif()
 find_package(Armadillo REQUIRED)
 
 # pcl
-find_package(PCL 1.11 QUIET COMPONENTS common io visualization)
+# find_package(PCL 1.11 QUIET COMPONENTS common io visualization)
 if (PCL_FOUND)
     message("Found PCL")
 else() 

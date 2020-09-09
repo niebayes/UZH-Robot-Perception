@@ -39,38 +39,43 @@ RunBA(const arma::vec& hidden_state, const arma::vec& observations,
       hidden_state.subvec(6 * num_frames, hidden_state.n_elem - 1), 3,
       num_landmarks);
 
-  ceres::Problem problem;
+  // Parameters to be optimized.
   arma::mat optimized_twist_W_C = twist_W_C;
   arma::mat optimized_p_W_landmarks = p_W_landmarks;
-  int ob_idx = 2;
+
+  // Build the optimization problem.
+  ceres::Problem problem;
+  // Get the index of the end of the cropped observations.
+  // The frist two elements are n and m as stated.
+  int end = 2;
   for (int i = 0; i < num_frames; ++i) {
-    const int num_observations_frame_i = observations(ob_idx);
+    const int num_observations_frame_i = observations(end);
     const arma::vec observations_frame_i(2 * num_observations_frame_i,
                                          arma::fill::none);
     const arma::mat observed_kpts = arma::flipud(arma::reshape(
-        observations.subvec(ob_idx + 1, arma::size(observations_frame_i)), 2,
+        observations.subvec(end + 1, arma::size(observations_frame_i)), 2,
         num_observations_frame_i));
     const arma::vec landmarks_frame_i(num_observations_frame_i,
                                       arma::fill::none);
     const arma::uvec landmark_indices = arma::conv_to<arma::uvec>::from(
-        observations.subvec(ob_idx + 1 + 2 * num_observations_frame_i,
+        observations.subvec(end + 1 + 2 * num_observations_frame_i,
                             arma::size(landmarks_frame_i)));
     const int num_landmarks_frame_i = landmark_indices.n_elem;
+    assert(num_observations_frame_i == num_landmarks_frame_i);
+
+    // Add residual blocks introduced from corresponding pair of
+    // (frame, landmark).
     for (int j = 0; j < num_landmarks_frame_i; ++j) {
-      std::cout << "i: " << i << '\n';
-      std::cout << "j: " << j << '\n';
-      std::cout << "landmark(j): " << landmark_indices(j) << '\n';
-      optimized_twist_W_C.col(i).print("otwist_col i");
-      optimized_p_W_landmarks.col(landmark_indices(j)).print("oland idx j");
-      double* twist = optimized_twist_W_C.colptr(i);
+      double* twist = optimized_twist_W_C.begin_col(i);
+      // Minus 1 making indices start from 0.
       double* landmark =
-          optimized_p_W_landmarks.colptr(landmark_indices(j) - 1);
+          optimized_p_W_landmarks.begin_col(landmark_indices(j) - 1);
       ceres::CostFunction* cost_function =
           uzh::ReprojectionError::Create(observed_kpts.col(j), K);
       problem.AddResidualBlock(cost_function, nullptr, twist, landmark);
     }
 
-    ob_idx += 3 * num_observations_frame_i + 1;
+    end += 3 * num_observations_frame_i + 1;
   }
 
   // Perform optimization.
@@ -85,8 +90,8 @@ RunBA(const arma::vec& hidden_state, const arma::vec& observations,
   const arma::vec optimized_hidden_state =
       arma::join_vert(arma::vectorise(optimized_twist_W_C),
                       arma::vectorise(optimized_p_W_landmarks));
-  assert(optimized_hidden_state.n_elem == hidden_state.n_elem);
 
+  assert(optimized_hidden_state.n_elem == hidden_state.n_elem);
   return optimized_hidden_state;
 }
 
