@@ -1,5 +1,5 @@
-#ifndef UZH_TRAITS_CV2EIGEN_H_
-#define UZH_TRAITS_CV2EIGEN_H_
+#ifndef UZH_TRANSFER_CV2EIGEN_H_
+#define UZH_TRANSFER_CV2EIGEN_H_
 
 #include "Eigen/Core"
 #include "opencv2/core.hpp"
@@ -27,4 +27,4 @@ MatrixX<V> cv2eigen(cv::Mat &C) {
 
 }  // namespace uzh
 
-#endif  // UZH_TRAITS_CV2EIGEN_H_
+#endif  // UZH_TRANSFER_CV2EIGEN_H_

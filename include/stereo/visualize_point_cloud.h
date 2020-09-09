@@ -64,7 +64,6 @@ void VisualizePointCloud(const arma::mat& point_cloud,
   pcl::visualization::PCLVisualizer::Ptr viewer = rgbVis(cloud);
   while (!viewer->wasStopped()) {
     viewer->spinOnce(100);
-    // boost::this_thread::sleep(boost::posix_time::microseconds(100000));
   }
 }
 

@@ -1,34 +1,12 @@
-# Third party libraries
-
 # Directories containing compiled files
 bin
 build
-
-# Temporary files 
-eigen_notes.md
-
-# Data files
-data
 
 # Visual Studio Code settings
 .vscode
 
 # macOS-specific files
 .DS_Store
-
-# ethz exercises
-exercises
-
-# media files
-# results
-
-# googletest source files 
-googletest-master
-
-# externals 
-eigen-dev
-manif-devel
-lambdatwist-p3p
 
 # Prerequisites
 *.d

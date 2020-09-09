@@ -24,11 +24,6 @@ arma::Mat<V> cv2arma(const cv::Mat &C, bool copy = true) {
                       /*strict*/ false);
 }
 
-// template <typename V>
-// arma::Mat<V> cv2arma(cv::Mat& C, bool copy = true) {
-//   return arma::Mat<V>(C.data(), C.rows, C.cols, copy);
-// }
-
 }  // namespace uzh
 
 #endif  // UZH_TRANSFER_CV2ARMA_H_

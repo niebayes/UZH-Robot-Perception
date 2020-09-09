@@ -5,7 +5,7 @@
 #include "ba/compute_align_error.h"
 #include "ba/compute_reprojection_error.h"
 #include "ba/crop_problem.h"
-// #include "ba/plot_map.h"
+#include "ba/plot_map.h"
 #include "ba/project_point.h"
 #include "ba/run_ba.h"
 
