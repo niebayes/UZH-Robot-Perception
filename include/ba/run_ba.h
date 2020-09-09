@@ -80,9 +80,12 @@ RunBA(const arma::vec& hidden_state, const arma::vec& observations,
 
   // Perform optimization.
   ceres::Solver::Options options;
-  options.linear_solver_type = ceres::SPARSE_SCHUR;
+  options.linear_solver_type = ceres::ITERATIVE_SCHUR;
+  options.preconditioner_type = ceres::SCHUR_JACOBI;
+  options.use_explicit_schur_complement = true;
   options.minimizer_progress_to_stdout = true;
-  options.max_num_iterations = 200;
+  options.num_threads = 8;
+  options.max_num_iterations = 20;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
   std::cout << summary.FullReport() << '\n';

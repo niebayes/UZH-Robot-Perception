@@ -1,8 +1,6 @@
 #include <string>
 #include <tuple>
-#include <vector>
 
-#include "arma_traits.h"
 #include "armadillo"
 #include "ba.h"
 #include "ceres/ceres.h"
@@ -11,14 +9,13 @@
 #include "matlab_port.h"
 #include "opencv2/opencv.hpp"
 #include "pcl/visualization/pcl_plotter.h"
-#include "transfer.h"
 #include "transform.h"
 
 int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
-  const std::string file_path{"data/ex9/"};
+  const std::string file_path{"data/09_bundle_adjustment/"};
 
   // Load data.
   // Loaded hidden state and observations are obtained from a visual odometry
@@ -63,7 +60,6 @@ int main(int /*argc*/, char** argv) {
   }
 
   // Plot the VO trajectory and ground truth trajectory.
-<<<<<<< HEAD:src/ex9/bundle_adjustment.cc
   pcl::visualization::PCLPlotter::Ptr plotter(
       new pcl::visualization::PCLPlotter);
   plotter->setTitle("VO trajectory and ground truth trajectory");
@@ -83,33 +79,12 @@ int main(int /*argc*/, char** argv) {
                        arma::conv_to<std::vector<double>>::from(-p_V_C.row(0)),
                        "Original estimate", vtkChart::LINE);
   plotter->plot();
-=======
-  // pcl::visualization::PCLPlotter::Ptr plotter(
-  //     new pcl::visualization::PCLPlotter);
-  // plotter->setTitle("VO trajectory and ground truth trajectory");
-  // plotter->setShowLegend(true);
-  // plotter->setXRange(-5, 95);
-  // plotter->setYRange(-30, 10);
-  // //! The figure axes are not the same with the camera axes.
-  // //! For camera, positive x axis points to right of the camere, positive y
-  // //! axis points to the down of the camera and positive z axis points to the
-  // //! front of the camera.
-  // //! Therefore, x and z are the two axes needed for plotting in 2D figure,
-  // and
-  // //! x needs to be negated to be consistent with the x axis of the figure.
-  // plotter->addPlotData(arma::conv_to<std::vector<double>>::from(pp_G_C.row(2)),
-  //                      arma::conv_to<std::vector<double>>::from(-pp_G_C.row(0)),
-  //                      "Ground truth", vtkChart::LINE);
-  // plotter->addPlotData(arma::conv_to<std::vector<double>>::from(p_V_C.row(2)),
-  //                      arma::conv_to<std::vector<double>>::from(-p_V_C.row(0)),
-  //                      "Original estimate", vtkChart::LINE);
-  // plotter->plot();
->>>>>>> 33ba69b5b1b78ba11fae0f854a5ffb2b69390c21:src/09_bundle_adjustment/bundle_adjustment.cc
 
   // Apply non-linear least square (NLLS) method to align VO estimate to the
   // ground truth.
   const arma::mat p_G_C = uzh::AlignVOToGroundTruth(p_V_C, pp_G_C);
-  Show the optimized trajectory.plotter->addPlotData(
+//   Show the optimized trajectory.
+  plotter->addPlotData(
       arma::conv_to<std::vector<double>>::from(p_G_C.row(2)),
       arma::conv_to<std::vector<double>>::from(-p_G_C.row(0)),
       "Aligned estimate", vtkChart::LINE);
@@ -157,7 +132,7 @@ int main(int /*argc*/, char** argv) {
         optimized_twists_V_C.col(i))(0, 3, arma::size(3, 1));
   }
   const arma::mat optimized_p_G_C =
-      uzh::AlignVOToGroundTruth(pp_G_C, optimized_p_V_C);
+      uzh::AlignVOToGroundTruth(optimized_p_V_C, pp_G_C);
   // Plot for comparision.
   plotter->clearPlots();
   plotter->setTitle("Optimized VO trajectory and ground truth trajectory");
@@ -167,16 +142,14 @@ int main(int /*argc*/, char** argv) {
   plotter->addPlotData(arma::conv_to<std::vector<double>>::from(pp_G_C.row(2)),
                        arma::conv_to<std::vector<double>>::from(-pp_G_C.row(0)),
                        "Ground truth", vtkChart::LINE);
-  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(p_V_C.row(2)),
-                       arma::conv_to<std::vector<double>>::from(-p_V_C.row(0)),
-                       "Original estimate", vtkChart::LINE);
+  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(p_G_C.row(2)),
+                       arma::conv_to<std::vector<double>>::from(-p_G_C.row(0)),
+                       "Aligned original estimate", vtkChart::LINE);
   plotter->addPlotData(
-      arma::conv_to<std::vector<double>>::from(optimized_p_V_C.row(2)),
-      arma::conv_to<std::vector<double>>::from(-optimized_p_V_C.row(0)),
-      "Optimized estimate", vtkChart::LINE);
+      arma::conv_to<std::vector<double>>::from(optimized_p_G_C.row(2)),
+      arma::conv_to<std::vector<double>>::from(-optimized_p_G_C.row(0)),
+      "Aligned optimized estimate", vtkChart::LINE);
   plotter->plot();
 
-  optimized_p_G_C.save(file_path + "opt_p_G_C", arma::file_type::arma_ascii,
-                       true);
   return EXIT_SUCCESS;
 }

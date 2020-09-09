@@ -3,7 +3,6 @@
 
 #include "armadillo"
 #include "Eigen/Core"
-#include "opencv2/core/core.hpp"
 
 namespace uzh {
 
@@ -12,7 +11,7 @@ namespace uzh {
 template <typename M>
 M armaLoad(const std::string& file_name) {
   arma::mat arma_mat;
-  arma_mat.load(file_name, arma::file_type::arma_ascii, true);
+  arma_mat.load(file_name, arma::file_type::auto_detect, true);
   return Eigen::Map<const M>(arma_mat.memptr(), arma_mat.n_rows,
                              arma_mat.n_cols);
 }
@@ -20,7 +19,7 @@ M armaLoad(const std::string& file_name) {
 template <typename T>
 arma::Mat<T> LoadArma(const std::string& file_name) {
   arma::Mat<T> mat;
-  mat.load(file_name, arma::file_type::arma_ascii, true);
+  mat.load(file_name, arma::file_type::auto_detect, true);
   return mat;
 }
 

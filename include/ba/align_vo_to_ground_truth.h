@@ -49,8 +49,9 @@ AlignVOToGroundTruth(const arma::mat& p_V_C, const arma::mat& pp_G_C) {
 
   // Perform optimization.
   ceres::Solver::Options options;
-  options.linear_solver_type = ceres::SPARSE_SCHUR;
+  options.linear_solver_type = ceres::DENSE_SCHUR;
   options.minimizer_progress_to_stdout = true;
+  options.use_explicit_schur_complement = true;
   ceres::Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);
   std::cout << summary.FullReport() << '\n';
