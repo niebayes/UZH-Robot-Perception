@@ -13,6 +13,8 @@
 #include "matlab_port/imgradient.h"
 #include "sift/derotate.h"
 
+namespace uzh {
+
 //@brief Compute descriptors from the patches around the putative keypoints.
 //@param blurred_images Blurred images computed from the ComputeBlurredImages
 // function. These images are used to locate the patches around the putative
@@ -194,5 +196,7 @@ ComputeDescriptors(const arma::field<arma::cube>& blurred_images,
 
   return {normalized_descriptors, final_keypoints};
 }
+
+}  // namespace uzh
 
 #endif  // UZH_SIFT_COMPUTE_DESCRIPTORS_H_

@@ -18,19 +18,19 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
-  // Load data
-  const std::string kFilePath{"data/ex5/"};
-  const std::string kLeftImageName{kFilePath + "left/%06d.png"};
-  const std::string kRightImageName{kFilePath + "right/%06d.png"};
+  const std::string file_path{"data/stereo_dense_reconstruction/"};
+  const std::string left_img_name{file_path + "left/%06d.png"};
+  const std::string right_img_name{file_path + "right/%06d.png"};
 
+  // Load data
   const arma::umat left_img =
-      uzh::stereo::GetImage(cv::format(kLeftImageName.c_str(), 0));
+      uzh::GetImageStereo(cv::format(left_img_name.c_str(), 0));
   const arma::umat right_img =
-      uzh::stereo::GetImage(cv::format(kRightImageName.c_str(), 0));
-  arma::mat K = uzh::LoadArma<double>(kFilePath + "K.txt");
+      uzh::GetImageStereo(cv::format(right_img_name.c_str(), 0));
+  arma::mat K = uzh::LoadArma<double>(file_path + "K.txt");
   // Rescale K according to the resize factor of images.
   K.head_rows(2) /= 2.0;
-  const arma::mat poses = uzh::LoadArma<double>(kFilePath + "poses.txt");
+  const arma::mat poses = uzh::LoadArma<double>(file_path + "poses.txt");
 
   // Given settings
   const double kBaseLine = 0.54;
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
   // Part III: sub-pixel refinement, through setting refine_subpixel to true.
   const arma::mat disparity_map =
       uzh::GetDisparity(left_img, right_img, kPatchRadius, kMinDisparity,
-                           kMaxDisparity, true, true);
+                        kMaxDisparity, true, true);
   uzh::imagesc(arma::conv_to<arma::umat>::from(disparity_map), true,
                "Disparity map produced by the first pair of images");
 
@@ -58,7 +58,6 @@ int main(int argc, char** argv) {
   arma::mat33 R_C_frame{{0, -1, 0}, {0, 0, -1}, {1, 0, 0}};
   arma::mat point_cloud_W = R_C_frame.i() * point_cloud;
   // Visualize the point cloud.
-  // FIXME Visualization faulties.
   uzh::VisualizePointCloud(point_cloud_W, intensities);
 
   // Part V: accumulate point clouds over sequence of pairs of images and write
@@ -72,14 +71,14 @@ int main(int argc, char** argv) {
     arma::field<arma::umat> all_intensities(kAccumulatedPairs);
     for (int i = 0; i < kAccumulatedPairs; ++i) {
       const arma::umat l_img =
-          uzh::stereo::GetImage(cv::format(kLeftImageName.c_str(), i));
+          uzh::GetImageStereo(cv::format(left_img_name.c_str(), i));
       const arma::umat r_img =
-          uzh::stereo::GetImage(cv::format(kRightImageName.c_str(), i));
-      const arma::mat disp_map = stereo::GetDisparity(
+          uzh::GetImageStereo(cv::format(right_img_name.c_str(), i));
+      const arma::mat disp_map = uzh::GetDisparity(
           l_img, r_img, kPatchRadius, kMinDisparity, kMaxDisparity, true, true);
       // Write disparity map to a image file.
       cv::imwrite(
-          cv::format((kFilePath + "disp_map/disp_map_%d.png").c_str(), i),
+          cv::format((file_path + "disp_map/disp_map_%d.png").c_str(), i),
           uzh::imagesc(arma::conv_to<arma::umat>::from(disp_map), false));
 
       arma::mat p_C_points;
@@ -117,9 +116,9 @@ int main(int argc, char** argv) {
                 << all_point_clouds(i).n_cols << " points.";
     }
     // Gather all point clouds altogether and save it to a .pcd file.
-    uzh::WritePointCloud(kFilePath + "cloud.pcd",
-                            uzh::cell2mat<double>(all_point_clouds),
-                            uzh::cell2mat<arma::uword>(all_intensities));
+    uzh::WritePointCloud(file_path + "cloud.pcd",
+                         uzh::cell2mat<double>(all_point_clouds),
+                         uzh::cell2mat<arma::uword>(all_intensities));
   }
 
   return EXIT_SUCCESS;

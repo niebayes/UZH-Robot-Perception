@@ -14,6 +14,8 @@ int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
+  const std::string file_path{"data/sift/"};
+
   // Given settings
   const int kNumOctaves = 5;  // Number of levels of the image pyramid.
   const int kNumScales = 3;   // Number of scales per octave.
@@ -24,15 +26,16 @@ int main(int /*argc*/, char** argv) {
       0.05;  // Exceed which the keypoints is selected as a potential keypoints
 
   // Color images to be rendered with detected keypoints
-  const std::string kFilePath{"data/ex4/"};
-  cv::Mat img_1_show = cv::imread(kFilePath + "img_1.jpg", cv::IMREAD_COLOR);
-  cv::Mat img_2_show = cv::imread(kFilePath + "img_2.jpg", cv::IMREAD_COLOR);
+  cv::Mat img_1_show = cv::imread(file_path + "img_1.jpg", cv::IMREAD_COLOR);
+  cv::Mat img_2_show = cv::imread(file_path + "img_2.jpg", cv::IMREAD_COLOR);
 
   // Decimate the images for speed.
   // The original images are [3024 x 4032 x 3] color images.
   const double kRescaleFactor = 0.3;
-  cv::Mat left_image = GetImage(kFilePath + "img_1.jpg", kRescaleFactor);
-  cv::Mat right_image = GetImage(kFilePath + "img_2.jpg", kRescaleFactor);
+  cv::Mat left_image =
+      uzh::GetImageSIFT(file_path + "img_1.jpg", kRescaleFactor);
+  cv::Mat right_image =
+      uzh::GetImageSIFT(file_path + "img_2.jpg", kRescaleFactor);
   const int kResizedRows = left_image.rows, kResizedCols = left_image.cols;
   arma::field<cv::Mat> imgs_show(2);
   imgs_show(0) = uzh::imresize(img_1_show, kResizedRows, kResizedCols);
@@ -62,14 +65,14 @@ int main(int /*argc*/, char** argv) {
     // function to generate images of five octaves with each octave containing 6
     // images blurred with different sigma values.
     const arma::field<cv::Mat> image_pyramid =
-        ComputeImagePyramid(images(i), kNumOctaves);
+        uzh::ComputeImagePyramid(images(i), kNumOctaves);
     const arma::field<arma::cube> blurred_images =
-        ComputeBlurredImages(image_pyramid, kNumScales, kBaseSigma);
-    const arma::field<arma::cube> DoGs = ComputeDoGs(blurred_images);
+        uzh::ComputeBlurredImages(image_pyramid, kNumScales, kBaseSigma);
+    const arma::field<arma::cube> DoGs = uzh::ComputeDoGs(blurred_images);
     const arma::field<arma::umat> keypoints_tmp =
-        ExtractKeypoints(DoGs, kKeypointsThreshold);
+        uzh::ExtractKeypoints(DoGs, kKeypointsThreshold);
     std::tie(descriptors(i), keypoints(i)) =
-        ComputeDescriptors(blurred_images, keypoints_tmp, false);
+        uzh::ComputeDescriptors(blurred_images, keypoints_tmp, false);
     LOG(INFO) << "Detected " << keypoints(i).n_cols << " keypoints on img_"
               << i + 1;
   }
@@ -97,7 +100,7 @@ int main(int /*argc*/, char** argv) {
   query_descriptor = uzh::arma2cv<double>(descriptors(0));
   database_descriptor = uzh::arma2cv<double>(descriptors(1));
   cv::Mat matches;
-  MatchDescriptors(query_descriptor, database_descriptor, matches, 3);
+  uzh::MatchDescriptors(query_descriptor, database_descriptor, matches, 3);
   arma::umat match_indices = uzh::cv2arma<arma::uword>(matches);
   // FIXME Will the arma::find discard 0 index which is matched though?
   LOG(INFO) << "Number of matched keypoint pairs: "

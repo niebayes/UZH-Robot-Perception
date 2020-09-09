@@ -8,6 +8,8 @@
 #include "opencv2/imgproc.hpp"
 #include "transfer/cv2arma.h"
 
+namespace uzh {
+
 //@brief Compute blurred images for all images in the image pyramid.
 //! Images in a certain octave are blurred with Gaussians of different sigmas.
 //! Images in different octaves are blurred with the same set of Gaussians.
@@ -48,5 +50,7 @@ arma::field<arma::cube> ComputeBlurredImages(
 
   return blurred_images;
 }
+
+}  // namespace uzh
 
 #endif  // UZH_SIFT_COMPUTE_BLURRED_IMAGES_H_

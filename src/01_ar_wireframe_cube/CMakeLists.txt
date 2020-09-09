@@ -5,4 +5,5 @@ target_compile_options(ar_wireframe_cube PRIVATE -O3 -march=native)
 target_link_libraries(ar_wireframe_cube
   ${OpenCV_LIBRARIES}
   ${GLOG_LIBRARY}
+  ${ARMADILLO_LIBRARIES}
 )

@@ -1,20 +1,30 @@
-#include <cmath>
-#include <fstream>
-#include <iostream>
-#include <sstream>
 #include <string>
-#include <vector>
 
 #include "Eigen/Dense"
 #include "google_suite.h"
+#include "image_formation.h"
+#include "io.h"
+#include "matlab_port.h"
 #include "opencv2/core/eigen.hpp"
 #include "opencv2/opencv.hpp"
+#include "transform.h"
+
+//@brief Construct a rigid transformation matrix from the pose vector
+static void PoseVectorToTransformationMatrix(const Eigen::VectorXd& pose,
+                                             Eigen::Matrix<double, 3, 4>* T) {
+  const Eigen::Vector3d rotation_vector{pose[0], pose[1], pose[2]},
+      translation{pose[3], pose[4], pose[5]};
+  Eigen::Matrix3d rotation_matrix;
+  uzh::Rodrigues(rotation_vector, &rotation_matrix);
+  T->leftCols(3) = rotation_matrix;
+  T->rightCols(1) = translation;
+}
 
 int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
-  const std::string kFilePath{"data/ex1/"};
+  const std::string file_path{"data/01_ar_wireframe_cube/"};
 
   // Part I:
   // Construct a 2D mesh grid where each vertix corrsponds to a inner corner.
@@ -41,43 +51,33 @@ int main(int /*argc*/, char** argv) {
   p_W_corners *= kCellSize;
 
   // Rigid transformation from world coord. to camera coord.
-  const std::vector<std::vector<double>> poses =
-      LoadPoses(kFilePath + "poses.txt");
-  Matrix34d T_C_W;
-  PoseVectorToTransformationMatrix(poses[0], &T_C_W);
+  const Eigen::MatrixXd poses =
+      uzh::armaLoad<Eigen::MatrixXd>(file_path + "poses.txt").transpose();
+  Eigen::Matrix<double, 3, 4> T_C_W;
+  PoseVectorToTransformationMatrix(poses.col(0), &T_C_W);
   const Eigen::Matrix3Xd p_C_corners =
       T_C_W * p_W_corners.colwise().homogeneous();
 
   // Project 3D corners to image plane
   // Load K and D
-  //@warning This is cool, but also dangerous! Because the Eigen object will NOT
-  // create its own memory. It will operate on the memory provided by "data". In
-  // other words, working with the Eigen object when the "data" object is out of
-  // scope will result in a segmentation fault (or memory access violation)
-  //! Hence you shall not use const qualifier to K_tmp, otherwise errors
-  //! induced.
-  std::vector<double> K_tmp = LoadK(kFilePath + "K.txt");
-  std::vector<double> D_tmp = LoadD(kFilePath + "D.txt");
-  //@warning Eigen use column-major storage order! Hence when constructing a
-  // eigen Matrix use the data pointer of an external array-like object, be sure
-  // transposing it!
-  const Eigen::Matrix3d K =
-      (Eigen::Map<Eigen::Matrix3d>(K_tmp.data())).transpose();
-  const Eigen::Vector2d D(D_tmp.data());
+  const Eigen::Matrix3d K = uzh::armaLoad<Eigen::Matrix3d>(file_path + "K.txt");
+  const Eigen::Vector2d D =
+      uzh::armaLoad<Eigen::RowVector2d>(file_path + "D.txt").transpose();
 
   Eigen::Matrix2Xd image_points;
-  ProjectPoints(p_C_corners, &image_points, K, PROJECT_WITHOUT_DISTORTION);
+  uzh::ProjectPoints(p_C_corners, &image_points, K,
+                     uzh::PROJECT_WITHOUT_DISTORTION);
 
   // Superimpose points on the image
   const int kImageIndex = 1;
   const std::string kImageName{cv::format(
-      (kFilePath + "images_undistorted/img_%04d.jpg").c_str(), kImageIndex)};
+      (file_path + "images_undistorted/img_%04d.jpg").c_str(), kImageIndex)};
   cv::Mat image = cv::imread(kImageName, cv::IMREAD_COLOR);
   const Eigen::VectorXi& x = image_points.row(0).cast<int>();
   const Eigen::VectorXi& y = image_points.row(1).cast<int>();
   uzh::scatter(image, x, y, 3, {0, 0, 255}, cv::FILLED);
   cv::imshow("Scatter plot with corners reprojected", image);
-  // cv::waitKey(0);
+  cv::waitKey(0);
 
   // Draw a customized cube on the undistorted image
   const Eigen::Vector3i cube{2, 2, 2};
@@ -100,34 +100,38 @@ int main(int /*argc*/, char** argv) {
   }
   const double kOffsetX = 3 * kCellSize, kOffsetY = 1 * kCellSize,
                kScaling = 2 * kCellSize;
-  p_W_cube.noalias() = (kScaling * p_W_cube).colwise() +
-                       Eigen::Vector3d{kOffsetX, kOffsetY, 0.0};
+  p_W_cube = ((kScaling * p_W_cube).colwise() +
+              Eigen::Vector3d{kOffsetX, kOffsetY, 0.0})
+                 .eval();
 
   // Draw the cube frame by frame to create a video
   cv::Mat sample_image =
-      cv::imread(kFilePath + "images/img_0001.jpg", cv::IMREAD_COLOR);
+      cv::imread(file_path + "images/img_0001.jpg", cv::IMREAD_COLOR);
   const cv::Size frame_size = sample_image.size();
-  cv::VideoWriter video(kFilePath + "cube_video.avi",
+  cv::VideoWriter video(file_path + "cube_video.avi",
                         cv::VideoWriter::fourcc('M', 'J', 'P', 'G'), 30.0,
                         frame_size, true);
   if (video.isOpened()) {
     for (int pose_index = 0;; ++pose_index) {
       cv::Mat frame =
-          cv::imread(cv::format((kFilePath + "images/img_%04d.jpg").c_str(),
+          cv::imread(cv::format((file_path + "images/img_%04d.jpg").c_str(),
                                 pose_index + 1),
                      cv::IMREAD_COLOR);
       if (frame.empty()) {
         LOG(INFO) << "Wrote " << pose_index << " images to the video";
         break;
+      } else {
+        LOG(INFO) << "Writing the " << pose_index + 1 << " image.";
       }
-      const std::vector<double>& camera_pose = poses[pose_index];
-      Matrix34d T_C_W_cube;
+
+      const Eigen::VectorXd& camera_pose = poses.col(pose_index);
+      Eigen::Matrix<double, 3, 4> T_C_W_cube;
       PoseVectorToTransformationMatrix(camera_pose, &T_C_W_cube);
       const Eigen::Matrix3Xd p_C_cube =
           T_C_W_cube * p_W_cube.colwise().homogeneous();
       Eigen::Matrix2Xd cube_image_points;
-      ProjectPoints(p_C_cube, &cube_image_points, K, PROJECT_WITH_DISTORTION,
-                    D);
+      uzh::ProjectPoints(p_C_cube, &cube_image_points, K,
+                         uzh::PROJECT_WITH_DISTORTION, D);
       //! The uzh::meshgrid returns points with column-major order, not a cyclic
       //! order. Hence, you need to swap the corresponding columns to get a
       //! cyclic order in order to bootstrap the cube drawing.
@@ -165,11 +169,13 @@ int main(int /*argc*/, char** argv) {
 
   // Part II: undistort an image
   cv::Mat distorted_image =
-      cv::imread(kFilePath + "images/img_0001.jpg", cv::IMREAD_GRAYSCALE);
+      cv::imread(file_path + "images/img_0001.jpg", cv::IMREAD_GRAYSCALE);
+  LOG(INFO) << "Undistorting image with nearest-neighbor interpolation.";
   cv::Mat undistorted_image_nearest_neighbor =
-      UndistortImage(distorted_image, K, D, NEAREST_NEIGHBOR);
+      uzh::UndistortImage(distorted_image, K, D, uzh::NEAREST_NEIGHBOR);
+  LOG(INFO) << "Undistorting image with bilinear interpolation.";
   cv::Mat undistorted_image_bilinear =
-      UndistortImage(distorted_image, K, D, BILINEAR);
+      uzh::UndistortImage(distorted_image, K, D, uzh::BILINEAR);
   cv::Mat comparison(distorted_image.rows, 2 * distorted_image.cols, CV_8UC1);
   cv::hconcat(undistorted_image_nearest_neighbor, undistorted_image_bilinear,
               comparison);

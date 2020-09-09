@@ -6,6 +6,8 @@
 #include "matlab_port/imresize.h"
 #include "opencv2/core.hpp"
 
+namespace uzh {
+
 //@brief Compute image pyramid by recursively decimating the original image.
 //! This function generates original images of all octaves. That is
 //! the resolutions of the original image in octave o and the original
@@ -27,5 +29,7 @@ arma::field<cv::Mat> ComputeImagePyramid(const cv::Mat& image,
   }
   return image_pyramid;
 }
+
+}  // namespace uzh
 
 #endif  // UZH_SIFT_COMPUTE_IMAGE_PYRAMID_H_

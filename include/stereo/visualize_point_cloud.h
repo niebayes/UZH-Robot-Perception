@@ -5,7 +5,7 @@
 #include "boost/thread.hpp"
 #include "pcl/visualization/pcl_visualizer.h"
 
-namespace stereo {
+namespace uzh {
 
 //@brief Viewer wrapper helper function.
 //@ref
@@ -67,6 +67,6 @@ void VisualizePointCloud(const arma::mat& point_cloud,
   }
 }
 
-}  // namespace stereo
+}  // namespace uzh
 
 #endif  // UZH_STEREO_VISUALIZE_POINT_CLOUD_H_

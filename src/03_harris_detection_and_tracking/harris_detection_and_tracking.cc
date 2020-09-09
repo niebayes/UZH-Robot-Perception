@@ -12,11 +12,10 @@ int main(int /*argv*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
-  const std::string result_path{"results/ex3/"};
-  const std::string kFilePath = "data/ex3/";
+  const std::string file_path = "data/harris_detection_and_tracking/";
   // Image to show the rendered objects.
   cv::Mat image_show =
-      cv::imread(kFilePath + "KITTI/000000.png", cv::IMREAD_COLOR);
+      cv::imread(file_path + "KITTI/000000.png", cv::IMREAD_COLOR);
   cv::Mat image_show_shi = image_show.clone();
   cv::Mat image = image_show.clone();
   cv::cvtColor(image_show, image, cv::COLOR_BGR2GRAY, 1);
@@ -30,10 +29,8 @@ int main(int /*argv*/, char** argv) {
   uzh::HarrisResponse(image, harris_response, kPatchSize, kHarrisKappa);
   uzh::ShiTomasiResponse(image, shi_tomasi_response, kPatchSize);
   // Compare the colormaps to see the detail of differences.
-  cv::imwrite(result_path + "harris_response.png",
-              uzh::imagesc(harris_response, true, "Harris response"));
-  cv::imwrite(result_path + "shi_tomasi_response.png",
-              uzh::imagesc(shi_tomasi_response, true, "Shi-Tomasi response"));
+  uzh::imagesc(harris_response, true, "Harris response");
+  uzh::imagesc(shi_tomasi_response, true, "Shi-Tomasi response");
 
   // Part II: select keypoints
   const int kNumKeypoints = 200;
@@ -47,7 +44,6 @@ int main(int /*argv*/, char** argv) {
   const Eigen::VectorXi x = k.row(0).cast<int>(), y = k.row(1).cast<int>();
   uzh::scatter(image_show, x, y, 4, {0, 0, 255}, cv::FILLED);
   cv::imshow("Harris keypoints", image_show);
-  cv::imwrite(result_path + "harris_pts.png", image_show);
   cv::waitKey(0);
 
   // Show the Shi-Tomasi keypoints for comparison.
@@ -60,7 +56,6 @@ int main(int /*argv*/, char** argv) {
                         shi_y = shi_k.row(1).cast<int>();
   uzh::scatter(image_show_shi, shi_x, shi_y, 4, {0, 255, 0}, cv::FILLED);
   cv::imshow("Shi-Tomasi keypoints", image_show_shi);
-  cv::imwrite(result_path + "shi_tomasi_kpts.png", image_show_shi);
   cv::waitKey(0);
 
   // Part III: describe keypoints
@@ -88,14 +83,13 @@ int main(int /*argv*/, char** argv) {
     top_sixteen_patches = uzh::MakeCanvas(Mat_vec, image.rows, 4);
     cv::namedWindow("Top 16 descriptors", cv::WINDOW_NORMAL);
     cv::imshow("Top 16 descriptors", top_sixteen_patches);
-    cv::imwrite(result_path + "top_16_descs.png", top_sixteen_patches);
     cv::waitKey(0);
   }
 
   // Part IV: match descriptors
   const double kDistanceRatio = 4;
   cv::Mat match_show =
-      cv::imread(kFilePath + "KITTI/000001.png", cv::IMREAD_COLOR);
+      cv::imread(file_path + "KITTI/000001.png", cv::IMREAD_COLOR);
   cv::Mat query_image;
   cv::cvtColor(match_show, query_image, cv::COLOR_BGR2GRAY, 1);
 
@@ -115,7 +109,6 @@ int main(int /*argv*/, char** argv) {
   uzh::PlotMatches(matches, query_keypoints, keypoints, match_show);
   cv::namedWindow("Matches between the first two frames", cv::WINDOW_AUTOSIZE);
   cv::imshow("Matches between the first two frames", match_show);
-  cv::imwrite(result_path + "match_show.png", match_show);
   cv::waitKey(0);
 
   // Part V: match descriptors for all 200 images in the reduced KITTI
@@ -127,7 +120,7 @@ int main(int /*argv*/, char** argv) {
   if (plot_matches) {
     for (int i = 0; i < kNumImages; ++i) {
       cv::Mat img_show =
-          cv::imread(cv::format((kFilePath + "KITTI/%06d.png").c_str(), i),
+          cv::imread(cv::format((file_path + "KITTI/%06d.png").c_str(), i),
                      cv::IMREAD_COLOR);
       cv::Mat query_img;
       cv::cvtColor(img_show, query_img, cv::COLOR_BGR2GRAY, 1);
@@ -151,9 +144,6 @@ int main(int /*argv*/, char** argv) {
                                cv::countNonZero(matches_qd) + 1, kNumKeypoints),
                     {50, 30}, cv::FONT_HERSHEY_PLAIN, 2, {0, 0, 255}, 2);
         cv::imshow("Matches", img_show);
-        cv::imwrite(
-            cv::format((result_path + "match_imgs/img_%d.png").c_str(), i),
-            img_show);
         char key = cv::waitKey(10);  // Pause 10 ms.
         if (key == 27)
           break;  // 'ESC' key -> exit.
@@ -165,10 +155,6 @@ int main(int /*argv*/, char** argv) {
       database_descs = query_descs;
     }
   }
-
-  // -------------------------------------------------------------------
-  // Optional: profile the program
-  // TODO(bayes) Profile the program.
 
   return EXIT_SUCCESS;
 }

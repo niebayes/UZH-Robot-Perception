@@ -8,6 +8,8 @@
 #include "armadillo"
 #include "glog/logging.h"
 
+// TODO(bayes)
+
 namespace uzh {
 
 enum MatchingMethod : int { EXHAUSTIVE, APPROXIMATE };

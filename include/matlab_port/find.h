@@ -7,9 +7,24 @@
 #include <vector>
 
 #include "Eigen/Core"
-#include "common/tools.h"
 
 namespace uzh {
+
+//@brief Remove zeros in an array.
+template <typename T>
+T remove_zeros(const T& A) {
+  //! Alternative way.
+  // std::vector<int> A_(A.cbegin(), A.cend());
+  // std::vector<int>::const_iterator last_non_zero =
+  //     std::remove_if(A_.begin(), A_.end(), [](int x) { return x != 0; });
+  // std::vector<int> A_no_zeros(A_.cbegin(), last_non_zero);
+  const auto num_non_zeros =
+      std::count_if(A.cbegin(), A.cend(), [](int x) { return x != 0; });
+  T A_no_zeros(num_non_zeros);
+  std::copy_if(A.cbegin(), A.cend(), A_no_zeros.begin(),
+               [](int x) { return x != 0; });
+  return A_no_zeros;
+}
 
 //@brief Imitate matlab's `[row, col, v] = find(A)` function. Find non-zero
 // elements in an array A.

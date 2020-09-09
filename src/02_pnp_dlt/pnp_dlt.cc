@@ -1,15 +1,11 @@
-#include <cmath>
-#include <fstream>
-#include <iostream>
-#include <limits>
-#include <optional>  // std::optional, feature of C++17
-#include <sstream>
 #include <string>
-#include <vector>
 
 #include "Eigen/Dense"
+#include "armadillo"
+#include "dlt.h"
 #include "google_suite.h"
-#include "opencv2/core/eigen.hpp"
+#include "io.h"
+#include "matlab_port.h"
 #include "opencv2/opencv.hpp"
 
 int main(int /*argc*/, char** argv) {
@@ -17,7 +13,7 @@ int main(int /*argc*/, char** argv) {
   google::LogToStderr();
 
   // Load data files
-  const std::string kFilePath{"data/ex2/"};
+  const std::string kFilePath{"data/pnp_dlt/"};
 
   const Eigen::Matrix3d K = uzh::armaLoad<Eigen::Matrix3d>(kFilePath + "K.txt");
   const Eigen::MatrixXd observations =
@@ -55,14 +51,14 @@ int main(int /*argc*/, char** argv) {
       M_dlt.DecomposeDLT();
 
       // Compare reprojected points and the obvervations.
-      const Matrix34d M = M_dlt.getM();
+      const Eigen::Matrix<double, 3, 4> M = M_dlt.getM();
       Eigen::Matrix2Xd reprojected_points;
-      ReprojectPoints(p_W_corners, &reprojected_points, K, M,
-                      PROJECT_WITHOUT_DISTORTION);
+      uzh::ReprojectPoints(p_W_corners, &reprojected_points, K, M,
+                           uzh::PROJECT_WITHOUT_DISTORTION);
 
       // Compute reprojection error
       double reprojection_error =
-          GetReprojectionError(image_points, reprojected_points);
+          uzh::GetReprojectionError(image_points, reprojected_points);
       cv::putText(frame,
                   cv::format("Reprojection error: %.4f", reprojection_error),
                   {5, 40}, cv::FONT_HERSHEY_PLAIN, 2, {0, 255, 0}, 3);
