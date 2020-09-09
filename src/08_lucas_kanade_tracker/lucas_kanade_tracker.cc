@@ -15,12 +15,12 @@ int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
-  const std::string kFilePath{"data/ex8/"};
+  const std::string file_path{"data/08_lucas_kanade_tracker/"};
 
   // Part I: warp an image to test the functionalities of the warping functions.
   // Reference image.
   const cv::Mat img_r =
-      cv::imread(kFilePath + "000000.png", cv::IMREAD_GRAYSCALE);
+      cv::imread(file_path + "000000.png", cv::IMREAD_GRAYSCALE);
   const arma::umat I_r = uzh::img2arma(img_r);
 
   // Various basic warpings.
@@ -81,7 +81,7 @@ int main(int /*argc*/, char** argv) {
   const cv::Mat img_r_down = uzh::imresize(img_r, 0.25);
   const arma::umat I_r_down = uzh::img2arma(img_r_down);
   arma::mat keypoints = arma::conv_to<arma::mat>::from(
-      uzh::LoadArma<arma::uword>(kFilePath + "keypoints.txt").t());
+      uzh::LoadArma<arma::uword>(file_path + "keypoints.txt").t());
   // Make indices start from 0.
   keypoints -= 1.0;
   // Change (row, col) layout to (x, y) layout.
@@ -97,7 +97,7 @@ int main(int /*argc*/, char** argv) {
   const int kNumImages = 20;
   for (int i = 1; i < kNumImages + 1; ++i) {
     const cv::Mat img_i = cv::imread(
-        cv::format((kFilePath + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
+        cv::format((file_path + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
     const cv::Mat img_i_down = uzh::imresize(img_i, 0.25);
     const arma::umat I = uzh::img2arma(img_i_down);
 
@@ -130,8 +130,6 @@ int main(int /*argc*/, char** argv) {
     cv::imshow("KLT tracking", match_show);
     const char key = cv::waitKey(50);
     if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
-    cv::imwrite(cv::format("results/ex8/klt/track_%02d.png", i - 1),
-                match_show);
 
     I_prev = I;
     kpts_prev = kpts;
@@ -142,7 +140,7 @@ int main(int /*argc*/, char** argv) {
   kpts_prev = keypoints;
   for (int i = 1; i < kNumImages + 1; ++i) {
     const cv::Mat img_i = cv::imread(
-        cv::format((kFilePath + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
+        cv::format((file_path + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
     const cv::Mat img_i_down = uzh::imresize(img_i, 0.25);
     const arma::umat I = uzh::img2arma(img_i_down);
 
@@ -184,8 +182,6 @@ int main(int /*argc*/, char** argv) {
       cv::imshow("Robust KLT tracking", match_show);
       const char key = cv::waitKey(50);
       if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
-      cv::imwrite(cv::format("results/ex8/robust_klt/track_%02d.png", i - 1),
-                  match_show);
     }
 
     I_prev = I;

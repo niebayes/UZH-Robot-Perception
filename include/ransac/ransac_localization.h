@@ -2,16 +2,18 @@
 #define UZH_RANSAC_RANSAC_LOCALIZATION_H_
 
 #include <cmath>
+#include <numeric>
 #include <tuple>
 #include <vector>
 
 #include "Eigen/Core"
 #include "arma_traits.h"
 #include "armadillo"
+#include "dlt/estimate_pose_dlt.h"
 #include "glog/logging.h"
+#include "image_formation/project_points.h"
 #include "matlab_port/nnz.h"
 #include "ransac/kneip_p3p.h"
-#include "vision.h"
 
 namespace uzh {
 

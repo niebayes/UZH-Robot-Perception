@@ -17,11 +17,12 @@ int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
+  const std::string file_path{"data/06_two_view_geometry/"};
+
   // Load data
-  const std::string kFilePath{"data/ex6/"};
-  const arma::mat K = uzh::LoadArma<double>(kFilePath + "K.txt");
-  const arma::mat p1 = uzh::LoadArma<double>(kFilePath + "matches0001.txt");
-  const arma::mat p2 = uzh::LoadArma<double>(kFilePath + "matches0002.txt");
+  const arma::mat K = uzh::LoadArma<double>(file_path + "K.txt");
+  const arma::mat p1 = uzh::LoadArma<double>(file_path + "matches0001.txt");
+  const arma::mat p2 = uzh::LoadArma<double>(file_path + "matches0002.txt");
 
   // Transform to homogeneous 2D coordinates.
   const arma::mat p1_h = uzh::homogeneous<double>(p1);
@@ -44,15 +45,22 @@ int main(int /*argc*/, char** argv) {
   // Triangulate a point cloud from the views.
   const arma::mat M1 = K * arma::eye<arma::mat>(3, 4);
   const arma::mat M2 = K * arma::join_horiz(R, t);
-  const arma::mat P = uzh::LinearTriangulation(p1_h, p2_h, M1, M2);
+  arma::mat P;
 
-  // Show the result.
+  const bool use_nonlinear_triangulation = true;
+  if (use_nonlinear_triangulation) {
+    // Use nonlinear triangulation to get a more accurate P.
+    P = uzh::NonlinearTriangulation(p1_h, p2_h, M1, M2);
+  } else {
+    P = uzh::LinearTriangulation(p1_h, p2_h, M1, M2);
+  }
+
+  // Dehomogenize.
   const arma::mat P_hn = uzh::hnormalized<double>(P);
-  P_hn.print("Dehomogenized P");
 
   // Display the 2D image points.
-  cv::Mat img1 = cv::imread(kFilePath + "0001.jpg", cv::IMREAD_COLOR);
-  cv::Mat img2 = cv::imread(kFilePath + "0002.jpg", cv::IMREAD_COLOR);
+  cv::Mat img1 = cv::imread(file_path + "images/0001.jpg", cv::IMREAD_COLOR);
+  cv::Mat img2 = cv::imread(file_path + "images/0002.jpg", cv::IMREAD_COLOR);
   const arma::uvec p1_x = arma::conv_to<arma::uvec>::from(p1.row(0).t());
   const arma::uvec p1_y = arma::conv_to<arma::uvec>::from(p1.row(1).t());
   const arma::uvec p2_x = arma::conv_to<arma::uvec>::from(p2.row(0).t());
@@ -70,7 +78,7 @@ int main(int /*argc*/, char** argv) {
       arma::randi<arma::umat>(1, P_hn.n_cols, arma::distr_param(0, 255));
   uzh::VisualizePointCloud(P_hn, intensities);
   // Save the points to .pcd file.
-  uzh::WritePointCloud(kFilePath + "points_3d.pcd", P_hn, intensities);
+  uzh::WritePointCloud(file_path + "points_3d.pcd", P_hn, intensities);
 
   return EXIT_SUCCESS;
 }

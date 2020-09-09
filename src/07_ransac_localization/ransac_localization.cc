@@ -19,7 +19,7 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
-  const std::string kFilePath{"data/ex7/"};
+  const std::string file_path{"data/07_ransac_localization/"};
 
   // Random seed.
   // arma::arma_rng::set_seed(1);
@@ -135,17 +135,17 @@ int main(int argc, char** argv) {
   //! Note the keypoints are stored in (row, col) layout in the file, and the
   //! indices start from 1 rather than 0.
   const cv::Mat database_keypoints_cv =
-      uzh::arma2cv<int>(uzh::LoadArma<int>(kFilePath + "keypoints.txt") - 1)
+      uzh::arma2cv<int>(uzh::LoadArma<int>(file_path + "keypoints.txt") - 1)
           .t();
   const arma::mat p_W_landmarks =
-      uzh::LoadArma<double>(kFilePath + "p_W_landmarks.txt").t();
-  const arma::mat K = uzh::LoadArma<double>(kFilePath + "K.txt");
+      uzh::LoadArma<double>(file_path + "p_W_landmarks.txt").t();
+  const arma::mat K = uzh::LoadArma<double>(file_path + "K.txt");
 
   // Load images.
   cv::Mat database_image =
-      cv::imread(kFilePath + "000000.png", cv::IMREAD_GRAYSCALE);
+      cv::imread(file_path + "000000.png", cv::IMREAD_GRAYSCALE);
   cv::Mat query_image =
-      cv::imread(kFilePath + "000001.png", cv::IMREAD_GRAYSCALE);
+      cv::imread(file_path + "000001.png", cv::IMREAD_GRAYSCALE);
 
   // Port parameters from ex3.
   const int kPatchSize = 9;
@@ -287,7 +287,7 @@ int main(int argc, char** argv) {
   const std::string winname{"All matches vs. inlier matches found with RANSAC"};
   for (int i = 1; i < kNumFrames + 1; ++i) {
     cv::Mat query_img = cv::imread(
-        cv::format((kFilePath + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
+        cv::format((file_path + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
 
     // Detect Harris keypoints in the query image.
     cv::Mat harris_res;
@@ -391,7 +391,6 @@ int main(int argc, char** argv) {
     const cv::Mat show =
         uzh::MakeCanvas(imgs_show_frame_i, 3 * query_img.rows, 2);
     cv::imshow(winname, show);
-    cv::imwrite(cv::format("results/ex7/img_%d.png", i), show);
     const char key = cv::waitKey(2000);
     if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
   }
