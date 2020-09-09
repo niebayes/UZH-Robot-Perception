@@ -10,7 +10,7 @@
 #include "io.h"
 #include "matlab_port.h"
 #include "opencv2/opencv.hpp"
-// #include "pcl/visualization/pcl_plotter.h"
+#include "pcl/visualization/pcl_plotter.h"
 #include "transfer.h"
 #include "transform.h"
 
@@ -63,67 +63,67 @@ int main(int /*argc*/, char** argv) {
   }
 
   // Plot the VO trajectory and ground truth trajectory.
-  // pcl::visualization::PCLPlotter::Ptr plotter(
-  //     new pcl::visualization::PCLPlotter);
-  // plotter->setTitle("VO trajectory and ground truth trajectory");
-  // plotter->setShowLegend(true);
-  // plotter->setXRange(-5, 95);
-  // plotter->setYRange(-30, 10);
-  // //! The figure axes are not the same with the camera axes.
-  // //! For camera, positive x axis points to right of the camere, positive y
-  // //! axis points to the down of the camera and positive z axis points to the
-  // //! front of the camera.
-  // //! Therefore, x and z are the two axes needed for plotting in 2D figure,  and
-  // //! x needs to be negated to be consistent with the x axis of the figure.
-  // plotter->addPlotData(arma::conv_to<std::vector<double>>::from(pp_G_C.row(2)),
-  //                      arma::conv_to<std::vector<double>>::from(-pp_G_C.row(0)),
-  //                      "Ground truth", vtkChart::LINE);
-  // plotter->addPlotData(arma::conv_to<std::vector<double>>::from(p_V_C.row(2)),
-  //                      arma::conv_to<std::vector<double>>::from(-p_V_C.row(0)),
-  //                      "Original estimate", vtkChart::LINE);
-  // plotter->plot();
+  pcl::visualization::PCLPlotter::Ptr plotter(
+      new pcl::visualization::PCLPlotter);
+  plotter->setTitle("VO trajectory and ground truth trajectory");
+  plotter->setShowLegend(true);
+  plotter->setXRange(-5, 95);
+  plotter->setYRange(-30, 10);
+  //! The figure axes are not the same with the camera axes.
+  //! For camera, positive x axis points to right of the camere, positive y
+  //! axis points to the down of the camera and positive z axis points to the
+  //! front of the camera.
+  //! Therefore, x and z are the two axes needed for plotting in 2D figure,  and
+  //! x needs to be negated to be consistent with the x axis of the figure.
+  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(pp_G_C.row(2)),
+                       arma::conv_to<std::vector<double>>::from(-pp_G_C.row(0)),
+                       "Ground truth", vtkChart::LINE);
+  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(p_V_C.row(2)),
+                       arma::conv_to<std::vector<double>>::from(-p_V_C.row(0)),
+                       "Original estimate", vtkChart::LINE);
+  plotter->plot();
 
   // Apply non-linear least square (NLLS) method to align VO estimate to the
   // ground truth.
-  // const arma::mat p_G_C = uzh::AlignVOToGroundTruth(p_V_C, pp_G_C);
-  // Show the optimized trajectory.
-  // plotter->addPlotData(arma::conv_to<std::vector<double>>::from(p_G_C.row(2)),
-  //                      arma::conv_to<std::vector<double>>::from(-p_G_C.row(0)),
-  //                      "Aligned estimate", vtkChart::LINE);
-  // plotter->plot();
+  const arma::mat p_G_C = uzh::AlignVOToGroundTruth(p_V_C, pp_G_C);
+  Show the optimized trajectory.plotter->addPlotData(
+      arma::conv_to<std::vector<double>>::from(p_G_C.row(2)),
+      arma::conv_to<std::vector<double>>::from(-p_G_C.row(0)),
+      "Aligned estimate", vtkChart::LINE);
+  plotter->plot();
 
   // Part II: small bundle adjustment.
   // Part III: determine jacob pattern.
   // FIXME Seems no need to perform this using ceres?
   // Plot map before BA.
-  // plotter->clearPlots();
-  // plotter->setTitle("Cropped problem before bundle adjustment");
-  // uzh::PlotMap(plotter, cropped_hidden_state, cropped_observations,
-  //              {0, 20, -5, 5});
-  // plotter->plot();
+  plotter->clearPlots();
+  plotter->setTitle("Cropped problem before bundle adjustment");
+  uzh::PlotMap(plotter, cropped_hidden_state, cropped_observations,
+               {0, 20, -5, 5});
+  plotter->plot();
   // Run BA and plot.
-  const arma::vec optimized_hidden_state =
+  const arma::vec optimized_cropped_hidden_state =
       uzh::RunBA(cropped_hidden_state, cropped_observations, K);
-  // plotter->clearPlots();
-  // plotter->setTitle("Cropped problem after bundle adjustment");
-  // uzh::PlotMap(plotter, cropped_hidden_state, cropped_observations,
-  //              {0, 20, -5, 5});
-  // plotter->plot();
+  plotter->clearPlots();
+  plotter->setTitle("Cropped problem after bundle adjustment");
+  uzh::PlotMap(plotter, optimized_cropped_hidden_state, cropped_observations,
+               {0, 20, -5, 5});
+  plotter->plot();
 
   // Part IV: larger bundle adjustment and evaluation.
   // Plot full map before BA.
-  // plotter->clearPlots();
-  // plotter->setTitle("Full problem before bundle adjustment");
-  // uzh::PlotMap(plotter, hidden_state, observations, {0, 40, -10, 10});
-  // plotter->plot();
+  plotter->clearPlots();
+  plotter->setTitle("Full problem before bundle adjustment");
+  uzh::PlotMap(plotter, hidden_state, observations, {0, 40, -10, 10});
+  plotter->plot();
   // Run BA and plot.
   const arma::vec optimized_full_hidden_state =
       uzh::RunBA(hidden_state, observations, K);
-  // plotter->clearPlots();
-  // plotter->setTitle("Full problem after bundle adjustment");
-  // uzh::PlotMap(plotter, optimized_full_hidden_state, observations,
-  //              {0, 40, -10, 10});
-  // plotter->plot();
+  plotter->clearPlots();
+  plotter->setTitle("Full problem after bundle adjustment");
+  uzh::PlotMap(plotter, optimized_full_hidden_state, observations,
+               {0, 40, -10, 10});
+  plotter->plot();
 
   // Evaluate the BA performance by plotting.
   const arma::mat optimized_twists_V_C = arma::reshape(
@@ -135,23 +135,23 @@ int main(int /*argc*/, char** argv) {
   }
   const arma::mat optimized_p_G_C =
       uzh::AlignVOToGroundTruth(pp_G_C, optimized_p_V_C);
-  // Plot.
-  // plotter->clearPlots();
-  // plotter->setTitle("Optimized VO trajectory and ground truth trajectory");
-  // plotter->setShowLegend(true);
-  // plotter->setXRange(-5, 95);
-  // plotter->setYRange(-30, 10);
-  // plotter->addPlotData(arma::conv_to<std::vector<double>>::from(pp_G_C.row(2)),
-  //                      arma::conv_to<std::vector<double>>::from(-pp_G_C.row(0)),
-  //                      "Ground truth", vtkChart::LINE);
-  // plotter->addPlotData(arma::conv_to<std::vector<double>>::from(p_V_C.row(2)),
-  //                      arma::conv_to<std::vector<double>>::from(-p_V_C.row(0)),
-  //                      "Original estimate", vtkChart::LINE);
-  // plotter->addPlotData(
-  //     arma::conv_to<std::vector<double>>::from(optimized_p_V_C.row(2)),
-  //     arma::conv_to<std::vector<double>>::from(-optimized_p_V_C.row(0)),
-  //     "Optimized estimate", vtkChart::LINE);
-  // plotter->plot();
+  // Plot for comparision.
+  plotter->clearPlots();
+  plotter->setTitle("Optimized VO trajectory and ground truth trajectory");
+  plotter->setShowLegend(true);
+  plotter->setXRange(-5, 95);
+  plotter->setYRange(-30, 10);
+  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(pp_G_C.row(2)),
+                       arma::conv_to<std::vector<double>>::from(-pp_G_C.row(0)),
+                       "Ground truth", vtkChart::LINE);
+  plotter->addPlotData(arma::conv_to<std::vector<double>>::from(p_V_C.row(2)),
+                       arma::conv_to<std::vector<double>>::from(-p_V_C.row(0)),
+                       "Original estimate", vtkChart::LINE);
+  plotter->addPlotData(
+      arma::conv_to<std::vector<double>>::from(optimized_p_V_C.row(2)),
+      arma::conv_to<std::vector<double>>::from(-optimized_p_V_C.row(0)),
+      "Optimized estimate", vtkChart::LINE);
+  plotter->plot();
 
   return EXIT_SUCCESS;
 }

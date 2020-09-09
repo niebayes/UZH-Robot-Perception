@@ -7,5 +7,5 @@ target_link_libraries(bundle_adjustment
   ${GLOG_LIBRARY}
   ${ARMADILLO_LIBRARIES}
   ${CERES_LIBRARIES}
-  # ${PCL_LIBRARIES}
+  ${PCL_LIBRARIES}
 )
