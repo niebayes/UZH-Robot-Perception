@@ -7,11 +7,13 @@
 #include <optional>    // std::optional
 
 #include "Eigen/Core"
+#include "armadillo"
 #include "matlab_port/find.h"
 #include "matlab_port/pdist2.h"
 #include "matlab_port/scatter.h"
 #include "matlab_port/unique.h"
 #include "opencv2/core/eigen.hpp"
+#include "transfer.h"
 
 namespace uzh {
 
@@ -55,10 +57,15 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   // For each query descriptor, find the nearest descriptor in database
   // descriptors whose index is stored in the matches matrix and the
   // corresponding distance is stored in the distances matrix.
-  Eigen::MatrixXd distances;
-  Eigen::MatrixXi matches;
-  uzh::pdist2(database, query, &distances, uzh::EUCLIDEAN, &matches,
-              uzh::SMALLEST_FIRST, 1);
+  arma::mat distances_arma;
+  arma::umat matches_arma;
+  std::tie(distances_arma, matches_arma) =
+      uzh::pdist2(uzh::eigen2arma(database), uzh::eigen2arma(query),
+                  uzh::EUCLIDEAN, uzh::SMALLEST_FIRST, 1);
+  Eigen::MatrixXd distances = uzh::arma2eigen(distances_arma);
+  Eigen::MatrixXi matches =
+      (uzh::arma2eigen(arma::conv_to<arma::mat>::from(matches_arma)))
+          .cast<int>();
 
   // Find the overall minimal non-zero distance.
   //@note This could also be accomplished with std::sort / std::statble in
@@ -76,11 +83,19 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
   // Remove duplicate matches.
   std::vector<int> unique_match_indices;
   std::tie(std::ignore, unique_match_indices, std::ignore) =
-      uzh::unique(matches.cast<double>().reshaped());
+      uzh::unique<double>(
+          arma::vectorise(uzh::eigen2arma(matches.cast<double>())));
   Eigen::MatrixXi unique_matches(1, matches.size());
   unique_matches.setZero();
-  unique_matches.reshaped()(unique_match_indices) =
-      matches.reshaped()(unique_match_indices);
+  std::vector<int> unique_mask(matches.size(), 0);
+  for (int i = 0; i < unique_match_indices.size(); ++i) {
+    unique_mask[unique_match_indices[i]] = 1;
+  }
+  for (int i = 0; i < matches.size(); ++i) {
+    if (unique_mask[i]) {
+      unique_matches.col(i) = matches.col(i);
+    }
+  }
 
   // Convert back to cv::Mat
   cv::eigen2cv(unique_matches, matches_);
@@ -100,40 +115,43 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
 void PlotMatches(const cv::Mat& matches, const cv::Mat& query_keypoints,
                  const cv::Mat& database_keypoints, cv::Mat& image,
                  const bool plot_all_keypoints = false) {
-  // Convert to Eigen::Matrix
-  Eigen::MatrixXi matches_;
-  Eigen::MatrixXi query_kps, database_kps;
-  cv::cv2eigen(matches, matches_);
-  cv::cv2eigen(query_keypoints, query_kps);
-  cv::cv2eigen(database_keypoints, database_kps);
+  // Convert to arma::Mat
+  const arma::urowvec matches_ =
+      arma::conv_to<arma::urowvec>::from(uzh::cv2arma<int>(matches).t());
+  const arma::umat query_kps =
+      arma::conv_to<arma::umat>::from(uzh::cv2arma<int>(query_keypoints).t());
+  const arma::umat database_kps = arma::conv_to<arma::umat>::from(
+      uzh::cv2arma<int>(database_keypoints).t());
 
   // Plot all keypoints, query as red whilst database as blue.
   if (plot_all_keypoints) {
     //! Follow the convention, row -> y and col -> x.
-    const Eigen::VectorXi query_x = query_kps.row(1);
-    const Eigen::VectorXi query_y = query_kps.row(0);
-    const Eigen::VectorXi database_x = database_kps.row(1);
-    const Eigen::VectorXi database_y = database_kps.row(0);
-    uzh::scatter(image, query_x, query_y, 3, {0, 0, 255}, cv::FILLED);
-    uzh::scatter(image, database_x, database_y, 3, {255, 0, 0}, cv::FILLED);
+    const arma::urowvec query_x = query_kps.row(1);
+    const arma::urowvec query_y = query_kps.row(0);
+    const arma::urowvec database_x = database_kps.row(1);
+    const arma::urowvec database_y = database_kps.row(0);
+    uzh::scatter(image, query_x.t(), query_y.t(), 3, {0, 0, 255}, cv::FILLED);
+    uzh::scatter(image, database_x.t(), database_y.t(), 3, {255, 0, 0},
+                 cv::FILLED);
   }
 
   // Isolate query and match indices.
   //! These indices are used to access corresponding keypoints later on.
   std::vector<int> query_indices;
-  Eigen::ArrayXi match_indices;
+  arma::uvec match_indices;
   std::tie(std::ignore, query_indices, match_indices) =
-      uzh::find(matches_.reshaped());
-
+      uzh::find(arma::vectorise(matches_));
   // Extract coordinates of keypoints.
-  Eigen::RowVectorXi from_kp_x, from_kp_y, to_kp_x, to_kp_y;
-  from_kp_x = query_kps(1, query_indices);
-  from_kp_y = query_kps(0, query_indices);
-  to_kp_x = database_kps(1, match_indices);
-  to_kp_y = database_kps(0, match_indices);
+  arma::urowvec from_kp_x, from_kp_y, to_kp_x, to_kp_y;
+  from_kp_x =
+      query_kps(arma::uvec{1}, arma::conv_to<arma::uvec>::from(query_indices));
+  from_kp_y =
+      query_kps(arma::uvec{0}, arma::conv_to<arma::uvec>::from(query_indices));
+  to_kp_x = database_kps(arma::uvec{1}, match_indices);
+  to_kp_y = database_kps(arma::uvec{0}, match_indices);
 
   // Link each set of matches.
-  const int num_matches = match_indices.size();
+  const int num_matches = match_indices.n_elem;
   for (int i = 0; i < num_matches; ++i) {
     int from_x, from_y, to_x, to_y;
     from_x = from_kp_x(i);

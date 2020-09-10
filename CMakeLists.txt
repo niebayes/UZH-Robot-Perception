@@ -44,7 +44,7 @@ else()
     message("Not Found OpenCV")
 endif()
 
-find_package(Eigen3 3.3.9 REQUIRED)
+find_package(Eigen3 REQUIRED)
 if (Eigen3_FOUND)
     message("Found Eigen3")
 else()

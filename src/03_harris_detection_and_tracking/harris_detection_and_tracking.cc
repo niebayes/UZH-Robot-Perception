@@ -144,7 +144,7 @@ int main(int /*argv*/, char** argv) {
                                cv::countNonZero(matches_qd) + 1, kNumKeypoints),
                     {50, 30}, cv::FONT_HERSHEY_PLAIN, 2, {0, 0, 255}, 2);
         cv::imshow("Matches", img_show);
-        char key = cv::waitKey(10);  // Pause 10 ms.
+        char key = cv::waitKey(5);  // Pause 5 ms.
         if (key == 27)
           break;  // 'ESC' key -> exit.
         else if (key == 32)

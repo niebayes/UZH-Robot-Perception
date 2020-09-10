@@ -6,7 +6,7 @@
 #include <tuple>
 #include <vector>
 
-#include "Eigen/Core"
+#include "armadillo"
 
 namespace uzh {
 
@@ -14,27 +14,16 @@ namespace uzh {
 // sorted order (by default descending).
 //@param A One dimensional array containing the original values.
 //@return C One dimensional array containing the unique values of A.
-//@return ia One dimensional array containing indices such that C = A(ia).
-//@return ic One dimensional array containing indices such that A = C(ic).
-//
-//! Eigen provides surprising flexibility and genericity, so you can pass as
-//! arguments ArrayXd, VectorXd, RowVectorXd as well as MatrixXd to the
-//! parameter A and the returned object C. They all work properly.
-//
+//@return
+// ia -- One dimensional array containing indices such that C = A(ia).
+// ic -- One dimensional array containing indices such that A = C(ic).
 //@note How to implement matlab's unique using C++?
 //@ref https://stackoverflow.com/q/63537619/14007680
 //@note Return unmovable and uncopyable values with C++17.
 //@ref https://stackoverflow.com/a/38531743/14007680
-// TODO(bayes) Templatize this function to make the parameter parsing more
-// flexible.
-std::tuple<Eigen::ArrayXd /*C*/, std::vector<int> /*ia*/,
-           std::vector<int> /*ic*/>
-unique(const Eigen::ArrayXd& A) {
-  //! Alternatively, explicitly passing into pointers.
-  // Eigen::ArrayXd* C,
-  // std::optional<Eigen::ArrayXi*> ia = std::nullopt,
-  // std::optional<Eigen::ArrayXi*> ic = std::nullopt) {
-
+template <typename T>
+std::tuple<arma::Col<T> /*C*/, std::vector<int> /*ia*/, std::vector<int> /*ic*/>
+unique(const arma::Col<T>& A) {
   // Copy the values of A.
   const std::vector<double> original(A.begin(), A.end());
 
@@ -63,7 +52,7 @@ unique(const Eigen::ArrayXd& A) {
                  });
 
   // Output C.
-  Eigen::ArrayXd C_out(uniqued.size());
+  arma::Col<T> C_out(uniqued.size());
   std::copy(uniqued.cbegin(), uniqued.cend(), C_out.begin());
 
   return {C_out, indices_ori, indices_uni};

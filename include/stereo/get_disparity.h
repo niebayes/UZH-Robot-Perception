@@ -2,10 +2,15 @@
 #define UZH_STEREO_GET_DISPARITY
 
 #include <tuple>  // std::tie
+#include <vector>
 
 #include "armadillo"
 #include "glog/logging.h"
+#include "matlab_port/imagesc.h"
 #include "matlab_port/pdist2.h"
+#include "matlab_port/subplot.h"
+#include "opencv2/core.hpp"
+#include "opencv2/highgui.hpp"
 
 namespace uzh {
 
