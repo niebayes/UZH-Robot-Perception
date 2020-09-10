@@ -44,7 +44,7 @@ else()
     message("Not Found OpenCV")
 endif()
 
-find_package(Eigen3 3.3.7 REQUIRED)
+find_package(Eigen3 3.3.9 REQUIRED)
 if (Eigen3_FOUND)
     message("Found Eigen3")
 else()
@@ -52,7 +52,7 @@ else()
 endif()
 
 # ceres
-find_package(Ceres REQUIRED)
+find_package(Ceres 1.14 REQUIRED)
 if (CERES_FOUND)
     message("Found ceres")
 else()
@@ -99,11 +99,11 @@ include_directories(BEFORE
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/utils
     ${PROJECT_SOURCE_DIR}/src
+    ${PROJECT_SOURCE_DIR}/external/eigen-3.3.9/Eigen
+    ${PROJECT_SOURCE_DIR}/external/eigen-3.3.9/unsupported
     ${ARMADILLO_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}
-    "/usr/local/include/eigen3"
-    "/usr/local/include/eigen3/unsupported"
     ${CERES_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
@@ -153,12 +153,12 @@ include_directories(BEFORE
 # Uncomment to enable building.
 
 # add_subdirectory(utils)
-# add_subdirectory(src/01_ar_wireframe_cube)
-# add_subdirectory(src/02_pnp_dlt)
-# add_subdirectory(src/03_harris_detection_and_tracking)
-# add_subdirectory(src/04_sift)
-# add_subdirectory(src/05_stereo_dense_reconstruction)
-# add_subdirectory(src/06_two_view_geometry)
-# add_subdirectory(src/07_ransac_localization)
-# add_subdirectory(src/08_lucas_kanade_tracker)
-# add_subdirectory(src/09_bundle_adjustment)
+add_subdirectory(src/01_ar_wireframe_cube)
+add_subdirectory(src/02_pnp_dlt)
+add_subdirectory(src/03_harris_detection_and_tracking)
+add_subdirectory(src/04_sift)
+add_subdirectory(src/05_stereo_dense_reconstruction)
+add_subdirectory(src/06_two_view_geometry)
+add_subdirectory(src/07_ransac_localization)
+add_subdirectory(src/08_lucas_kanade_tracker)
+add_subdirectory(src/09_bundle_adjustment)

@@ -42,7 +42,8 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
                        const int patch_radius, const double min_disparity,
                        const double max_disparity,
                        const bool reject_outliers = true,
-                       const bool refine_subpixel = true) {
+                       const bool refine_subpixel = true,
+                       bool debug_ssds = false) {
   // Assure the sizes of the left_img and the right_img are consistent and not
   // empty.
   if (left_img.empty() || right_img.empty() ||
@@ -66,9 +67,6 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
 
   // Construct disparity map to be assigned.
   arma::mat disparity_map(img_rows, img_cols, arma::fill::zeros);
-
-  // Debug switch.
-  bool debug_ssds = true;
 
   // For each defined pixel in the left image, match the strip of pixels in the
   // right image. The undefined pixels are those on borders which involve pixels
@@ -112,9 +110,11 @@ arma::mat GetDisparity(const arma::umat& left_img, const arma::umat& right_img,
         std::vector<cv::Mat> plots(2);
         plots[0] = uzh::imagesc(left_patch, false);
         plots[1] = uzh::imagesc(right_strip, false);
-        cv::imshow("Left patch and right strip (Hold any key to move)",
-                   uzh::MakeCanvas(plots, left_img.n_rows, 1));
-        char key = cv::waitKey(0);
+        cv::imshow(
+            "Left patch and right strip (Hold any key to move; Press ESC to "
+            "proceed.)",
+            uzh::MakeCanvas(plots, left_img.n_rows, 1));
+        const char key = cv::waitKey(0);
         if (key == 27) {  // 'ESC' key -> exit.
           cv::destroyAllWindows();
           debug_ssds = false;

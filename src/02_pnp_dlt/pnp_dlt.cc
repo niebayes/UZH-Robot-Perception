@@ -13,7 +13,7 @@ int main(int /*argc*/, char** argv) {
   google::LogToStderr();
 
   // Load data files
-  const std::string kFilePath{"data/pnp_dlt/"};
+  const std::string kFilePath{"data/02_pnp_dlt/"};
 
   const Eigen::Matrix3d K = uzh::armaLoad<Eigen::Matrix3d>(kFilePath + "K.txt");
   const Eigen::MatrixXd observations =

@@ -18,9 +18,9 @@ int main(int argc, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
-  const std::string file_path{"data/stereo_dense_reconstruction/"};
-  const std::string left_img_name{file_path + "left/%06d.png"};
-  const std::string right_img_name{file_path + "right/%06d.png"};
+  const std::string file_path{"data/05_stereo_dense_reconstruction/"};
+  const std::string left_img_name{file_path + "left_images/%06d.png"};
+  const std::string right_img_name{file_path + "right_images/%06d.png"};
 
   // Load data
   const arma::umat left_img =
@@ -46,7 +46,7 @@ int main(int argc, char** argv) {
   // Part III: sub-pixel refinement, through setting refine_subpixel to true.
   const arma::mat disparity_map =
       uzh::GetDisparity(left_img, right_img, kPatchRadius, kMinDisparity,
-                        kMaxDisparity, true, true);
+                        kMaxDisparity, true, true, true);
   uzh::imagesc(arma::conv_to<arma::umat>::from(disparity_map), true,
                "Disparity map produced by the first pair of images");
 
@@ -74,8 +74,9 @@ int main(int argc, char** argv) {
           uzh::GetImageStereo(cv::format(left_img_name.c_str(), i));
       const arma::umat r_img =
           uzh::GetImageStereo(cv::format(right_img_name.c_str(), i));
-      const arma::mat disp_map = uzh::GetDisparity(
-          l_img, r_img, kPatchRadius, kMinDisparity, kMaxDisparity, true, true);
+      const arma::mat disp_map =
+          uzh::GetDisparity(l_img, r_img, kPatchRadius, kMinDisparity,
+                            kMaxDisparity, true, true, false);
       // Write disparity map to a image file.
       cv::imwrite(
           cv::format((file_path + "disp_map/disp_map_%d.png").c_str(), i),

@@ -143,9 +143,9 @@ int main(int argc, char** argv) {
 
   // Load images.
   cv::Mat database_image =
-      cv::imread(file_path + "000000.png", cv::IMREAD_GRAYSCALE);
+      cv::imread(file_path + "KITTI/000000.png", cv::IMREAD_GRAYSCALE);
   cv::Mat query_image =
-      cv::imread(file_path + "000001.png", cv::IMREAD_GRAYSCALE);
+      cv::imread(file_path + "KITTI/000001.png", cv::IMREAD_GRAYSCALE);
 
   // Port parameters from ex3.
   const int kPatchSize = 9;
@@ -286,8 +286,9 @@ int main(int argc, char** argv) {
   const int kNumFrames = 9;
   const std::string winname{"All matches vs. inlier matches found with RANSAC"};
   for (int i = 1; i < kNumFrames + 1; ++i) {
-    cv::Mat query_img = cv::imread(
-        cv::format((file_path + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
+    cv::Mat query_img =
+        cv::imread(cv::format((file_path + "KITTI/%06d.png").c_str(), i),
+                   cv::IMREAD_GRAYSCALE);
 
     // Detect Harris keypoints in the query image.
     cv::Mat harris_res;
@@ -391,7 +392,7 @@ int main(int argc, char** argv) {
     const cv::Mat show =
         uzh::MakeCanvas(imgs_show_frame_i, 3 * query_img.rows, 2);
     cv::imshow(winname, show);
-    const char key = cv::waitKey(2000);
+    const char key = cv::waitKey(500);
     if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
   }
 

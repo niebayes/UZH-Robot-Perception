@@ -168,12 +168,11 @@ int main(int /*argc*/, char** argv) {
   }
 
   // Part II: undistort an image
+  // FIXME Error in undistorint image.
   cv::Mat distorted_image =
       cv::imread(file_path + "images/img_0001.jpg", cv::IMREAD_GRAYSCALE);
-  LOG(INFO) << "Undistorting image with nearest-neighbor interpolation.";
   cv::Mat undistorted_image_nearest_neighbor =
       uzh::UndistortImage(distorted_image, K, D, uzh::NEAREST_NEIGHBOR);
-  LOG(INFO) << "Undistorting image with bilinear interpolation.";
   cv::Mat undistorted_image_bilinear =
       uzh::UndistortImage(distorted_image, K, D, uzh::BILINEAR);
   cv::Mat comparison(distorted_image.rows, 2 * distorted_image.cols, CV_8UC1);

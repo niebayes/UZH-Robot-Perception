@@ -20,7 +20,7 @@ int main(int /*argc*/, char** argv) {
   // Part I: warp an image to test the functionalities of the warping functions.
   // Reference image.
   const cv::Mat img_r =
-      cv::imread(file_path + "000000.png", cv::IMREAD_GRAYSCALE);
+      cv::imread(file_path + "KITTI/000000.png", cv::IMREAD_GRAYSCALE);
   const arma::umat I_r = uzh::img2arma(img_r);
 
   // Various basic warpings.
@@ -96,8 +96,9 @@ int main(int /*argc*/, char** argv) {
   arma::mat kpts_prev = keypoints;
   const int kNumImages = 20;
   for (int i = 1; i < kNumImages + 1; ++i) {
-    const cv::Mat img_i = cv::imread(
-        cv::format((file_path + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
+    const cv::Mat img_i =
+        cv::imread(cv::format((file_path + "KITTI/%06d.png").c_str(), i),
+                   cv::IMREAD_GRAYSCALE);
     const cv::Mat img_i_down = uzh::imresize(img_i, 0.25);
     const arma::umat I = uzh::img2arma(img_i_down);
 
@@ -139,8 +140,9 @@ int main(int /*argc*/, char** argv) {
   I_prev = I_r_down;
   kpts_prev = keypoints;
   for (int i = 1; i < kNumImages + 1; ++i) {
-    const cv::Mat img_i = cv::imread(
-        cv::format((file_path + "%06d.png").c_str(), i), cv::IMREAD_GRAYSCALE);
+    const cv::Mat img_i =
+        cv::imread(cv::format((file_path + "KITTI/%06d.png").c_str(), i),
+                   cv::IMREAD_GRAYSCALE);
     const cv::Mat img_i_down = uzh::imresize(img_i, 0.25);
     const arma::umat I = uzh::img2arma(img_i_down);
 

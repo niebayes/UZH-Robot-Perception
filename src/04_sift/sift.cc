@@ -14,7 +14,7 @@ int main(int /*argc*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
-  const std::string file_path{"data/sift/"};
+  const std::string file_path{"data/04_sift/"};
 
   // Given settings
   const int kNumOctaves = 5;  // Number of levels of the image pyramid.

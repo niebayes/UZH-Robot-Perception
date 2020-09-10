@@ -12,7 +12,7 @@ int main(int /*argv*/, char** argv) {
   google::InitGoogleLogging(argv[0]);
   google::LogToStderr();
 
-  const std::string file_path = "data/harris_detection_and_tracking/";
+  const std::string file_path = "data/03_harris_detection_and_tracking/";
   // Image to show the rendered objects.
   cv::Mat image_show =
       cv::imread(file_path + "KITTI/000000.png", cv::IMREAD_COLOR);
@@ -41,7 +41,7 @@ int main(int /*argv*/, char** argv) {
   // Superimpose the selected keypoins to the original image.
   Eigen::MatrixXd k;
   cv::cv2eigen(keypoints, k);
-  const Eigen::VectorXi x = k.row(0).cast<int>(), y = k.row(1).cast<int>();
+  const Eigen::VectorXi x = k.row(1).cast<int>(), y = k.row(0).cast<int>();
   uzh::scatter(image_show, x, y, 4, {0, 0, 255}, cv::FILLED);
   cv::imshow("Harris keypoints", image_show);
   cv::waitKey(0);
@@ -52,8 +52,8 @@ int main(int /*argv*/, char** argv) {
                        kNonMaximumRadius);
   Eigen::MatrixXd shi_k;
   cv::cv2eigen(shi_keypoints, shi_k);
-  const Eigen::VectorXi shi_x = shi_k.row(0).cast<int>(),
-                        shi_y = shi_k.row(1).cast<int>();
+  const Eigen::VectorXi shi_x = shi_k.row(1).cast<int>(),
+                        shi_y = shi_k.row(0).cast<int>();
   uzh::scatter(image_show_shi, shi_x, shi_y, 4, {0, 255, 0}, cv::FILLED);
   cv::imshow("Shi-Tomasi keypoints", image_show_shi);
   cv::waitKey(0);
@@ -106,7 +106,7 @@ int main(int /*argv*/, char** argv) {
   cv::Mat matches;
   uzh::MatchDescriptors(query_descriptors, descriptors, matches,
                         kDistanceRatio);
-  uzh::PlotMatches(matches, query_keypoints, keypoints, match_show);
+  uzh::PlotMatches(matches, query_keypoints, keypoints, match_show, true);
   cv::namedWindow("Matches between the first two frames", cv::WINDOW_AUTOSIZE);
   cv::imshow("Matches between the first two frames", match_show);
   cv::waitKey(0);
@@ -138,7 +138,7 @@ int main(int /*argv*/, char** argv) {
       if (i >= 1) {
         uzh::MatchDescriptors(query_descs, database_descs, matches_qd,
                               kDistanceRatio);
-        uzh::PlotMatches(matches_qd, query_kps, database_kps, img_show);
+        uzh::PlotMatches(matches_qd, query_kps, database_kps, img_show, true);
         cv::putText(img_show,
                     cv::format("Matches / Total: %d / %d",
                                cv::countNonZero(matches_qd) + 1, kNumKeypoints),
