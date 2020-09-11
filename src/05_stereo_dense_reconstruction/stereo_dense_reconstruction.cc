@@ -9,7 +9,7 @@
 #include "stereo.h"
 #include "transfer.h"
 
-DEFINE_int32(num_image_pairs, 10,
+DEFINE_int32(num_image_pairs, 0,
              "Number of image pairs to be accumulated during the computation "
              "of point clouds. Maximum pairs: 100");
 
@@ -79,7 +79,7 @@ int main(int argc, char** argv) {
                             kMaxDisparity, true, true, false);
       // Write disparity map to a image file.
       cv::imwrite(
-          cv::format((file_path + "disp_map/disp_map_%d.png").c_str(), i),
+          cv::format("tmp/disp_map_%03d.jpg", i),
           uzh::imagesc(arma::conv_to<arma::umat>::from(disp_map), false));
 
       arma::mat p_C_points;

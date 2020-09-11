@@ -156,7 +156,7 @@ include_directories(BEFORE
 # add_subdirectory(src/03_harris_detection_and_tracking)
 # add_subdirectory(src/04_sift)
 # add_subdirectory(src/05_stereo_dense_reconstruction)
-add_subdirectory(src/06_two_view_geometry)
+# add_subdirectory(src/06_two_view_geometry)
 # add_subdirectory(src/07_ransac_localization)
 # add_subdirectory(src/08_lucas_kanade_tracker)
 # add_subdirectory(src/09_bundle_adjustment)

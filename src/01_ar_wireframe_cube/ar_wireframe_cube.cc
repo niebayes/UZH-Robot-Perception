@@ -159,6 +159,7 @@ int main(int /*argc*/, char** argv) {
       for (int i = 0; i < kNumVerticesPerDepth; ++i) {
         cv::line(frame, {cube_base.col(i)}, {cube_top.col(i)}, {0, 0, 255}, 3);
       }
+      cv::imwrite(cv::format("tmp/img_%04d.jpg", pose_index), frame);
       video << frame;
     }
     video.release();
@@ -181,6 +182,7 @@ int main(int /*argc*/, char** argv) {
       "Comparison between nearest-neighbor interpolation and bilinear "
       "interpolation in undistortion",
       comparison);
+  cv::imwrite("tmp/undistort_comp.png", comparison);
   cv::waitKey(0);
   cv::destroyAllWindows();
 

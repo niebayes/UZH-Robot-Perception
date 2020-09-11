@@ -74,6 +74,7 @@ int main(int /*argc*/, char** argv) {
 
       // Show the frame.
       cv::imshow("Reprojected points vs. Ground truth", frame);
+      cv::imwrite(cv::format("tmp/reproj_%03d.jpg", image_index), frame);
       const char key = cv::waitKey(50);
       if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
 
