@@ -29,7 +29,7 @@ namespace uzh {
 //@param range [4 x 1] column vector where the first two elements are the lower
 // and upper bound of the x range respectively and the last two elements are the
 // lower and upper bound of the y range respectively.
-void PlotMap(pcl::visualization::PCLPlotter::Ptr plotter,
+void PlotMap(pcl::visualization::PCLPlotter* plotter,
              const arma::vec& hidden_state, const arma::vec& observations,
              const arma::vec4& range = arma::vec4{0.0, 0.0, 0.0, 0.0}) {
   if (hidden_state.empty() || observations.empty()) LOG(ERROR) << "Empty input";

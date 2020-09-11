@@ -60,7 +60,7 @@ int main(int /*argc*/, char** argv) {
   }
 
   // Plot the VO trajectory and ground truth trajectory.
-  pcl::visualization::PCLPlotter::Ptr plotter(
+  pcl::visualization::PCLPlotter* plotter(
       new pcl::visualization::PCLPlotter);
   plotter->setTitle("VO trajectory and ground truth trajectory");
   plotter->setShowLegend(true);

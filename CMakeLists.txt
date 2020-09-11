@@ -76,7 +76,7 @@ else()
 endif()
 
 # pcl
-find_package(PCL REQUIRED COMPONENTS common io visualization)
+find_package(PCL 1.11 REQUIRED COMPONENTS common io visualization)
 if (PCL_FOUND)
     message("Found PCL")
     link_directories(${PCL_LIBRARY_DIRS})

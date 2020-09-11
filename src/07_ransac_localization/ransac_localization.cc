@@ -60,7 +60,7 @@ int main(int argc, char** argv) {
       uzh::ParabolaRANSAC(data, max_noise);
 
   // Compare various fits with RANSAC.
-  pcl::visualization::PCLPlotter::Ptr plotter(
+  pcl::visualization::PCLPlotter* plotter(
       new pcl::visualization::PCLPlotter);
   plotter->setTitle("Fitted parabolas");
   plotter->setShowLegend(true);
@@ -101,7 +101,7 @@ int main(int argc, char** argv) {
   plotter->plot();
 
   // Plot the maximum inlier counts at eack iteration.
-  pcl::visualization::PCLPlotter::Ptr inlier_cnt_plotter(
+  pcl::visualization::PCLPlotter* inlier_cnt_plotter(
       new pcl::visualization::PCLPlotter);
   inlier_cnt_plotter->setTitle("Maximum inliers count");
   inlier_cnt_plotter->setXTitle("iteration");
@@ -207,7 +207,7 @@ int main(int argc, char** argv) {
   // Show the history of maximum number of inliers and number of iterations at
   // each iteration.
   const int num_iterations = num_iterations_history.n_cols;
-  pcl::visualization::PCLPlotter::Ptr max_num_inliers_plot(
+  pcl::visualization::PCLPlotter* max_num_inliers_plot(
       new pcl::visualization::PCLPlotter);
   max_num_inliers_plot->setTitle("Maximum number of inliers");
   max_num_inliers_plot->setXTitle("iterations");
@@ -219,7 +219,7 @@ int main(int argc, char** argv) {
       "inliers", vtkChart::LINE);
   max_num_inliers_plot->plot();
 
-  pcl::visualization::PCLPlotter::Ptr num_iterations_plot(
+  pcl::visualization::PCLPlotter* num_iterations_plot(
       new pcl::visualization::PCLPlotter);
   num_iterations_plot->setTitle("Estimated number of iterations");
   max_num_inliers_plot->setXTitle("iterations");
