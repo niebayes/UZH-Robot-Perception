@@ -17,18 +17,18 @@ enum InterpolationMethod : int { NEAREST_NEIGHBOR, BILINEAR };
 // distortion coefficients D
 //@note A good tip for using Eigen::Ref with derived types:
 //@ref https://stackoverflow.com/a/58463638/14007680
-cv::Mat UndistortImage(const cv::Mat& distorted_image,
-                       const Eigen::Ref<const Eigen::Matrix3d>& K,
-                       const Eigen::Ref<const Eigen::Vector2d>& D,
+cv::Mat UndistortImage(const cv::Mat &distorted_image,
+                       const Eigen::Ref<const Eigen::Matrix3d> &K,
+                       const Eigen::Ref<const Eigen::Vector2d> &D,
                        const int interpolation_method) {
   if (distorted_image.channels() > 1) {
     LOG(ERROR) << "Only support grayscale image at this moment";
   }
 
-  const cv::Size& image_size = distorted_image.size();
+  const cv::Size &image_size = distorted_image.size();
   cv::Mat undistorted_image = cv::Mat::zeros(image_size, CV_8UC1);
-  Eigen::MatrixXd distorted_image_eigen(image_size.height, image_size.width);
-  cv::cv2eigen(distorted_image, distorted_image_eigen);
+  Eigen::MatrixXd distorted_image_(image_size.height, image_size.width);
+  cv::cv2eigen(distorted_image, distorted_image_);
 
   // Use backward warping
   for (int u = 0; u < image_size.width; ++u) {
@@ -64,7 +64,8 @@ cv::Mat UndistortImage(const cv::Mat& distorted_image,
           //! std::floor here for the sake of simplicity and consistency.
           if (up_0 >= 0 && up_0 < image_size.width && vp_0 >= 0 &&
               vp_0 < image_size.height) {
-            intensity = distorted_image.at<uchar>({(uchar)up_0, (uchar)vp_0});
+            //! Follow the convection that x -> col, y -> row.
+            intensity = distorted_image_(vp_0, up_0);
           }
           break;
 
@@ -75,14 +76,11 @@ cv::Mat UndistortImage(const cv::Mat& distorted_image,
               vp_0 + 1 < image_size.height) {
             const double x = up - up_0, y = vp - vp_0;
             const Eigen::Matrix2d four_corners =
-                (Eigen::Matrix<uchar, 2, 2>()
-                     << distorted_image.at<uchar>({(uchar)up_0, (uchar)vp_0}),
-                 distorted_image.at<uchar>({(uchar)up_0, (uchar)(vp_0 + 1)}),
-                 distorted_image.at<uchar>({(uchar)(up_0 + 1), (uchar)vp_0}),
-                 distorted_image.at<uchar>(
-                     {(uchar)(up_0 + 1), (uchar)(vp_0 + 1)}))
-                    .finished()
-                    .cast<double>();
+                (Eigen::Matrix<double, 2, 2>() << distorted_image_(vp_0, up_0),
+                 distorted_image_(vp_0 + 1, up_0),
+                 distorted_image_(vp_0, up_0 + 1),
+                 distorted_image_(vp_0 + 1, up_0 + 1))
+                    .finished();
             intensity = cv::saturate_cast<uchar>(
                 Eigen::Vector2d{1 - x, x}.transpose() * four_corners *
                 Eigen::Vector2d{1 - y, y});

@@ -72,6 +72,12 @@ int main(int /*argc*/, char** argv) {
       const Eigen::VectorXi& observed_y = image_points.row(1).cast<int>();
       uzh::scatter(frame, observed_x, observed_y, 4, {0, 255, 0});
 
+      // Show the frame.
+      cv::imshow("Reprojected points vs. Ground truth", frame);
+      const char key = cv::waitKey(50);
+      if (key == 32) cv::waitKey(0);  // 'Space' key -> pause.
+
+      // Write to the video.
       video << frame;
     }
     video.release();

@@ -168,7 +168,6 @@ int main(int /*argc*/, char** argv) {
   }
 
   // Part II: undistort an image
-  // FIXME Error in undistorint image.
   cv::Mat distorted_image =
       cv::imread(file_path + "images/img_0001.jpg", cv::IMREAD_GRAYSCALE);
   cv::Mat undistorted_image_nearest_neighbor =
