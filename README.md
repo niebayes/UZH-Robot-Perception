@@ -11,7 +11,7 @@ For a robot to be autonomous, it has to perceive and understand the world around
   - [Direct Linear Transform algorithm for solving PNP problem](/src/02_pnp_dlt). 
   ![reprojected_gif][reprojected_gif]
   - [Feature detection and tracking with Harris corner detector](/src/03_harris_detection_and_tracking). 
-  ![harris_match_gif][harrsi_match.gif]
+  ![harris_match_gif][harrsi_match_gif]
   - [The principal pipeline of SIFT feature detection and description](src/04_sift).
   ![sift_keypoints_1][sift_keypoints_1] ![sift_keypoints_2][sift_keypoints_2]
   - [Basic stereo dense reconstruction on KITTI dataset](src/05_stereo_dense_reconstruction).
