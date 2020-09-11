@@ -2,7 +2,6 @@
 #define UZH_STEREO_VISUALIZE_POINT_CLOUD_H_
 
 #include "armadillo"
-#include "boost/thread.hpp"
 #include "pcl/visualization/pcl_visualizer.h"
 
 namespace uzh {

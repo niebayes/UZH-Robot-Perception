@@ -25,6 +25,7 @@ For a robot to be autonomous, it has to perceive and understand the world around
     - clang (tested version: 11.0.0 for macOS).
     - Visual Studio Code.
   3. Dependencies:
+    - C++17                                       , for `std::optional`, `std::tuple`, etc.
     - Armadillo (tested version: 9.900.3)         , for most matrix computations.
     - Eigen3    (tested version: 3.3.7)           , for the rest matrix computations.
     - Ceres     (tested version: 1.14)            , for solving general non-linear least squares.

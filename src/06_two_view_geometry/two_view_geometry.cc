@@ -47,7 +47,7 @@ int main(int /*argc*/, char** argv) {
   const arma::mat M2 = K * arma::join_horiz(R, t);
   arma::mat P;
 
-  const bool use_nonlinear_triangulation = true;
+  const bool use_nonlinear_triangulation = false;
   if (use_nonlinear_triangulation) {
     // Use nonlinear triangulation to get a more accurate P.
     P = uzh::NonlinearTriangulation(p1_h, p2_h, M1, M2);
