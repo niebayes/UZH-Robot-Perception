@@ -6,24 +6,24 @@ For a robot to be autonomous, it has to perceive and understand the world around
 
 ## What this repository contain
 1. Implemented basic algorithms used for robot perception:
-  - [Basic VR of a user specified wireframe cube](/src/01_ar_wireframe_cube).
-  ![](cube_gif)
-  - [Direct Linear Transform algorithm for solving PNP problem](/src/02_pnp_dlt).
-  ![](reprojected_gif)
-  - [Feature detection and tracking with Harris corner detector](/src/03_harris_detection_and_tracking).
-  ![](harrsi_match.gif)
+  - [Basic VR of a user specified wireframe cube](/src/01_ar_wireframe_cube). 
+  ![cube_gif](cube_gif)
+  - [Direct Linear Transform algorithm for solving PNP problem](/src/02_pnp_dlt). 
+  ![reprojected_gif](reprojected_gif)
+  - [Feature detection and tracking with Harris corner detector](/src/03_harris_detection_and_tracking). 
+  ![harris_match_gif](harrsi_match.gif)
   - [The principal pipeline of SIFT feature detection and description](src/04_sift).
-  ![](sift_keypoints_1) ![](sift_keypoints_2)
+  ![sift_keypoints_1](sift_keypoints_1) ![sift_keypoints_2](sift_keypoints_2)
   - [Basic stereo dense reconstruction on KITTI dataset](src/05_stereo_dense_reconstruction).
-  ![](disparity_map_gif) ![](point_cloud_gif)
+  ![disparity_map_gif](disparity_map_gif) ![point_cloud_gif](point_cloud_gif)
   - [Normalized eight point algorithm used in two view geometry](src/06_two_view_geometry). 
-  ![](points_2d) ![](reconstructed_left_view) ![](reconstructed_right_view)
+  ![points_2d_img](points_2d) ![reconstructed_left_view_img](reconstructed_left_view) ![reconstructed_right_view_img](reconstructed_right_view)
   - [Camera localization with RANSAC outlier rejection](src/07_ransac_localization).
-  ![](ransac_matching_gif)
+  ![ransac_matching_gif](ransac_matching_gif)
   - [Lucas-Kanade tracker for feature tracking](src/08_lucas_kanade_tracker).
-  ![](gauss_newton_iter_gif) ![](klt_tracking_gif) ![](robust_klt_tracking_git)
+  ![gauss_newton_iter_gif](gauss_newton_iter_gif) ![klt_tracking_gif](klt_tracking_gif) ![robust_klt_tracking_gif](robust_klt_tracking_git)
   - [Basic bundle adjustment pipeline on KITTI dataset](src/09_bundle_adjustment).
-  ![](original_trajectory) ![](optimized_trajectory)
+  ![original_trajectory_img](original_trajectory) ![optimized_trajectory_img](optimized_trajectory)
 2. Alongside their [results](./results).
 
 ## Compilation environment
