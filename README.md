@@ -2,7 +2,7 @@ Solutions for [UZH Robot Perception Course 2019](http://rpg.ifi.uzh.ch/teaching.
 ---
 
 ## Course overview
-For a robot to be autonomous, it has to perceive and understand the world around it. This course introduces you to the key computer vision algorithms used in mobile robotics, such as image formation, filtering, feature extraction, multiple view geometry, dense reconstruction, tracking, image retrieval, event-based vision, visual-inertial odometry, Simultaneous Localization And Mapping (SLAM), and some basics of deep learning.
+> For a robot to be autonomous, it has to perceive and understand the world around it. This course introduces you to the key computer vision algorithms used in mobile robotics, such as image formation, filtering, feature extraction, multiple view geometry, dense reconstruction, tracking, image retrieval, event-based vision, visual-inertial odometry, Simultaneous Localization And Mapping (SLAM), and some basics of deep learning.
 
 ## What this repository contain
 ### Implemented basic algorithms used for robot perception:
@@ -28,13 +28,13 @@ For a robot to be autonomous, it has to perceive and understand the world around
   <img width="414" height="126" src="https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/05_stereo_dense_reconstruction/disp_map.gif">
   <p>
   <p align="center">
-  <img width="192" height="108" src="https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/05_stereo_dense_reconstruction/point_cloud.gif">
+  <img width="288" height="162" src="https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/05_stereo_dense_reconstruction/point_cloud.gif">
   <p>
 
   - [Normalized eight point algorithm used in two view geometry](src/06_two_view_geometry). 
   - [Camera localization with RANSAC outlier rejection](src/07_ransac_localization).
   <p align="center">
-    <img width="213" height="263" src="https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/07_ransac_localization/ransac.gif">
+    <img width="300" height="263" src="https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/07_ransac_localization/ransac.gif">
   <p>
 
   - [Lucas-Kanade tracker for feature tracking](src/08_lucas_kanade_tracker).
