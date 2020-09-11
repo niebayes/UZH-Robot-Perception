@@ -52,7 +52,7 @@ else()
 endif()
 
 # ceres
-find_package(Ceres 1.14 REQUIRED)
+find_package(Ceres REQUIRED)
 if (CERES_FOUND)
     message("Found ceres")
 else()
@@ -76,7 +76,7 @@ else()
 endif()
 
 # pcl
-find_package(PCL 1.11 QUIET COMPONENTS common io visualization)
+find_package(PCL REQUIRED COMPONENTS common io visualization)
 if (PCL_FOUND)
     message("Found PCL")
     link_directories(${PCL_LIBRARY_DIRS})
@@ -99,8 +99,6 @@ include_directories(BEFORE
     ${PROJECT_SOURCE_DIR}/include
     ${PROJECT_SOURCE_DIR}/utils
     ${PROJECT_SOURCE_DIR}/src
-    ${PROJECT_SOURCE_DIR}/external/eigen-3.3.9/Eigen
-    ${PROJECT_SOURCE_DIR}/external/eigen-3.3.9/unsupported
     ${ARMADILLO_INCLUDE_DIRS}
     ${OpenCV_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS}

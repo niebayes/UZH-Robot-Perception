@@ -17,23 +17,6 @@
 
 namespace uzh {
 
-//@brief Wrap STL's std::min_element and std::remove_if. Find the minimum
-// not satisfying the given rule.
-template <typename T, typename Derived>
-T find_min_if_not(const Eigen::DenseBase<Derived>& X,
-                  std::function<bool(typename Derived::Scalar)> pred) {
-  // FIXME template followed dot operator works well on Linux, but not on macOS
-  // Derived X_(X.size());
-  // std::copy(X.cbegin(), X.cend(), X_.template begin());
-  // return (*std::min_element(
-  //     X_.template begin(),
-  //     std::remove_if(X_.template begin(), X_.template end(), pred)));
-  Derived X_(X.size());
-  std::copy(X.cbegin(), X.cend(), X_.begin());
-  return (*std::min_element(X_.begin(),
-                            std::remove_if(X_.begin(), X_.end(), pred)));
-}
-
 //@brief Match descriptors based on the Sum of Squared Distance (SSD) measure.
 //@param query_descriptors [m x q] matrix where each column corresponds to a
 // m-dimensional descriptor vector formed by stacking the intensities inside a
@@ -68,12 +51,10 @@ void MatchDescriptors(const cv::Mat& query_descriptors,
           .cast<int>();
 
   // Find the overall minimal non-zero distance.
-  //@note This could also be accomplished with std::sort / std::statble in
-  // juction with std::find_if
   eigen_assert(distances.rows() == 1);
-  Eigen::RowVectorXd dist = distances.row(0);
+  const arma::rowvec dist_arma = uzh::eigen2arma(distances.row(0));
   const double min_non_zero_distance =
-      find_min_if_not<double>(dist, [](double x) { return x <= 0; });
+      dist_arma(arma::find(dist_arma > 0)).min();
 
   // Discard -- set to 0 -- all matches that out of the
   // distance_ratio * min_non_zero_distance range.
