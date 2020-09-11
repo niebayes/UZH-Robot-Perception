@@ -47,26 +47,26 @@ For a robot to be autonomous, it has to perceive and understand the world around
   - **Gtest**                                       , for testing (only used for developers).
 
 ## How to compile.
-1. `cd <path_to>/uzh_robot_perception_robot`
+1. `cd <path_to>/uzh_robot_perception_codes`
 2. `mkdir build && cd build` 
 3. `cmake -j4 -DCMAKE_BUILD_TYPE=Release ..` 
 4. `make`
 5. The compiled binary files will be in the `bin` directory.
 
 
-[cube_gif]: https://github.com/niebayes/uzh_robot_perception/blob/master/results/01_ar_wireframe_cube/cube.gif
-[reprojected_gif]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/02_pnp_dlt/reprojected.gif
-[harrsi_match.gif]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/03_harris_detection_and_tracking/match.gif
-[sift_keypoints_1]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/04_sift/sift_left.png
-[sift_keypoints_2]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/04_sift/sift_right.png
-[disparity_map_gif]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/05_stereo_dense_reconstruction/disp_map.gif
-[point_cloud_gif]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/05_stereo_dense_reconstruction/point_cloud.gif
-[points_2d]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/06_two_view_geometry/points_2d.png
-[reconstructed_left_view]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/06_two_view_geometry/left_side_view_1.png
-[reconstructed_front_view]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/06_two_view_geometry/front_view.png
-[ransac_matching_gif]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/07_ransac_localization/ransac.gif
-[gauss_newton_iter_gif]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/08_lucas_kanade_tracker/gauss_newton_iter.gif
-[klt_tracking_gif]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/08_lucas_kanade_tracker/klt.gif
-[robust_klt_tracking_git]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/08_lucas_kanade_tracker/robust_klt.gif
-[original_trajectory]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/09_bundle_adjustment/original_trajectory.png
-[optimized_trajectory]:https://github.com/niebayes/uzh_robot_perception/blob/master/results/09_bundle_adjustment/optimized_trajectory.png
+[cube_gif]: https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/01_ar_wireframe_cube/cube.gif
+[reprojected_gif]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/02_pnp_dlt/reprojected.gif
+[harrsi_match.gif]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/03_harris_detection_and_tracking/match.gif
+[sift_keypoints_1]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/04_sift/sift_left.png
+[sift_keypoints_2]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/04_sift/sift_right.png
+[disparity_map_gif]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/05_stereo_dense_reconstruction/disp_map.gif
+[point_cloud_gif]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/05_stereo_dense_reconstruction/point_cloud.gif
+[points_2d]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/06_two_view_geometry/points_2d.png
+[reconstructed_left_view]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/06_two_view_geometry/left_side_view_1.png
+[reconstructed_front_view]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/06_two_view_geometry/front_view.png
+[ransac_matching_gif]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/07_ransac_localization/ransac.gif
+[gauss_newton_iter_gif]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/08_lucas_kanade_tracker/gauss_newton_iter.gif
+[klt_tracking_gif]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/08_lucas_kanade_tracker/klt.gif
+[robust_klt_tracking_git]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/08_lucas_kanade_tracker/robust_klt.gif
+[original_trajectory]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/09_bundle_adjustment/original_trajectory.png
+[optimized_trajectory]:https://github.com/niebayes/uzh_robot_perception_codes/blob/master/results/09_bundle_adjustment/optimized_trajectory.png
