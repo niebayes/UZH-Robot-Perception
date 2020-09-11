@@ -47,13 +47,15 @@ int main(int /*argc*/, char** argv) {
   const arma::mat M2 = K * arma::join_horiz(R, t);
   arma::mat P;
 
-  const bool use_nonlinear_triangulation = false;
+  const bool use_nonlinear_triangulation = true;
   if (use_nonlinear_triangulation) {
     // Use nonlinear triangulation to get a more accurate P.
+    LOG(WARNING) << "Nonlinear triangulation risks to overfitting.";
     P = uzh::NonlinearTriangulation(p1_h, p2_h, M1, M2);
   } else {
     P = uzh::LinearTriangulation(p1_h, p2_h, M1, M2);
   }
+  // FIXME P is okay in macOS but bad in Ubuntu.
 
   // Dehomogenize.
   const arma::mat P_hn = uzh::hnormalized<double>(P);
